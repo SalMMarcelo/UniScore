@@ -13,18 +13,13 @@ import {
     where
 } from "firebase/firestore";
 import Link from "next/link";
+import { isAdminEmail } from "../../../lib/admin";
 
 export default function ModeradorForum() {
     const [user, setUser] = useState(undefined);
     const [posts, setPosts] = useState([]);
     const [filtro, setFiltro] = useState("todos");
     const [loading, setLoading] = useState(false);
-
-    // Lista de moderadores - em produção isso deveria vir do banco de dados
-    const moderadores = [
-        "admin@uniscore.com",
-        "moderador@uniscore.com"
-    ];
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
@@ -59,7 +54,7 @@ export default function ModeradorForum() {
         return () => unsubscribe();
     }, [filtro]);
 
-    const isModerator = user && moderadores.includes(user.email);
+    const isModerator = user && isAdminEmail(user.email);
 
     const handleDeletePost = async (postId) => {
         if (!isModerator || !confirm("Tem certeza que deseja excluir este post?")) return;

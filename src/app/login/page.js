@@ -3,6 +3,8 @@ import { useState } from "react";
 import { auth } from "../../firebase";
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import Link from "next/link";
+import AccessTypeTabs from "../../components/AccessTypeTabs";
+import { isAdminEmail } from "../../lib/admin";
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -11,13 +13,17 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    const redirectAfterLogin = (loggedInEmail) => {
+        window.location.href = isAdminEmail(loggedInEmail) ? "/forum/moderacao" : "/";
+    };
+
     const handleLogin = async (e) => {
         e.preventDefault();
         setErro("");
         setLoading(true);
         try {
-            await signInWithEmailAndPassword(auth, email, senha);
-            window.location.href = "/";
+            const { user } = await signInWithEmailAndPassword(auth, email, senha);
+            redirectAfterLogin(user.email);
         } catch (err) {
             setErro("Usuário ou senha inválidos.");
         }
@@ -29,8 +35,8 @@ export default function Login() {
         setLoading(true);
         try {
             const provider = new GoogleAuthProvider();
-            await signInWithPopup(auth, provider);
-            window.location.href = "/";
+            const { user } = await signInWithPopup(auth, provider);
+            redirectAfterLogin(user.email);
         } catch (err) {
             setErro("Falha ao autenticar com Google.");
         }
@@ -50,6 +56,8 @@ export default function Login() {
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">Bem-vindo de volta!</h1>
                         <p className="text-gray-600">Entre para continuar avaliando eventos universitários</p>
                     </div>
+
+                    <AccessTypeTabs active="estudante" />
 
                     {/* Card do formulário */}
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">

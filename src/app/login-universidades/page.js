@@ -4,6 +4,7 @@ import { auth } from "../../firebase";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import AccessTypeTabs from "../../components/AccessTypeTabs";
 
 export default function LoginUniversidades() {
     const [email, setEmail] = useState("");
@@ -59,6 +60,8 @@ export default function LoginUniversidades() {
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">Acesso Institucional</h1>
                         <p className="text-gray-600">Login exclusivo para universidades parceiras</p>
                     </div>
+
+                    <AccessTypeTabs active="universidade" />
 
                     {/* Card do formulário */}
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">

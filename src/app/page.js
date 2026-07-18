@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { auth, db } from "../firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { isAdminEmail } from "../lib/admin";
 
 function SuccessMessage() {
   const searchParams = useSearchParams();
@@ -179,15 +180,24 @@ export default function Home() {
               </Link>
             </>
           ) : (
-            <a href="/perfil" className="rounded-full bg-gray-100 w-9 h-9 flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer border border-gray-300" title="Perfil">
-              {user.photoURL ? (
-                <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
-              ) : (
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                </svg>
+            <>
+              {isAdminEmail(user.email) && (
+                <Link href="/forum/moderacao">
+                  <button className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-sm transition-all">
+                    Painel Admin
+                  </button>
+                </Link>
               )}
-            </a>
+              <a href="/perfil" className="rounded-full bg-gray-100 w-9 h-9 flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer border border-gray-300" title="Perfil">
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
+                ) : (
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                )}
+              </a>
+            </>
           )}
           <Link href="/para-universidades">
             <button className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold text-sm shadow-sm transition-all">Para universidades</button>
