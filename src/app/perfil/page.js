@@ -9,9 +9,12 @@ import Link from "next/link";
 import PainelConquistas from "../../components/PainelConquistas";
 import SeletorTipoPerfil from "../../components/SeletorTipoPerfil";
 import MenuMobile from "../../components/MenuMobile";
+import SeletorIdioma from "../../components/SeletorIdioma";
+import { useI18n } from "../../i18n/I18nProvider";
 import { NOME_MAX, isTipoPerfilValido, rotuloTipoPerfil, carregarUniversidades, destinoDaUrl } from "../../lib/usuarios";
 
 export default function Perfil() {
+    const { t } = useI18n();
     const [user, setUser] = useState(null);
     const [nome, setNome] = useState("");
     const [foto, setFoto] = useState("");
@@ -85,7 +88,7 @@ export default function Perfil() {
         setSucesso("");
         setErro("");
         if (!isTipoPerfilValido(tipoPerfil)) {
-            setErro("Escolha seu tipo de perfil.");
+            setErro(t("perfil.escolhaTipo"));
             return;
         }
         setLoading(true);
@@ -124,7 +127,7 @@ export default function Perfil() {
                 }, { merge: true });
             } catch (err) {
                 console.error("Erro ao salvar no Firestore:", err);
-                setErro("Erro ao salvar perfil. Tente novamente.");
+                setErro(t("perfil.erroSalvarTente"));
                 setLoading(false);
                 return;
             }
@@ -136,10 +139,10 @@ export default function Perfil() {
                 return;
             }
 
-            setSucesso("Perfil salvo com sucesso!");
+            setSucesso(t("perfil.sucesso"));
             setTimeout(() => setSucesso(""), 3000);
         } catch (err) {
-            setErro("Erro ao salvar perfil.");
+            setErro(t("perfil.erroSalvar"));
             console.error(err);
         }
         setLoading(false);
@@ -150,7 +153,7 @@ export default function Perfil() {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4" role="status">
                     <div aria-hidden="true" className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-gray-600">Carregando perfil...</p>
+                    <p className="text-gray-600">{t("perfil.carregando")}</p>
                 </div>
             </div>
         );
@@ -165,19 +168,20 @@ export default function Perfil() {
                         <svg aria-hidden="true" className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                         </svg>
-                        <span className="font-bold text-lg">Voltar</span>
+                        <span className="font-bold text-lg">{t("perfil.voltar")}</span>
                     </Link>
 
                     <img src="/uniscore_star_logo.png" alt="UniScore" className="h-10 sm:h-16 w-auto max-w-[140px] sm:max-w-[220px]" />
 
-                    <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label="Principal">
+                    <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label={t("menu.navPrincipal")}>
                         <Link href="/forum" className="hover:text-blue-600 transition-colors flex items-center gap-1">
                             <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
                             </svg>
-                            Fórum
+                            {t("menu.forum")}
                         </Link>
-                        <Link href="/relatorio" className="hover:text-yellow-600 transition-colors">Relatórios</Link>
+                        <Link href="/relatorio" className="hover:text-yellow-600 transition-colors">{t("perfil.relatorios")}</Link>
+                        <SeletorIdioma />
                     </nav>
                     <MenuMobile />
                 </div>
@@ -186,13 +190,13 @@ export default function Perfil() {
             <main id="conteudo" className="container mx-auto px-4 py-12">
                 <div className="max-w-2xl mx-auto">
                     <div className="text-center mb-8">
-                        <h1 className="text-4xl font-bold text-gray-900 mb-2">Meu Perfil</h1>
-                        <p className="text-gray-600">Personalize suas informações</p>
+                        <h1 className="text-4xl font-bold text-gray-900 mb-2">{t("perfil.titulo")}</h1>
+                        <p className="text-gray-600">{t("perfil.subtitulo")}</p>
                     </div>
 
                     {completar && (
                         <div className="mb-6 bg-yellow-50 border border-yellow-300 text-yellow-900 px-4 py-3 rounded-lg text-center" role="status">
-                            <strong>Escolha seu tipo de perfil</strong> para concluir seu cadastro e depois clique em &quot;Salvar Perfil&quot;.
+                            <strong>{t("perfil.completarDestaque")}</strong> {t("perfil.completarTexto")}
                         </div>
                     )}
 
@@ -203,7 +207,7 @@ export default function Perfil() {
                                 <div className="relative">
                                     <img 
                                         src={foto || "/avatar-default.png"} 
-                                        alt={nome ? `Foto de perfil de ${nome}` : "Sua foto de perfil"} 
+                                        alt={nome ? t("perfil.fotoDe", { nome }) : t("perfil.suaFoto")} 
                                         className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 shadow-lg" 
                                     />
                                     <div aria-hidden="true" className="absolute bottom-0 right-0 bg-blue-600 rounded-full p-2 shadow-lg">
@@ -217,7 +221,7 @@ export default function Perfil() {
                             {/* Tipo de perfil (RF01) */}
                             {tipoPerfil && (
                                 <p className="-mt-2 mb-6 inline-flex items-center gap-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-full px-3 py-1 text-sm font-semibold">
-                                    {rotuloTipoPerfil(tipoPerfil)}
+                                    {rotuloTipoPerfil(tipoPerfil, t)}
                                     {tipoPerfil === "universitario" && nomeUniversidade ? ` · ${nomeUniversidade}` : ""}
                                 </p>
                             )}
@@ -225,15 +229,15 @@ export default function Perfil() {
                             {/* Avatar Options */}
                             <div className="mb-6">
                                 <p id="perfil-avatar-rotulo" className="block text-sm font-semibold text-gray-900 mb-3 text-center">
-                                    Escolha um avatar padrão
+                                    {t("perfil.escolhaAvatar")}
                                 </p>
                                 <div className="flex justify-center gap-4" role="group" aria-labelledby="perfil-avatar-rotulo">
                                     <button
                                         type="button"
                                         className={`border-4 rounded-full p-1 transition-all duration-200 ${foto === "/avatar-default.png" ? "border-blue-600 shadow-lg scale-110" : "border-gray-200 hover:border-gray-300"}`}
                                         onClick={() => setFoto("/avatar-default.png")}
-                                        title="Avatar masculino"
-                                        aria-label="Avatar masculino"
+                                        title={t("perfil.avatarMasculino")}
+                                        aria-label={t("perfil.avatarMasculino")}
                                         aria-pressed={foto === "/avatar-default.png"}
                                     >
                                         <img src="/avatar-default.png" alt="" className="w-20 h-20 rounded-full object-cover" />
@@ -242,8 +246,8 @@ export default function Perfil() {
                                         type="button"
                                         className={`border-4 rounded-full p-1 transition-all duration-200 ${foto === "/avatar-feminino-default.jpg" ? "border-blue-600 shadow-lg scale-110" : "border-gray-200 hover:border-gray-300"}`}
                                         onClick={() => setFoto("/avatar-feminino-default.jpg")}
-                                        title="Avatar feminino"
-                                        aria-label="Avatar feminino"
+                                        title={t("perfil.avatarFeminino")}
+                                        aria-label={t("perfil.avatarFeminino")}
                                         aria-pressed={foto === "/avatar-feminino-default.jpg"}
                                     >
                                         <img src="/avatar-feminino-default.jpg" alt="" className="w-20 h-20 rounded-full object-cover" />
@@ -254,13 +258,13 @@ export default function Perfil() {
                             {/* Upload Custom Photo */}
                             <div className="mb-6 w-full max-w-md">
                                 <p id="perfil-foto-rotulo" className="block text-sm font-semibold text-gray-900 mb-2 text-center">
-                                    Ou faça upload de sua foto
+                                    {t("perfil.uploadFoto")}
                                 </p>
                                 <label htmlFor="perfil-foto" className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 focus-within:ring-2 focus-within:ring-blue-500 text-gray-700 px-4 py-2.5 rounded-lg font-medium cursor-pointer transition-colors border border-gray-300">
                                     <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                     </svg>
-                                    Escolher arquivo
+                                    {t("perfil.escolherArquivo")}
                                     <input
                                         id="perfil-foto"
                                         type="file"
@@ -275,7 +279,7 @@ export default function Perfil() {
                             {/* Nome */}
                             <div className="w-full max-w-md mb-6">
                                 <label htmlFor="perfil-nome" className="block text-sm font-semibold text-gray-900 mb-2">
-                                    Nome
+                                    {t("perfil.nome")}
                                 </label>
                                 <input
                                     id="perfil-nome"
@@ -284,7 +288,7 @@ export default function Perfil() {
                                     value={nome}
                                     onChange={e => setNome(e.target.value)}
                                     className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                                    placeholder="Seu nome completo"
+                                    placeholder={t("perfil.placeholderNome")}
                                     maxLength={NOME_MAX}
                                 />
                             </div>
@@ -305,7 +309,7 @@ export default function Perfil() {
                             {user && (
                                 <div className="w-full max-w-md mb-6">
                                     <label htmlFor="perfil-email" className="block text-sm font-semibold text-gray-900 mb-2">
-                                        Email
+                                        {t("perfil.email")}
                                     </label>
                                     <input
                                         id="perfil-email"
@@ -345,10 +349,10 @@ export default function Perfil() {
                                 {loading ? (
                                     <div className="flex items-center justify-center gap-2">
                                         <div aria-hidden="true" className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        Salvando...
+                                        {t("perfil.salvando")}
                                     </div>
                                 ) : (
-                                    "Salvar Perfil"
+                                    t("perfil.salvar")
                                 )}
                             </button>
                         </div>

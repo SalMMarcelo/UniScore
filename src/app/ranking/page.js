@@ -6,6 +6,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import MenuMobile from "../../components/MenuMobile";
+import SeletorIdioma from "../../components/SeletorIdioma";
+import { useI18n } from "../../i18n/I18nProvider";
 import {
     carregarRanking,
     LIMITE_RANKING_AVALIACOES,
@@ -15,9 +17,17 @@ import {
 
 const MEDALHAS = ["🥇", "🥈", "🥉"];
 
+// Ordinal em inglês para o rótulo de posição (1st, 2nd, 3rd, 4th...)
+function ordinalIngles(n) {
+    const resto100 = n % 100;
+    if (resto100 >= 11 && resto100 <= 13) return `${n}th`;
+    return `${n}${{ 1: "st", 2: "nd", 3: "rd" }[n % 10] || "th"}`;
+}
+
 function Estrelas({ quantidade }) {
+    const { t } = useI18n();
     return (
-        <div className="flex items-center gap-0.5" role="img" aria-label={`Nível ${quantidade} de 5 estrelas`}>
+        <div className="flex items-center gap-0.5" role="img" aria-label={t("ranking.nivelEstrelas", { n: quantidade })}>
             {Array.from({ length: 5 }, (_, i) => (
                 <svg
                     key={i}
@@ -34,6 +44,8 @@ function Estrelas({ quantidade }) {
 }
 
 export default function Ranking() {
+    const { t, idioma } = useI18n();
+    const lugar = (n) => t("ranking.lugar", { n: idioma === "en-US" ? ordinalIngles(n) : n });
     const [ranking, setRanking] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState("");
@@ -46,7 +58,8 @@ export default function Ranking() {
             })
             .catch(err => {
                 console.error("Erro ao carregar ranking:", err);
-                if (ativo) setErro("Não foi possível carregar o ranking.");
+                // Guarda a chave; o texto é traduzido na renderização
+                if (ativo) setErro("ranking.erro");
             })
             .finally(() => {
                 if (ativo) setCarregando(false);
@@ -65,14 +78,15 @@ export default function Ranking() {
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                         </svg>
-                        <span className="font-bold text-lg">Voltar</span>
+                        <span className="font-bold text-lg">{t("ranking.voltar")}</span>
                     </Link>
 
                     <img src="/uniscore_star_logo.png" alt="UniScore" className="h-10 sm:h-16 w-auto max-w-[140px] sm:max-w-[220px]" />
 
-                    <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label="Principal">
-                        <Link href="/forum" className="hover:text-blue-600 transition-colors">Fórum</Link>
-                        <Link href="/perfil" className="hover:text-blue-600 transition-colors">Meu Perfil</Link>
+                    <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label={t("menu.navPrincipal")}>
+                        <Link href="/forum" className="hover:text-blue-600 transition-colors">{t("menu.forum")}</Link>
+                        <Link href="/perfil" className="hover:text-blue-600 transition-colors">{t("ranking.meuPerfil")}</Link>
+                        <SeletorIdioma />
                     </nav>
                     <MenuMobile />
                 </div>
@@ -82,10 +96,10 @@ export default function Ranking() {
                 <div className="max-w-2xl mx-auto">
                     <div className="text-center mb-8">
                         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
-                            Ranking da <span className="bg-gradient-to-r from-yellow-300 to-green-400 bg-clip-text text-transparent">comunidade</span>
+                            {t("ranking.tituloAntes")} <span className="bg-gradient-to-r from-yellow-300 to-green-400 bg-clip-text text-transparent">{t("ranking.tituloDestaque")}</span>
                         </h1>
                         <p className="text-gray-600">
-                            Quem mais participa avaliando eventos e conversando no fórum
+                            {t("ranking.subtitulo")}
                         </p>
                     </div>
 
@@ -93,43 +107,46 @@ export default function Ranking() {
                         {carregando ? (
                             <div className="flex flex-col items-center gap-4 py-8" aria-busy="true" role="status">
                                 <div aria-hidden="true" className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                <p className="text-gray-600">Carregando ranking...</p>
+                                <p className="text-gray-600">{t("ranking.carregando")}</p>
                             </div>
                         ) : erro ? (
-                            <p role="alert" className="text-center text-red-700 py-8">{erro}</p>
+                            <p role="alert" className="text-center text-red-700 py-8">{t(erro)}</p>
                         ) : ranking.length === 0 ? (
                             <div className="text-center text-gray-600 py-8">
-                                <p className="mb-4">Ainda não há participação suficiente para montar o ranking.</p>
+                                <p className="mb-4">{t("ranking.vazio")}</p>
                                 <Link
                                     href="/avaliar"
                                     className="inline-block bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md"
                                 >
-                                    Avaliar um evento
+                                    {t("ranking.avaliarEvento")}
                                 </Link>
                             </div>
                         ) : (
-                            <ol className="divide-y divide-gray-100" aria-label={`Top ${TAMANHO_RANKING} da comunidade`}>
-                                {ranking.map((u, i) => (
+                            <ol className="divide-y divide-gray-100" aria-label={t("ranking.top", { n: TAMANHO_RANKING })}>
+                                {ranking.map((u, i) => {
+                                    const nomeExibido = u.nomeOculto ? t("comum.participante") : u.nome;
+                                    const nomeSelo = (s) => t(`gamificacao.selos.${s.id}.nome`);
+                                    return (
                                     <li key={u.uid} className="flex items-center gap-2 sm:gap-4 py-4">
-                                        <span className="w-8 text-center text-lg font-bold text-gray-600 flex-shrink-0" role="img" aria-label={`${i + 1}º lugar`}>
-                                            {MEDALHAS[i] || `${i + 1}º`}
+                                        <span className="w-8 text-center text-lg font-bold text-gray-600 flex-shrink-0" role="img" aria-label={lugar(i + 1)}>
+                                            {MEDALHAS[i] || t("ranking.posicao", { n: i + 1 })}
                                         </span>
                                         {u.foto ? (
                                             <img src={u.foto} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 flex-shrink-0" />
                                         ) : (
                                             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-green-400 text-white font-bold flex items-center justify-center flex-shrink-0" aria-hidden="true">
-                                                {u.nome.charAt(0).toUpperCase()}
+                                                {nomeExibido.charAt(0).toUpperCase()}
                                             </div>
                                         )}
                                         <div className="min-w-0 flex-1">
-                                            <p className="font-semibold text-gray-900 truncate">{u.nome}</p>
+                                            <p className="font-semibold text-gray-900 truncate">{nomeExibido}</p>
                                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
                                                 <Estrelas quantidade={u.estrelas} />
-                                                <span>{u.totalSelos} {u.totalSelos === 1 ? "selo" : "selos"}</span>
+                                                <span>{t(u.totalSelos === 1 ? "ranking.seloUm" : "ranking.selosN", { n: u.totalSelos })}</span>
                                                 {u.selos.length > 0 && (
-                                                    <span role="img" aria-label={`Selos: ${u.selos.map(s => s.nome).join(", ")}`}>
+                                                    <span role="img" aria-label={t("ranking.selosLista", { lista: u.selos.map(nomeSelo).join(", ") })}>
                                                         {u.selos.map(s => (
-                                                            <span key={s.id} title={s.nome} aria-hidden="true">{s.emoji}</span>
+                                                            <span key={s.id} title={nomeSelo(s)} aria-hidden="true">{s.emoji}</span>
                                                         ))}
                                                     </span>
                                                 )}
@@ -137,16 +154,17 @@ export default function Ranking() {
                                         </div>
                                         <div className="text-right flex-shrink-0">
                                             <p className="text-xl font-bold text-blue-600">{u.pontos}</p>
-                                            <p className="text-xs text-gray-600">pontos</p>
+                                            <p className="text-xs text-gray-600">{t("ranking.pontos")}</p>
                                         </div>
                                     </li>
-                                ))}
+                                    );
+                                })}
                             </ol>
                         )}
                     </div>
 
                     <p className="text-xs text-gray-600 text-center mt-6">
-                        Calculado a partir das últimas {LIMITE_RANKING_AVALIACOES} avaliações e dos últimos {LIMITE_RANKING_POSTS} posts do fórum.
+                        {t("ranking.rodape", { avaliacoes: LIMITE_RANKING_AVALIACOES, posts: LIMITE_RANKING_POSTS })}
                     </p>
                 </div>
             </main>
