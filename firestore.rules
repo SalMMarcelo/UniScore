@@ -1,64 +1,195 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regras para usuários comuns (estudantes) - ambas nomenclaturas
+
+    // ------------------------------------------------------------------
+    // Funções auxiliares
+    // ------------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Moderadores da plataforma (aprovam universidades e moderam conteúdo).
+    // IMPORTANTE: esta lista deve ficar sincronizada com ADMIN_EMAILS em
+    // src/lib/admin.js. Exige e-mail verificado para que ninguém possa criar
+    // uma conta com um desses e-mails sem comprovar a posse da caixa postal.
+    function isModerator() {
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          'admin@uniscore.com',
+          'moderador@uniscore.com'
+        ];
+    }
+
+    // Conta de universidade ("administrador da faculdade") já APROVADA por
+    // um moderador. Contas com status 'pendente' não têm privilégios.
+    function isApprovedUniversity() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/universidades/$(request.auth.uid))
+        && get(/databases/$(database)/documents/universidades/$(request.auth.uid)).data.status == 'aprovado';
+    }
+
+    // Campos que o próprio usuário nunca pode gravar (gamificação / papéis).
+    // Só podem ser alterados via Admin SDK (que ignora estas regras).
+    function reservedUserFields() {
+      return ['pontos', 'selos', 'estrelas', 'papel', 'role'];
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // ------------------------------------------------------------------
+    // Usuários comuns (estudantes) - ambas nomenclaturas
+    // ------------------------------------------------------------------
+    // O dono lê e escreve o próprio documento, mas não pode gravar os
+    // campos reservados (pontos, selos, estrelas, papel, role).
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && !request.resource.data.keys().hasAny(reservedUserFields());
+      allow update: if isOwner(userId)
+        && !changedKeys().hasAny(reservedUserFields());
+      allow delete: if isOwner(userId);
     }
-    
+
     match /usuarios/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && !request.resource.data.keys().hasAny(reservedUserFields());
+      allow update: if isOwner(userId)
+        && !changedKeys().hasAny(reservedUserFields());
+      allow delete: if isOwner(userId);
     }
-    
-    // Regras para avaliações - todos podem ler, apenas autenticados podem escrever
+
+    // ------------------------------------------------------------------
+    // Avaliações - leitura pública; criação apenas pelo próprio autor
+    // ------------------------------------------------------------------
+    function isValidAvaliacao(data) {
+      return data.nota is int
+        && data.nota >= 1
+        && data.nota <= 5
+        && (!('comentario' in data) || (data.comentario is string && data.comentario.size() <= 2000));
+    }
+
     match /avaliacoes/{avaliacaoId} {
       allow read: if true; // Público para leitura
-      allow create: if request.auth != null; // Apenas usuários logados podem criar
-      allow update, delete: if request.auth != null && 
-        (request.auth.uid == resource.data.usuarioId || isUniversity(request.auth.uid));
+
+      allow create: if isSignedIn()
+        && request.resource.data.usuarioId == request.auth.uid
+        && isValidAvaliacao(request.resource.data);
+
+      // Autor pode editar a própria avaliação (sem trocar o autor);
+      // moderadores podem editar qualquer uma.
+      allow update: if isModerator()
+        || (isOwner(resource.data.usuarioId)
+            && request.resource.data.usuarioId == resource.data.usuarioId
+            && isValidAvaliacao(request.resource.data));
+
+      allow delete: if isModerator() || isOwner(resource.data.usuarioId);
     }
-    
-    // Regras para universidades - apenas a própria universidade pode acessar seus dados
+
+    // ------------------------------------------------------------------
+    // Universidades (contas de "administradores das faculdades")
+    // ------------------------------------------------------------------
+    // Status em uso no código: 'pendente' (gravado no cadastro) e
+    // 'aprovado' (definido por um moderador no console / painel).
     match /universidades/{universidadeId} {
-      allow read, write: if request.auth != null && request.auth.uid == universidadeId;
-      allow create: if request.auth != null; // Permitir cadastro de novas universidades
+      // O dono lê o próprio documento; moderadores leem todos.
+      allow read: if isOwner(universidadeId) || isModerator();
+
+      // Cadastro: só para o próprio uid e sempre como 'pendente'.
+      // `universidadeId` (campo) = id da entrada em public/universidades.json, ou null.
+      allow create: if isOwner(universidadeId)
+        && request.resource.data.status == 'pendente'
+        && (!('universidadeId' in request.resource.data)
+            || request.resource.data.universidadeId == null
+            || request.resource.data.universidadeId is string);
+
+      // O dono pode atualizar seus dados, mas não o próprio status nem o
+      // vínculo com public/universidades.json; moderadores podem tudo
+      // (inclusive aprovar, mudando status para 'aprovado').
+      allow update: if isModerator()
+        || (isOwner(universidadeId)
+            && !changedKeys().hasAny(['status', 'universidadeId']));
+
+      allow delete: if isModerator();
     }
-    
-    // Regras para eventos - universidades podem gerenciar, todos podem ler
+
+    // ------------------------------------------------------------------
+    // Eventos - leitura pública; gerenciados por universidades aprovadas
+    // ------------------------------------------------------------------
+    // Campo dono: `universidadeUid` = uid (Firebase Auth) da conta de
+    // universidade que cadastrou o evento. Todo código que criar eventos
+    // DEVE gravar `universidadeUid: auth.currentUser.uid`.
     match /eventos/{eventoId} {
       allow read: if true; // Público para leitura
-      allow create, update, delete: if request.auth != null && isUniversity(request.auth.uid);
+
+      allow create: if isApprovedUniversity()
+        && request.resource.data.universidadeUid == request.auth.uid;
+
+      allow update: if isModerator()
+        || (isApprovedUniversity()
+            && resource.data.universidadeUid == request.auth.uid
+            && request.resource.data.universidadeUid == request.auth.uid);
+
+      allow delete: if isModerator()
+        || (isApprovedUniversity()
+            && resource.data.universidadeUid == request.auth.uid);
     }
-    
-    // Regras para posts do fórum - todos podem ler, apenas autenticados podem escrever
+
+    // ------------------------------------------------------------------
+    // Posts do fórum - leitura pública; escrita controlada
+    // ------------------------------------------------------------------
+    // Curtir: o usuário só pode adicionar/remover o PRÓPRIO uid em `curtidas`.
+    function isValidLikeChange() {
+      return request.resource.data.curtidas is list
+        && request.resource.data.curtidas.toSet()
+             .difference(resource.data.get('curtidas', []).toSet())
+             .union(resource.data.get('curtidas', []).toSet()
+                      .difference(request.resource.data.curtidas.toSet()))
+             .hasOnly([request.auth.uid]);
+    }
+
+    // Comentar: só é permitido acrescentar UM comentário no final da lista,
+    // com `autorUid` igual ao próprio uid, sem apagar os existentes.
+    function isValidCommentAppend() {
+      let antes = resource.data.get('comentarios', []);
+      let depois = request.resource.data.comentarios;
+      return depois is list
+        && depois.size() == antes.size() + 1
+        && depois.hasAll(antes)
+        && depois[depois.size() - 1].autorUid == request.auth.uid;
+    }
+
     match /forumPosts/{postId} {
       allow read: if true; // Público para leitura
-      allow create: if request.auth != null; // Apenas usuários logados podem criar
-      allow update: if request.auth != null && 
-        (request.auth.uid == resource.data.autor.uid || isModerator(request.auth.token.email));
-      allow delete: if request.auth != null && 
-        (request.auth.uid == resource.data.autor.uid || isModerator(request.auth.token.email));
-    }
-    
-    // Função auxiliar para verificar se o usuário é uma universidade
-    function isUniversity(uid) {
-      return exists(/databases/$(database)/documents/universidades/$(uid));
-    }
-    
-    // Função auxiliar para verificar se é email institucional
-    function isInstitutionalEmail(email) {
-      return email.matches('.*@.*\\.edu.*') ||
-             email.matches('.*@.*universidade.*') ||
-             email.matches('.*@.*faculdade.*') ||
-             email.matches('.*@.*instituto.*') ||
-             email.matches('.*@uni.*') ||
-             email.matches('.*@.*\\.ac\\..*');
-    }
-    
-    // Função auxiliar para verificar se é moderador
-    function isModerator(email) {
-      return email == 'admin@uniscore.com' ||
-             email == 'moderador@uniscore.com';
+
+      allow create: if isSignedIn()
+        && request.resource.data.autor.uid == request.auth.uid
+        && (!('moderado' in request.resource.data) || request.resource.data.moderado == false)
+        // Posts nascem sem curtidas/comentários (evita "curtidas" forjadas).
+        && (!('curtidas' in request.resource.data) || request.resource.data.curtidas == [])
+        && (!('comentarios' in request.resource.data) || request.resource.data.comentarios == []);
+
+      // Moderadores: qualquer campo (inclui moderado/moderadoPor/moderadoEm).
+      // Autor: qualquer campo, exceto o autor e os campos de moderação.
+      // Demais usuários logados: apenas curtidas/comentarios.
+      allow update: if isModerator()
+        || (isOwner(resource.data.autor.uid)
+            && !changedKeys().hasAny(['autor', 'moderado', 'moderadoPor', 'moderadoEm']))
+        || (isSignedIn()
+            && changedKeys().hasOnly(['curtidas', 'comentarios'])
+            && (!changedKeys().hasAny(['curtidas']) || isValidLikeChange())
+            && (!changedKeys().hasAny(['comentarios']) || isValidCommentAppend()));
+
+      allow delete: if isModerator() || isOwner(resource.data.autor.uid);
     }
   }
 }
