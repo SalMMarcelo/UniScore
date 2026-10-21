@@ -284,5 +284,54 @@ service cloud.firestore {
 
       allow delete: if isModerator() || isOwner(resource.data.autor.uid);
     }
+
+    // ------------------------------------------------------------------
+    // Denúncias (RF07) - qualquer usuário logado denuncia; só moderadores leem
+    // ------------------------------------------------------------------
+    // Id determinístico: `${tipo}_${alvoId}_${uid}`. Assim cada usuário só
+    // consegue denunciar o mesmo conteúdo uma vez: um segundo setDoc no mesmo
+    // id vira "update", que é negado a não moderadores (permission-denied).
+    // Tipos:
+    //  - 'post':       alvoId = id do forumPosts
+    //  - 'comentario': alvoId = chave do comentário (`${autorUid}-${ms de criadoEm}`),
+    //                  alvoPostId = id do forumPosts que contém o comentário
+    //  - 'avaliacao':  alvoId = id da avaliacoes
+    // Código cliente: src/lib/denuncias.js
+    function denunciaFields() {
+      return ['tipo', 'alvoId', 'alvoPostId', 'motivo', 'detalhe',
+              'denuncianteUid', 'criadoEm', 'status'];
+    }
+
+    function isValidDenunciaAlvo(data) {
+      return (data.tipo == 'post'
+              && !('alvoPostId' in data)
+              && exists(/databases/$(database)/documents/forumPosts/$(data.alvoId)))
+        || (data.tipo == 'avaliacao'
+              && !('alvoPostId' in data)
+              && exists(/databases/$(database)/documents/avaliacoes/$(data.alvoId)))
+        || (data.tipo == 'comentario'
+              && data.alvoPostId is string
+              && data.alvoPostId.matches('^[A-Za-z0-9_-]{1,128}$')
+              && exists(/databases/$(database)/documents/forumPosts/$(data.alvoPostId)));
+    }
+
+    match /denuncias/{denunciaId} {
+      allow read, update, delete: if isModerator();
+
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasOnly(denunciaFields())
+        && request.resource.data.keys().hasAll(['tipo', 'alvoId', 'motivo', 'denuncianteUid', 'criadoEm', 'status'])
+        && request.resource.data.tipo in ['post', 'comentario', 'avaliacao']
+        && request.resource.data.alvoId is string
+        && request.resource.data.alvoId.matches('^[A-Za-z0-9_-]{1,128}$')
+        && request.resource.data.motivo in ['ofensivo', 'spam', 'discriminacao', 'informacao_falsa', 'outro']
+        && (!('detalhe' in request.resource.data)
+            || (request.resource.data.detalhe is string && request.resource.data.detalhe.size() <= 500))
+        && request.resource.data.denuncianteUid == request.auth.uid
+        && request.resource.data.status == 'aberta'
+        && request.resource.data.criadoEm == request.time
+        && denunciaId == request.resource.data.tipo + '_' + request.resource.data.alvoId + '_' + request.auth.uid
+        && isValidDenunciaAlvo(request.resource.data);
+    }
   }
 }
