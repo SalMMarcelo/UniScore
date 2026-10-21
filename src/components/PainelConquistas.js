@@ -79,7 +79,7 @@ export default function PainelConquistas({ uid }) {
 
     if (carregando) {
         return (
-            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm mt-8" aria-busy="true">
+            <div className="bg-white rounded-2xl p-5 sm:p-8 border border-gray-200 shadow-sm mt-8" aria-busy="true">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-10 h-10 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-gray-600">Carregando conquistas...</p>
@@ -90,7 +90,7 @@ export default function PainelConquistas({ uid }) {
 
     if (erro || !conquistas) {
         return (
-            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm mt-8">
+            <div className="bg-white rounded-2xl p-5 sm:p-8 border border-gray-200 shadow-sm mt-8">
                 <p className="text-center text-red-600">{erro || "Não foi possível carregar suas conquistas."}</p>
             </div>
         );
@@ -102,7 +102,7 @@ export default function PainelConquistas({ uid }) {
     return (
         <div className="mt-8 space-y-8">
             {/* Nível e pontos */}
-            <section className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm" aria-labelledby="titulo-conquistas">
+            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-gray-200 shadow-sm" aria-labelledby="titulo-conquistas">
                 <h2 id="titulo-conquistas" className="text-2xl font-bold text-gray-900 mb-6 text-center">Minhas conquistas</h2>
 
                 <div className="flex flex-col items-center gap-2 mb-6">
@@ -154,7 +154,7 @@ export default function PainelConquistas({ uid }) {
                             {detalhamento.map(item => (
                                 <li key={item.id} className="flex justify-between py-2 text-gray-700">
                                     <span>
-                                        {item.rotulo} <span className="text-gray-500">({item.quantidade} × {item.valor})</span>
+                                        {item.rotulo} <span className="text-gray-600">({item.quantidade} × {item.valor})</span>
                                     </span>
                                     <span className="font-semibold text-gray-900">{item.pontos}</span>
                                 </li>
@@ -165,7 +165,7 @@ export default function PainelConquistas({ uid }) {
             </section>
 
             {/* Selos */}
-            <section className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm" aria-labelledby="titulo-selos">
+            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-gray-200 shadow-sm" aria-labelledby="titulo-selos">
                 <div className="flex items-center justify-between mb-6">
                     <h2 id="titulo-selos" className="text-2xl font-bold text-gray-900">Selos</h2>
                     <span className="text-sm text-gray-600">{totalSelos} de {selos.length} conquistados</span>
@@ -184,10 +184,10 @@ export default function PainelConquistas({ uid }) {
                             <div className={`text-4xl mb-2 ${selo.conquistado ? "" : "grayscale opacity-40"}`} aria-hidden="true">
                                 {selo.emoji}
                             </div>
-                            <p className={`font-semibold text-sm ${selo.conquistado ? "text-gray-900" : "text-gray-500"}`}>{selo.nome}</p>
-                            <p className="text-xs text-gray-500 mt-1">{selo.descricao}</p>
+                            <p className={`font-semibold text-sm ${selo.conquistado ? "text-gray-900" : "text-gray-600"}`}>{selo.nome}</p>
+                            <p className="text-xs text-gray-600 mt-1">{selo.descricao}</p>
                             {!selo.conquistado && (
-                                <p className="text-xs text-gray-400 mt-1">{selo.atual}/{selo.meta}</p>
+                                <p className="text-xs text-gray-600 mt-1">{selo.atual}/{selo.meta}</p>
                             )}
                         </li>
                     ))}
@@ -195,7 +195,7 @@ export default function PainelConquistas({ uid }) {
             </section>
 
             {/* Histórico de avaliações */}
-            <section className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm" aria-labelledby="titulo-historico">
+            <section className="bg-white rounded-2xl p-5 sm:p-8 border border-gray-200 shadow-sm" aria-labelledby="titulo-historico">
                 <h2 id="titulo-historico" className="text-2xl font-bold text-gray-900 mb-6">Histórico de avaliações</h2>
                 {historico.length === 0 ? (
                     <div className="text-center text-gray-600">
@@ -223,7 +223,7 @@ export default function PainelConquistas({ uid }) {
                                             {av.comentario && (
                                                 <p className="text-sm text-gray-600 line-clamp-2">{av.comentario}</p>
                                             )}
-                                            <p className="text-xs text-gray-500 mt-1">{formatarData(av.criadoEm)}</p>
+                                            <p className="text-xs text-gray-600 mt-1">{formatarData(av.criadoEm)}</p>
                                         </div>
                                         <Estrelas quantidade={nota} className="w-4 h-4 flex-shrink-0" rotulo={`Nota ${nota} de 5`} />
                                     </Link>
