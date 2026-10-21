@@ -145,6 +145,10 @@ export default function PainelConquistas({ uid }) {
                     >
                         {mostrarDetalhes ? "Ocultar" : "Ver"} de onde vieram os pontos
                     </button>
+                    <span className="mx-2 text-gray-300" aria-hidden="true">·</span>
+                    <Link href="/ranking" className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+                        Ver ranking da comunidade
+                    </Link>
                     {mostrarDetalhes && (
                         <ul className="mt-3 divide-y divide-gray-100 text-sm">
                             {detalhamento.map(item => (
