@@ -10,6 +10,7 @@ import { auth, db } from "../firebase";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { isAdminEmail } from "../lib/admin";
+import { notaSegura } from "../lib/notas";
 
 function SuccessMessage() {
   const searchParams = useSearchParams();
@@ -46,13 +47,13 @@ function EventosDaUniversidade({ uni }) {
             </Link>
             <div className="flex-1 ml-0 md:ml-6 mt-4 md:mt-0 w-full">
               <div className="text-xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">{ev.nome}</div>
-              <div className="flex items-center gap-1 mt-2" aria-label={`${ev.avaliacao} estrelas`}>
-                {Array(ev.avaliacao).fill().map((_, i) => (
+              <div className="flex items-center gap-1 mt-2" aria-label={`${notaSegura(ev.avaliacao)} estrelas`}>
+                {Array(notaSegura(ev.avaliacao)).fill().map((_, i) => (
                   <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                   </svg>
                 ))}
-                {ev.avaliacao < 5 && Array(5 - ev.avaliacao).fill().map((_, i) => (
+                {Array(5 - notaSegura(ev.avaliacao)).fill().map((_, i) => (
                   <svg key={i} className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                   </svg>
@@ -549,13 +550,13 @@ export default function Home() {
                     <div className="font-bold text-gray-900 flex-1">{av.usuario || "Usuário"}</div>
                   </div>
                   
-                  <div className="flex items-center gap-1 mb-3" aria-label={`${av.nota} estrelas`}>
-                    {Array(av.nota).fill().map((_, i) => (
+                  <div className="flex items-center gap-1 mb-3" aria-label={`${notaSegura(av.nota)} estrelas`}>
+                    {Array(notaSegura(av.nota)).fill().map((_, i) => (
                       <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                       </svg>
                     ))}
-                    {av.nota < 5 && Array(5 - av.nota).fill().map((_, i) => (
+                    {Array(5 - notaSegura(av.nota)).fill().map((_, i) => (
                       <svg key={i} className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                       </svg>
