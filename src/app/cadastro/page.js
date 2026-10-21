@@ -1,14 +1,25 @@
 "use client";
 import { useState } from "react";
-import { auth, db } from "../../firebase";
+import Link from "next/link";
+import { auth } from "../../firebase";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import BotoesLoginSocial from "../../components/BotoesLoginSocial";
+import SeletorTipoPerfil from "../../components/SeletorTipoPerfil";
+import {
+    NOME_MAX,
+    isTipoPerfilValido,
+    garantirDocumentoUsuario,
+    destinoAposLogin,
+    mensagemErroAuth
+} from "../../lib/usuarios";
 
 export default function Cadastro() {
     const [nome, setNome] = useState("");
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
     const [avatar, setAvatar] = useState("/avatar-default.png");
+    const [tipoPerfil, setTipoPerfil] = useState("");
+    const [universidadeId, setUniversidadeId] = useState(null);
     const [erro, setErro] = useState("");
     const [sucesso, setSucesso] = useState("");
     const [loading, setLoading] = useState(false);
@@ -17,28 +28,43 @@ export default function Cadastro() {
         e.preventDefault();
         setErro("");
         setSucesso("");
+        if (!isTipoPerfilValido(tipoPerfil)) {
+            setErro("Escolha seu tipo de perfil.");
+            return;
+        }
         setLoading(true);
+        let user;
         try {
             // Cria usuário no Firebase Auth
             const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
-            const user = userCredential.user;
-            // Atualiza displayName e avatar
-            await updateProfile(user, { displayName: nome, photoURL: avatar });
-            // Salva dados no Firestore
-            await setDoc(doc(db, "usuarios", user.uid), {
-                nome,
-                avatar,
-                email,
-            });
-            setSucesso("Cadastro realizado com sucesso!");
-            setNome("");
-            setEmail("");
-            setSenha("");
-            setAvatar("/avatar-default.png");
+            user = userCredential.user;
         } catch (err) {
-            setErro("Erro ao cadastrar: " + err.message);
+            setErro("Erro ao cadastrar: " + mensagemErroAuth(err));
+            setLoading(false);
+            return;
         }
-        setLoading(false);
+        const nomeFinal = nome.trim().slice(0, NOME_MAX);
+        try {
+            // Atualiza displayName e avatar
+            await updateProfile(user, { displayName: nomeFinal, photoURL: avatar });
+        } catch (err) {
+            console.error("Erro ao atualizar Auth:", err);
+        }
+        let dados = null;
+        try {
+            // Salva dados no Firestore (usuarios/{uid})
+            dados = await garantirDocumentoUsuario(user, {
+                nome: nomeFinal,
+                avatar,
+                tipoPerfil,
+                universidadeId: tipoPerfil === "universitario" ? universidadeId : null
+            });
+        } catch (err) {
+            // A conta já foi criada; o perfil pode ser completado depois em /perfil
+            console.error("Erro ao salvar perfil no Firestore:", err);
+        }
+        setSucesso("Cadastro realizado com sucesso! Redirecionando...");
+        window.location.href = destinoAposLogin(user, dados, { exigirTipoPerfil: true });
     };
 
     return (
@@ -69,11 +95,14 @@ export default function Cadastro() {
                     value={nome}
                     onChange={e => setNome(e.target.value)}
                     className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    maxLength={NOME_MAX}
+                    aria-label="Nome"
                     required
                 />
                 <input
                     type="email"
                     placeholder="E-mail"
+                    aria-label="E-mail"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -81,11 +110,20 @@ export default function Cadastro() {
                 />
                 <input
                     type="password"
-                    placeholder="Senha"
+                    placeholder="Senha (mínimo 6 caracteres)"
+                    aria-label="Senha"
+                    minLength={6}
                     value={senha}
                     onChange={e => setSenha(e.target.value)}
                     className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
+                />
+                <SeletorTipoPerfil
+                    tipoPerfil={tipoPerfil}
+                    onTipoPerfilChange={setTipoPerfil}
+                    universidadeId={universidadeId}
+                    onUniversidadeIdChange={setUniversidadeId}
+                    idBase="cadastro-tipo-perfil"
                 />
                 <button
                     type="submit"
@@ -95,7 +133,22 @@ export default function Cadastro() {
                     {loading ? "Cadastrando..." : "Cadastrar"}
                 </button>
                 {sucesso && <div className="text-green-600 text-center mt-2">{sucesso}</div>}
-                {erro && <div className="text-red-600 text-center mt-2">{erro}</div>}
+                {erro && <div className="text-red-600 text-center mt-2" role="alert">{erro}</div>}
+                <div className="relative my-2">
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                        <span className="px-4 bg-white text-gray-500">Ou cadastre-se com</span>
+                    </div>
+                </div>
+                <BotoesLoginSocial acao="Continuar" onErro={setErro} disabled={loading} />
+                <p className="text-gray-600 text-center text-sm">
+                    Já tem uma conta?{' '}
+                    <Link href="/login" className="text-blue-600 font-semibold hover:text-blue-700 hover:underline">
+                        Entrar
+                    </Link>
+                </p>
             </form>
         </div>
     );
