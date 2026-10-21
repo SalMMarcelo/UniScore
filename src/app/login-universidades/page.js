@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
-import { auth } from "../../firebase";
+import { useState, useEffect, useCallback } from "react";
+import { auth, db } from "../../firebase";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AccessTypeTabs from "../../components/AccessTypeTabs";
@@ -14,14 +15,33 @@ export default function LoginUniversidades() {
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
 
+    // Só vai para o dashboard se a conta tiver cadastro em universidades/{uid}
+    const verificarUniversidade = useCallback(async (user) => {
+        try {
+            const docSnap = await getDoc(doc(db, "universidades", user.uid));
+            if (docSnap.exists()) {
+                router.push("/dashboard-universidade");
+                return;
+            }
+        } catch (err) {
+            // permission-denied também indica que não é uma conta de universidade
+            console.error("Erro ao verificar conta de universidade:", err);
+            if (err.code !== "permission-denied") {
+                setError("Erro ao verificar a conta. Tente novamente.");
+                return;
+            }
+        }
+        setError("Esta conta não é de uma universidade parceira. Use o login de estudante ou cadastre sua universidade.");
+    }, [router]);
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
-                router.push("/dashboard-universidade");
+                verificarUniversidade(user);
             }
         });
         return () => unsubscribe();
-    }, [router]);
+    }, [verificarUniversidade]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -29,8 +49,8 @@ export default function LoginUniversidades() {
         setError("");
 
         try {
-            await signInWithEmailAndPassword(auth, email, senha);
-            router.push("/dashboard-universidade");
+            const cred = await signInWithEmailAndPassword(auth, email, senha);
+            await verificarUniversidade(cred.user);
         } catch (err) {
             console.error("Erro no login:", err);
             if (err.code === 'auth/user-not-found') {
