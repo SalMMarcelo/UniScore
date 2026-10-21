@@ -11,6 +11,7 @@ import { signOut, onAuthStateChanged } from "firebase/auth";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { isAdminEmail } from "../lib/admin";
 import { notaSegura } from "../lib/notas";
+import { listarEventos } from "../lib/eventos";
 
 function SuccessMessage() {
   const searchParams = useSearchParams();
@@ -25,15 +26,20 @@ function SuccessMessage() {
   );
 }
 
-function EventosDaUniversidade({ uni }) {
-  const [eventos, setEventos] = useState([]);
-  useEffect(() => {
-    fetch("/events.json")
-      .then((res) => res.json())
-      .then((data) => {
-        setEventos(data.filter(ev => uni.eventos.includes(ev.id)));
-      });
-  }, [uni]);
+// Média das notas (inteiras 1-5) das avaliações de um evento
+function mediaDoEvento(avaliacoes, eventoId) {
+  const notas = avaliacoes
+    .filter(av => String(av.eventoId) === String(eventoId))
+    .map(av => notaSegura(av.nota))
+    .filter(n => n >= 1);
+  return notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : 0;
+}
+
+function EventosDaUniversidade({ uni, todosEventos, avaliacoes }) {
+  // Eventos do Firestore e legados (public/events.json) vinculados a esta universidade
+  const eventos = todosEventos
+    .filter(ev => ev.universidadeId === String(uni.id))
+    .map(ev => ({ ...ev, avaliacao: mediaDoEvento(avaliacoes, ev.id) }));
   if (!eventos.length) {
     return (<div className="text-gray-500 bg-gray-50 rounded-lg p-6 text-center">Nenhum evento cadastrado para esta universidade.</div>);
   }
@@ -43,10 +49,16 @@ function EventosDaUniversidade({ uni }) {
         <div key={ev.id} className="bg-white rounded-2xl shadow-md border-2 border-gray-200 hover:border-green-500 transition-all duration-300 overflow-hidden group">
           <div className="p-6 flex flex-col md:flex-row items-center hover:shadow-xl transition">
             <Link href={`/evento/${ev.id}/detalhes`} className="shrink-0">
-              <img src={ev.imagem} alt={ev.nome} className="w-32 h-32 rounded-xl object-cover border-2 border-gray-300 bg-gray-100 cursor-pointer group-hover:scale-105 transition-transform duration-200" />
+              {ev.imagem ? (
+                <img src={ev.imagem} alt={ev.nome} className="w-32 h-32 rounded-xl object-cover border-2 border-gray-300 bg-gray-100 cursor-pointer group-hover:scale-105 transition-transform duration-200" />
+              ) : (
+                <div className="w-32 h-32 rounded-xl border-2 border-gray-300 bg-gradient-to-br from-purple-600 via-pink-500 to-blue-500 flex items-center justify-center text-white text-4xl font-bold cursor-pointer group-hover:scale-105 transition-transform duration-200">
+                  {ev.nome?.charAt(0)?.toUpperCase() || "E"}
+                </div>
+              )}
             </Link>
             <div className="flex-1 ml-0 md:ml-6 mt-4 md:mt-0 w-full">
-              <div className="text-xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">{ev.nome}</div>
+              <Link href={`/evento/${ev.id}/detalhes`} className="text-xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">{ev.nome}</Link>
               <div className="flex items-center gap-1 mt-2" aria-label={`${notaSegura(ev.avaliacao)} estrelas`}>
                 {Array(notaSegura(ev.avaliacao)).fill().map((_, i) => (
                   <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -63,13 +75,15 @@ function EventosDaUniversidade({ uni }) {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                {ev.data}
+                {ev.data ? ev.data.split("-").reverse().join("/") : ""}
               </div>
               <div className="mt-4 flex gap-2">
-                <Link href="/avaliar">
+                <Link href={`/avaliar?eventoId=${encodeURIComponent(ev.id)}`}>
                   <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold shadow-md transition-colors">Avaliar</button>
                 </Link>
-                <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow-md transition-colors">Comentários</button>
+                <Link href={`/evento/${ev.id}/detalhes`}>
+                  <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow-md transition-colors">Comentários</button>
+                </Link>
               </div>
             </div>
           </div>
@@ -86,6 +100,7 @@ export default function Home() {
   const [selectedUni, setSelectedUni] = useState(null);
   const [user, setUser] = useState(null);
   const [avaliacoes, setAvaliacoes] = useState([]);
+  const [eventos, setEventos] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const router = useRouter();
 
@@ -121,6 +136,15 @@ export default function Home() {
   useEffect(() => {
     const interval = setInterval(nextSlide, 5000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Eventos reais (Firestore) + legados (public/events.json)
+  useEffect(() => {
+    let cancelado = false;
+    listarEventos()
+      .then((lista) => { if (!cancelado) setEventos(lista); })
+      .catch((err) => console.error("Erro ao carregar eventos:", err));
+    return () => { cancelado = true; };
   }, []);
 
   useEffect(() => {
@@ -454,7 +478,7 @@ export default function Home() {
               </div>
             </div>
             <h3 className="text-xl font-bold text-gray-900 mt-6 mb-4">Eventos da universidade</h3>
-            <EventosDaUniversidade uni={selectedUni} />
+            <EventosDaUniversidade uni={selectedUni} todosEventos={eventos} avaliacoes={avaliacoes} />
           </div>
         ) : null}
 
@@ -577,7 +601,12 @@ export default function Home() {
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                       </svg>
-                      Evento: {av.eventoId}
+                      Evento:{" "}
+                      {av.eventoId ? (
+                        <Link href={`/evento/${encodeURIComponent(av.eventoId)}/detalhes`} className="hover:text-blue-600 hover:underline">
+                          {eventos.find(ev => ev.id === String(av.eventoId))?.nome || av.eventoId}
+                        </Link>
+                      ) : "-"}
                     </div>
                     <div className="text-gray-400">
                       {av.criadoEm?.toDate ? av.criadoEm.toDate().toLocaleDateString('pt-BR') : ""}
