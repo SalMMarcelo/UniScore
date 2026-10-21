@@ -1,6 +1,8 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import PwaInstall from "@/components/PwaInstall";
+import LinkPularConteudo from "@/components/LinkPularConteudo";
+import { I18nProvider } from "@/i18n/I18nProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,6 +14,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Metadados do servidor ficam em português (idioma padrão); o idioma da
+// interface é escolhido no cliente (RNF07).
 export const metadata = {
   title: "UniScore",
   description: "Avalie e descubra eventos universitários com foco em interculturalidade.",
@@ -41,11 +45,12 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning={true}
       >
-        <a href="#conteudo" className="skip-link">
-          Pular para o conteúdo
-        </a>
-        {children}
-        <PwaInstall />
+        {/* lang="pt-BR" é o padrão do servidor; o I18nProvider atualiza <html lang> no cliente */}
+        <I18nProvider>
+          <LinkPularConteudo />
+          {children}
+          <PwaInstall />
+        </I18nProvider>
       </body>
     </html>
   );
