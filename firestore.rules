@@ -128,16 +128,59 @@ service cloud.firestore {
     // Campo dono: `universidadeUid` = uid (Firebase Auth) da conta de
     // universidade que cadastrou o evento. Todo código que criar eventos
     // DEVE gravar `universidadeUid: auth.currentUser.uid`.
+    // Formulário: src/app/dashboard-universidade/eventos/FormularioEvento.js
+    function eventoFields() {
+      return ['nome', 'descricao', 'data', 'local', 'publicoAlvo', 'preco',
+              'tema', 'tipo', 'imagem', 'universidadeUid', 'universidadeId',
+              'universidadeNome', 'criadoEm', 'atualizadoEm'];
+    }
+
+    function isValidEvento(data) {
+      return data.keys().hasOnly(eventoFields())
+        && data.nome is string && data.nome.size() >= 1 && data.nome.size() <= 200
+        && data.descricao is string && data.descricao.size() <= 5000
+        && data.data is string && data.data.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.local is string && data.local.size() <= 300
+        && data.preco is number && data.preco >= 0
+        && data.tema is string && data.tema.size() <= 100
+        && data.tipo is string && data.tipo.size() <= 100
+        && data.publicoAlvo is string && data.publicoAlvo.size() <= 100
+        && (!('imagem' in data) || data.imagem == null
+            || (data.imagem is string && data.imagem.size() <= 2048))
+        && (!('universidadeId' in data) || data.universidadeId == null || data.universidadeId is string)
+        && (!('universidadeNome' in data) || (data.universidadeNome is string && data.universidadeNome.size() <= 200));
+    }
+
+    // O vínculo com public/universidades.json tem de ser o mesmo da conta da
+    // universidade (campo `universidadeId` em universidades/{uid}), para que
+    // uma universidade não publique eventos em nome de outra.
+    function matchesOwnUniversidadeId(data) {
+      return data.get('universidadeId', null)
+        == get(/databases/$(database)/documents/universidades/$(request.auth.uid)).data.get('universidadeId', null);
+    }
+
     match /eventos/{eventoId} {
       allow read: if true; // Público para leitura
 
+      // Ids só numéricos ("1", "2"...) são reservados aos eventos legados de
+      // public/events.json, para que ninguém "sobrescreva" um evento legado
+      // (e herde as avaliações dele). Migrações devem usar o Admin SDK.
       allow create: if isApprovedUniversity()
-        && request.resource.data.universidadeUid == request.auth.uid;
+        && !eventoId.matches('^[0-9]+$')
+        && request.resource.data.universidadeUid == request.auth.uid
+        && request.resource.data.criadoEm == request.time
+        && matchesOwnUniversidadeId(request.resource.data)
+        && isValidEvento(request.resource.data);
 
-      allow update: if isModerator()
-        || (isApprovedUniversity()
-            && resource.data.universidadeUid == request.auth.uid
-            && request.resource.data.universidadeUid == request.auth.uid);
+      // Dono (universidade aprovada) ou moderador. O dono do evento
+      // (`universidadeUid`) e a data de criação nunca mudam.
+      allow update: if isValidEvento(request.resource.data)
+        && request.resource.data.universidadeUid == resource.data.universidadeUid
+        && !changedKeys().hasAny(['criadoEm'])
+        && (isModerator()
+            || (isApprovedUniversity()
+                && resource.data.universidadeUid == request.auth.uid
+                && matchesOwnUniversidadeId(request.resource.data)));
 
       allow delete: if isModerator()
         || (isApprovedUniversity()
