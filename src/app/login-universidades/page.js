@@ -1,13 +1,19 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { auth, db } from "../../firebase";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AccessTypeTabs from "../../components/AccessTypeTabs";
+import { mensagemErroAuth } from "../../lib/usuarios";
+import { useI18n } from "../../i18n/I18nProvider";
 
 export default function LoginUniversidades() {
+    const { t } = useI18n();
+    // Ref para não recriar verificarUniversidade (e reinscrever o listener) ao trocar de idioma
+    const tRef = useRef(t);
+    tRef.current = t;
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
     const [loading, setLoading] = useState(false);
@@ -27,11 +33,11 @@ export default function LoginUniversidades() {
             // permission-denied também indica que não é uma conta de universidade
             console.error("Erro ao verificar conta de universidade:", err);
             if (err.code !== "permission-denied") {
-                setError("Erro ao verificar a conta. Tente novamente.");
+                setError(tRef.current("loginUniversidades.erroVerificar"));
                 return;
             }
         }
-        setError("Esta conta não é de uma universidade parceira. Use o login de estudante ou cadastre sua universidade.");
+        setError(tRef.current("loginUniversidades.naoEUniversidade"));
     }, [router]);
 
     useEffect(() => {
@@ -54,13 +60,13 @@ export default function LoginUniversidades() {
         } catch (err) {
             console.error("Erro no login:", err);
             if (err.code === 'auth/user-not-found') {
-                setError("Usuário não encontrado. Verifique se sua universidade está cadastrada.");
+                setError(t("loginUniversidades.usuarioNaoEncontrado"));
             } else if (err.code === 'auth/wrong-password') {
-                setError("Senha incorreta. Tente novamente.");
+                setError(t("loginUniversidades.senhaIncorreta"));
             } else if (err.code === 'auth/invalid-email') {
-                setError("Email inválido. Verifique o formato do email.");
+                setError(t("loginUniversidades.emailInvalido"));
             } else {
-                setError(err.message || "Erro ao fazer login. Verifique suas credenciais.");
+                setError(String(err?.code || "").startsWith("auth/") ? mensagemErroAuth(err, "", t) : (err?.message || t("loginUniversidades.erroLogin")));
             }
         } finally {
             setLoading(false);
@@ -77,8 +83,8 @@ export default function LoginUniversidades() {
                         <Link href="/para-universidades" className="inline-block mb-6">
                             <img src="/uniscore_star_logo.png" alt="UniScore" className="h-16 w-auto mx-auto max-w-[200px]" />
                         </Link>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">Acesso Institucional</h1>
-                        <p className="text-gray-600">Login exclusivo para universidades parceiras</p>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("loginUniversidades.titulo")}</h1>
+                        <p className="text-gray-600">{t("loginUniversidades.subtitulo")}</p>
                     </div>
 
                     <AccessTypeTabs active="universidade" />
@@ -99,7 +105,7 @@ export default function LoginUniversidades() {
                             {/* Campo Email */}
                             <div>
                                 <label htmlFor="login-uni-email" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Email Institucional
+                                    {t("loginUniversidades.emailInstitucional")}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -113,20 +119,20 @@ export default function LoginUniversidades() {
                                         autoComplete="email"
                                         aria-describedby={error ? "login-uni-email-ajuda login-uni-erro" : "login-uni-email-ajuda"}
                                         aria-invalid={error ? true : undefined}
-                                        placeholder="reitor@universidade.edu.br"
+                                        placeholder={t("loginUniversidades.placeholderEmail")}
                                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
                                         value={email}
                                         onChange={e => setEmail(e.target.value)}
                                         required
                                     />
                                 </div>
-                                <p id="login-uni-email-ajuda" className="text-xs text-gray-600 mt-1">Use seu email oficial da instituição</p>
+                                <p id="login-uni-email-ajuda" className="text-xs text-gray-600 mt-1">{t("loginUniversidades.ajudaEmail")}</p>
                             </div>
 
                             {/* Campo Senha */}
                             <div>
                                 <label htmlFor="login-uni-senha" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Senha
+                                    {t("acesso.senha")}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -147,7 +153,7 @@ export default function LoginUniversidades() {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                                        aria-label={showPassword ? t("acesso.ocultarSenha") : t("acesso.mostrarSenha")}
                                         aria-pressed={showPassword}
                                         className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
                                     >
@@ -174,14 +180,14 @@ export default function LoginUniversidades() {
                                 {loading ? (
                                     <>
                                         <div aria-hidden="true" className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                        Entrando...
+                                        {t("acesso.entrando")}
                                     </>
                                 ) : (
                                     <>
                                         <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
                                         </svg>
-                                        Acessar Dashboard
+                                        {t("loginUniversidades.acessarDashboard")}
                                     </>
                                 )}
                             </button>
@@ -191,7 +197,7 @@ export default function LoginUniversidades() {
                         <div className="mt-6 space-y-4">
                             <div className="text-center">
                                 <button type="button" className="text-sm text-gray-600 hover:text-red-600 hover:underline transition-colors">
-                                    Esqueceu sua senha?
+                                    {t("loginUniversidades.esqueceuSenha")}
                                 </button>
                             </div>
 
@@ -200,7 +206,7 @@ export default function LoginUniversidades() {
                                     <div className="w-full border-t border-gray-300"></div>
                                 </div>
                                 <div className="relative flex justify-center text-sm">
-                                    <span className="px-4 bg-white text-gray-600">Ainda não é parceira?</span>
+                                    <span className="px-4 bg-white text-gray-600">{t("loginUniversidades.aindaNaoParceira")}</span>
                                 </div>
                             </div>
 
@@ -209,7 +215,7 @@ export default function LoginUniversidades() {
                                     <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                     </svg>
-                                    Solicitar Parceria
+                                    {t("loginUniversidades.solicitarParceria")}
                                 </Link>
                             </div>
                         </div>
@@ -218,9 +224,9 @@ export default function LoginUniversidades() {
                     {/* Ajuda */}
                     <div className="mt-6 text-center">
                         <p className="text-sm text-gray-600">
-                            Precisa de ajuda? Entre em contato com nosso{' '}
+                            {t("loginUniversidades.precisaAjuda")}{' '}
                             <a href="mailto:suporte@uniscore.com" className="text-red-600 font-semibold hover:underline">
-                                suporte especializado
+                                {t("loginUniversidades.suporte")}
                             </a>
                         </p>
                     </div>
@@ -239,10 +245,10 @@ export default function LoginUniversidades() {
                                 </svg>
                             </div>
                             <h2 className="text-4xl font-bold mb-4">
-                                Dashboard Institucional
+                                {t("loginUniversidades.painelTitulo")}
                             </h2>
                             <p className="text-xl text-red-100 leading-relaxed">
-                                Gerencie eventos, monitore avaliações e fortaleça a reputação da sua universidade.
+                                {t("loginUniversidades.painelTexto")}
                             </p>
                         </div>
 
@@ -252,25 +258,25 @@ export default function LoginUniversidades() {
                                 <svg aria-hidden="true" className="w-6 h-6 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                                 </svg>
-                                <span className="text-red-100">Análise de métricas e desempenho</span>
+                                <span className="text-red-100">{t("loginUniversidades.recursoMetricas")}</span>
                             </div>
                             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-4">
                                 <svg aria-hidden="true" className="w-6 h-6 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
-                                <span className="text-red-100">Gestão completa de eventos</span>
+                                <span className="text-red-100">{t("loginUniversidades.recursoEventos")}</span>
                             </div>
                             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-4">
                                 <svg aria-hidden="true" className="w-6 h-6 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                 </svg>
-                                <span className="text-red-100">Monitoramento de feedbacks</span>
+                                <span className="text-red-100">{t("loginUniversidades.recursoFeedbacks")}</span>
                             </div>
                             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-4">
                                 <svg aria-hidden="true" className="w-6 h-6 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                                 </svg>
-                                <span className="text-red-100">Dados seguros e privacidade</span>
+                                <span className="text-red-100">{t("loginUniversidades.recursoSeguranca")}</span>
                             </div>
                         </div>
 
@@ -278,11 +284,11 @@ export default function LoginUniversidades() {
                         <div className="mt-12 grid grid-cols-2 gap-4">
                             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center">
                                 <div className="text-3xl font-bold mb-1">67</div>
-                                <div className="text-sm text-red-100">Universidades Parceiras</div>
+                                <div className="text-sm text-red-100">{t("loginUniversidades.statUniversidades")}</div>
                             </div>
                             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center">
                                 <div className="text-3xl font-bold mb-1">1.2k+</div>
-                                <div className="text-sm text-red-100">Eventos Cadastrados</div>
+                                <div className="text-sm text-red-100">{t("loginUniversidades.statEventos")}</div>
                             </div>
                         </div>
                     </div>

@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useI18n } from "../i18n/I18nProvider";
 
 export default function AccessTypeTabs({ active }) {
+  const { t } = useI18n();
   return (
     <div className="max-w-md mx-auto mb-8">
-      <nav className="flex bg-gray-100 rounded-lg p-1" aria-label="Tipo de acesso">
+      <nav className="flex bg-gray-100 rounded-lg p-1" aria-label={t("acesso.tiposAcesso")}>
         <Link
           href="/login"
           aria-current={active === "estudante" ? "page" : undefined}
@@ -15,7 +17,7 @@ export default function AccessTypeTabs({ active }) {
               : "text-gray-600 hover:text-gray-800"
           }`}
         >
-          Estudante / Visitante
+          {t("acesso.estudante")}
         </Link>
         <Link
           href="/login-universidades"
@@ -26,12 +28,12 @@ export default function AccessTypeTabs({ active }) {
               : "text-gray-600 hover:text-gray-800"
           }`}
         >
-          Universidade parceira
+          {t("acesso.universidade")}
         </Link>
       </nav>
       {active === "estudante" && (
         <p className="text-xs text-gray-600 text-center mt-2">
-          É administrador da plataforma? Entre por aqui — o acesso é liberado automaticamente pelo seu e-mail cadastrado.
+          {t("acesso.avisoAdmin")}
         </p>
       )}
     </div>

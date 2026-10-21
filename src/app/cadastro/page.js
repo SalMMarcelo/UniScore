@@ -12,8 +12,10 @@ import {
     destinoAposLogin,
     mensagemErroAuth
 } from "../../lib/usuarios";
+import { useI18n } from "../../i18n/I18nProvider";
 
 export default function Cadastro() {
+    const { t } = useI18n();
     const [nome, setNome] = useState("");
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
@@ -29,7 +31,7 @@ export default function Cadastro() {
         setErro("");
         setSucesso("");
         if (!isTipoPerfilValido(tipoPerfil)) {
-            setErro("Escolha seu tipo de perfil.");
+            setErro(t("cadastro.escolhaTipoPerfil"));
             return;
         }
         setLoading(true);
@@ -39,7 +41,7 @@ export default function Cadastro() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
             user = userCredential.user;
         } catch (err) {
-            setErro("Erro ao cadastrar: " + mensagemErroAuth(err));
+            setErro(t("cadastro.erroCadastrar", { mensagem: mensagemErroAuth(err, "", t) }));
             setLoading(false);
             return;
         }
@@ -63,22 +65,22 @@ export default function Cadastro() {
             // A conta já foi criada; o perfil pode ser completado depois em /perfil
             console.error("Erro ao salvar perfil no Firestore:", err);
         }
-        setSucesso("Cadastro realizado com sucesso! Redirecionando...");
+        setSucesso(t("cadastro.sucesso"));
         window.location.href = destinoAposLogin(user, dados, { exigirTipoPerfil: true });
     };
 
     return (
         <main id="conteudo" className="min-h-screen flex items-center justify-center bg-mackenzie-light p-4">
             <form className="bg-white p-5 sm:p-8 rounded shadow-md w-full max-w-md flex flex-col gap-4" onSubmit={handleSubmit}>
-                <h1 className="text-2xl font-bold text-mackenzie-red mb-4 text-center">Cadastro</h1>
-                <p id="cadastro-avatar-rotulo" className="sr-only">Escolha seu avatar</p>
+                <h1 className="text-2xl font-bold text-mackenzie-red mb-4 text-center">{t("cadastro.titulo")}</h1>
+                <p id="cadastro-avatar-rotulo" className="sr-only">{t("cadastro.escolhaAvatar")}</p>
                 <div className="flex justify-center gap-4 mb-2" role="group" aria-labelledby="cadastro-avatar-rotulo">
                     <button
                         type="button"
                         className={`border-2 rounded-full p-1 ${avatar === "/avatar-default.png" ? "border-mackenzie-red" : "border-gray-200"}`}
                         onClick={() => setAvatar("/avatar-default.png")}
-                        title="Avatar masculino"
-                        aria-label="Avatar masculino"
+                        title={t("cadastro.avatarMasculino")}
+                        aria-label={t("cadastro.avatarMasculino")}
                         aria-pressed={avatar === "/avatar-default.png"}
                     >
                         <img src="/avatar-default.png" alt="" className="w-12 h-12 rounded-full object-cover" />
@@ -87,8 +89,8 @@ export default function Cadastro() {
                         type="button"
                         className={`border-2 rounded-full p-1 ${avatar === "/avatar-feminino-default.jpg" ? "border-mackenzie-red" : "border-gray-200"}`}
                         onClick={() => setAvatar("/avatar-feminino-default.jpg")}
-                        title="Avatar feminino"
-                        aria-label="Avatar feminino"
+                        title={t("cadastro.avatarFeminino")}
+                        aria-label={t("cadastro.avatarFeminino")}
                         aria-pressed={avatar === "/avatar-feminino-default.jpg"}
                     >
                         <img src="/avatar-feminino-default.jpg" alt="" className="w-12 h-12 rounded-full object-cover" />
@@ -96,13 +98,13 @@ export default function Cadastro() {
                 </div>
                 <div>
                     <label htmlFor="cadastro-nome" className="block text-sm font-medium text-gray-700 mb-1">
-                        Nome
+                        {t("cadastro.nome")}
                     </label>
                     <input
                         id="cadastro-nome"
                         type="text"
                         autoComplete="name"
-                        placeholder="Nome"
+                        placeholder={t("cadastro.nome")}
                         value={nome}
                         onChange={e => setNome(e.target.value)}
                         className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -112,13 +114,13 @@ export default function Cadastro() {
                 </div>
                 <div>
                     <label htmlFor="cadastro-email" className="block text-sm font-medium text-gray-700 mb-1">
-                        E-mail
+                        {t("acesso.email")}
                     </label>
                     <input
                         id="cadastro-email"
                         type="email"
                         autoComplete="email"
-                        placeholder="E-mail"
+                        placeholder={t("acesso.email")}
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -127,13 +129,13 @@ export default function Cadastro() {
                 </div>
                 <div>
                     <label htmlFor="cadastro-senha" className="block text-sm font-medium text-gray-700 mb-1">
-                        Senha
+                        {t("acesso.senha")}
                     </label>
                     <input
                         id="cadastro-senha"
                         type="password"
                         autoComplete="new-password"
-                        placeholder="Senha (mínimo 6 caracteres)"
+                        placeholder={t("cadastro.placeholderSenha")}
                         aria-describedby="cadastro-senha-ajuda"
                         minLength={6}
                         value={senha}
@@ -141,7 +143,7 @@ export default function Cadastro() {
                         className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                     />
-                    <p id="cadastro-senha-ajuda" className="text-xs text-gray-600 mt-1">Mínimo de 6 caracteres.</p>
+                    <p id="cadastro-senha-ajuda" className="text-xs text-gray-600 mt-1">{t("cadastro.ajudaSenha")}</p>
                 </div>
                 <SeletorTipoPerfil
                     tipoPerfil={tipoPerfil}
@@ -155,7 +157,7 @@ export default function Cadastro() {
                     className="bg-blue-600 text-white py-2 rounded font-semibold hover:bg-blue-700 transition"
                     disabled={loading}
                 >
-                    {loading ? "Cadastrando..." : "Cadastrar"}
+                    {loading ? t("cadastro.cadastrando") : t("cadastro.cadastrar")}
                 </button>
                 {sucesso && <div className="text-green-700 text-center mt-2" role="status">{sucesso}</div>}
                 {erro && <div className="text-red-700 text-center mt-2" role="alert">{erro}</div>}
@@ -164,14 +166,14 @@ export default function Cadastro() {
                         <div className="w-full border-t border-gray-300"></div>
                     </div>
                     <div className="relative flex justify-center text-sm">
-                        <span className="px-4 bg-white text-gray-600">Ou cadastre-se com</span>
+                        <span className="px-4 bg-white text-gray-600">{t("cadastro.ouCadastreCom")}</span>
                     </div>
                 </div>
-                <BotoesLoginSocial acao="Continuar" onErro={setErro} disabled={loading} />
+                <BotoesLoginSocial acao={t("acesso.continuar")} onErro={setErro} disabled={loading} />
                 <p className="text-gray-600 text-center text-sm">
-                    Já tem uma conta?{' '}
+                    {t("cadastro.jaTemConta")}{' '}
                     <Link href="/login" className="text-blue-600 font-semibold hover:text-blue-700 hover:underline">
-                        Entrar
+                        {t("acesso.entrar")}
                     </Link>
                 </p>
             </form>

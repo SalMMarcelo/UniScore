@@ -4,6 +4,7 @@ import { useState } from "react";
 import { auth } from "../firebase";
 import { GoogleAuthProvider, FacebookAuthProvider, GithubAuthProvider, signInWithPopup } from "firebase/auth";
 import { garantirDocumentoUsuario, destinoAposLogin, mensagemErroAuth } from "../lib/usuarios";
+import { useI18n } from "../i18n/I18nProvider";
 
 const PROVEDORES = [
   {
@@ -52,7 +53,9 @@ const PROVEDORES = [
 // Botões "Entrar com Google / Facebook / GitHub" (RF01), usados em /login e /cadastro.
 // Após o login: garante usuarios/{uid}; se o usuário ainda não escolheu o tipo de
 // perfil, vai para /perfil?completar=1; senão, para o destino padrão (ver destinoAposLogin).
-export default function BotoesLoginSocial({ acao = "Entrar", onErro, disabled = false }) {
+// `acao` é o texto já traduzido do verbo (padrão: t("acesso.entrar")).
+export default function BotoesLoginSocial({ acao, onErro, disabled = false }) {
+  const { t } = useI18n();
   const [carregando, setCarregando] = useState(null);
 
   const entrar = async (provedor) => {
@@ -63,7 +66,7 @@ export default function BotoesLoginSocial({ acao = "Entrar", onErro, disabled = 
       ({ user } = await signInWithPopup(auth, provedor.criar()));
     } catch (err) {
       console.error(`Erro no login com ${provedor.nome}:`, err);
-      if (onErro) onErro(mensagemErroAuth(err, provedor.nome));
+      if (onErro) onErro(mensagemErroAuth(err, provedor.nome, t));
       setCarregando(null);
       return;
     }
@@ -93,7 +96,7 @@ export default function BotoesLoginSocial({ acao = "Entrar", onErro, disabled = 
           ) : (
             provedor.icone
           )}
-          {acao} com {provedor.nome}
+          {t("loginSocial.acaoComProvedor", { acao: acao || t("acesso.entrar"), provedor: provedor.nome })}
         </button>
       ))}
     </div>

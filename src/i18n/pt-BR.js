@@ -155,6 +155,147 @@ const ptBR = {
     }
   },
 
+  // Campos e ações comuns aos formulários de acesso
+  acesso: {
+    tiposAcesso: "Tipo de acesso",
+    estudante: "Estudante / Visitante",
+    universidade: "Universidade parceira",
+    avisoAdmin: "É administrador da plataforma? Entre por aqui — o acesso é liberado automaticamente pelo seu e-mail cadastrado.",
+    email: "E-mail",
+    senha: "Senha",
+    placeholderEmail: "seu@email.com",
+    mostrarSenha: "Mostrar senha",
+    ocultarSenha: "Ocultar senha",
+    entrando: "Entrando...",
+    entrar: "Entrar",
+    continuar: "Continuar"
+  },
+
+  loginSocial: {
+    acaoComProvedor: "{acao} com {provedor}"
+  },
+
+  login: {
+    titulo: "Bem-vindo de volta!",
+    subtitulo: "Entre para continuar avaliando eventos universitários",
+    credenciaisInvalidas: "Usuário ou senha inválidos.",
+    ouContinueCom: "Ou continue com",
+    naoTemConta: "Não tem uma conta?",
+    cadastreSe: "Cadastre-se grátis",
+    painelTitulo: "Avalie eventos universitários",
+    painelTexto: "Compartilhe suas experiências e ajude outros estudantes a descobrir os melhores eventos culturais e acadêmicos.",
+    recursoAvalie: "Avalie eventos e universidades",
+    recursoForum: "Participe do fórum estudantil",
+    recursoRelatorios: "Acesse relatórios e estatísticas"
+  },
+
+  loginUniversidades: {
+    titulo: "Acesso Institucional",
+    subtitulo: "Login exclusivo para universidades parceiras",
+    erroVerificar: "Erro ao verificar a conta. Tente novamente.",
+    naoEUniversidade: "Esta conta não é de uma universidade parceira. Use o login de estudante ou cadastre sua universidade.",
+    usuarioNaoEncontrado: "Usuário não encontrado. Verifique se sua universidade está cadastrada.",
+    senhaIncorreta: "Senha incorreta. Tente novamente.",
+    emailInvalido: "Email inválido. Verifique o formato do email.",
+    erroLogin: "Erro ao fazer login. Verifique suas credenciais.",
+    emailInstitucional: "Email Institucional",
+    placeholderEmail: "reitor@universidade.edu.br",
+    ajudaEmail: "Use seu email oficial da instituição",
+    acessarDashboard: "Acessar Dashboard",
+    esqueceuSenha: "Esqueceu sua senha?",
+    aindaNaoParceira: "Ainda não é parceira?",
+    solicitarParceria: "Solicitar Parceria",
+    precisaAjuda: "Precisa de ajuda? Entre em contato com nosso",
+    suporte: "suporte especializado",
+    painelTitulo: "Dashboard Institucional",
+    painelTexto: "Gerencie eventos, monitore avaliações e fortaleça a reputação da sua universidade.",
+    recursoMetricas: "Análise de métricas e desempenho",
+    recursoEventos: "Gestão completa de eventos",
+    recursoFeedbacks: "Monitoramento de feedbacks",
+    recursoSeguranca: "Dados seguros e privacidade",
+    statUniversidades: "Universidades Parceiras",
+    statEventos: "Eventos Cadastrados"
+  },
+
+  cadastro: {
+    titulo: "Cadastro",
+    escolhaAvatar: "Escolha seu avatar",
+    avatarMasculino: "Avatar masculino",
+    avatarFeminino: "Avatar feminino",
+    nome: "Nome",
+    placeholderSenha: "Senha (mínimo 6 caracteres)",
+    ajudaSenha: "Mínimo de 6 caracteres.",
+    escolhaTipoPerfil: "Escolha seu tipo de perfil.",
+    erroCadastrar: "Erro ao cadastrar: {mensagem}",
+    sucesso: "Cadastro realizado com sucesso! Redirecionando...",
+    cadastrando: "Cadastrando...",
+    cadastrar: "Cadastrar",
+    ouCadastreCom: "Ou cadastre-se com",
+    jaTemConta: "Já tem uma conta?"
+  },
+
+  seletorPerfil: {
+    escolha: "Escolha seu tipo de perfil",
+    tipo: "Tipo de perfil",
+    universidade: "Universidade",
+    opcional: "(opcional)",
+    prefiroNaoInformar: "Prefiro não informar"
+  },
+
+  cadastroUniversidades: {
+    voltar: "Voltar",
+    tituloAntes: "Cadastro",
+    tituloDestaque: "institucional",
+    subtitulo: "Torne-se uma universidade parceira da UniScore",
+    senhasNaoCoincidem: "As senhas não coincidem",
+    erroCriar: "Erro ao criar conta. Tente novamente.",
+    nomeUniversidade: "Nome da Universidade",
+    placeholderNome: "Universidade Federal do...",
+    cnpj: "CNPJ",
+    emailInstitucional: "Email Institucional",
+    placeholderEmail: "contato@universidade.edu.br",
+    telefone: "Telefone",
+    placeholderTelefone: "(11) 99999-9999",
+    endereco: "Endereço",
+    placeholderEndereco: "Cidade, Estado",
+    responsavel: "Responsável",
+    placeholderResponsavel: "Nome completo",
+    cargo: "Cargo",
+    placeholderCargo: "Reitor, Diretor, etc.",
+    senha: "Senha",
+    confirmarSenha: "Confirmar Senha",
+    processoTitulo: "Processo de aprovação:",
+    processoTexto: "Após o envio, nossa equipe irá revisar sua solicitação. O processo pode levar até 3 dias úteis. Você receberá um email com o resultado.",
+    enviando: "Enviando solicitação...",
+    solicitar: "Solicitar parceria",
+    jaPossuiConta: "Já possui uma conta?",
+    fazerLogin: "Fazer Login"
+  },
+
+  cadastroSucesso: {
+    tituloAntes: "Solicitação",
+    tituloDestaque: "Enviada!",
+    obrigado: "Obrigado por se interessar em se tornar uma universidade parceira da UniScore!",
+    proximosPassos: "Próximos Passos",
+    passo1Titulo: "Análise da Solicitação",
+    passo1Texto: "Nossa equipe irá revisar todas as informações fornecidas e verificar a autenticidade da instituição.",
+    passo2Titulo: "Contato por Email",
+    passo2Texto: "Você receberá um email com o resultado da análise em até 3 dias úteis.",
+    passo3Titulo: "Ativação da Conta",
+    passo3Texto: "Após a aprovação, sua conta será ativada e você poderá acessar o dashboard institucional.",
+    enquantoIsso: "Enquanto isso, você já pode fazer login com as credenciais fornecidas.",
+    fazerLogin: "Fazer Login",
+    voltarInicio: "Voltar ao Início",
+    duvidas: "Dúvidas? Entre em contato conosco:"
+  },
+
+  redirecionamento: {
+    paraAvaliacao: "Redirecionando para a avaliação...",
+    paraPainelAntes: "Redirecionando para o",
+    painelAdministrativo: "painel administrativo",
+    paraPainelDepois: "..."
+  },
+
   // @@novas-secoes
 };
 

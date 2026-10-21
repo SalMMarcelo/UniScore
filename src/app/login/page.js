@@ -6,8 +6,10 @@ import Link from "next/link";
 import AccessTypeTabs from "../../components/AccessTypeTabs";
 import BotoesLoginSocial from "../../components/BotoesLoginSocial";
 import { garantirDocumentoUsuario, destinoAposLogin, mensagemErroAuth } from "../../lib/usuarios";
+import { useI18n } from "../../i18n/I18nProvider";
 
 export default function Login() {
+    const { t } = useI18n();
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
     const [erro, setErro] = useState("");
@@ -24,8 +26,8 @@ export default function Login() {
         } catch (err) {
             const codigo = err && err.code;
             setErro(["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found", "auth/invalid-email"].includes(codigo)
-                ? "Usuário ou senha inválidos."
-                : mensagemErroAuth(err));
+                ? t("login.credenciaisInvalidas")
+                : mensagemErroAuth(err, "", t));
             setLoading(false);
             return;
         }
@@ -49,8 +51,8 @@ export default function Login() {
                         <Link href="/" className="inline-block mb-6">
                             <img src="/uniscore_star_logo.png" alt="UniScore" className="h-16 w-auto mx-auto max-w-[200px]" />
                         </Link>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">Bem-vindo de volta!</h1>
-                        <p className="text-gray-600">Entre para continuar avaliando eventos universitários</p>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("login.titulo")}</h1>
+                        <p className="text-gray-600">{t("login.subtitulo")}</p>
                     </div>
 
                     <AccessTypeTabs active="estudante" />
@@ -61,7 +63,7 @@ export default function Login() {
                             {/* Campo Email */}
                             <div>
                                 <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-2">
-                                    E-mail
+                                    {t("acesso.email")}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -75,7 +77,7 @@ export default function Login() {
                                         autoComplete="email"
                                         aria-invalid={erro ? true : undefined}
                                         aria-describedby={erro ? "login-erro" : undefined}
-                                        placeholder="seu@email.com"
+                                        placeholder={t("acesso.placeholderEmail")}
                                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                         value={email}
                                         onChange={e => setEmail(e.target.value)}
@@ -87,7 +89,7 @@ export default function Login() {
                             {/* Campo Senha */}
                             <div>
                                 <label htmlFor="login-senha" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Senha
+                                    {t("acesso.senha")}
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -108,7 +110,7 @@ export default function Login() {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                                        aria-label={showPassword ? t("acesso.ocultarSenha") : t("acesso.mostrarSenha")}
                                         aria-pressed={showPassword}
                                         className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
                                     >
@@ -145,14 +147,14 @@ export default function Login() {
                                 {loading ? (
                                     <>
                                         <div aria-hidden="true" className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                        Entrando...
+                                        {t("acesso.entrando")}
                                     </>
                                 ) : (
                                     <>
                                         <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
                                         </svg>
-                                        Entrar
+                                        {t("acesso.entrar")}
                                     </>
                                 )}
                             </button>
@@ -164,19 +166,19 @@ export default function Login() {
                                 <div className="w-full border-t border-gray-300"></div>
                             </div>
                             <div className="relative flex justify-center text-sm">
-                                <span className="px-4 bg-white text-gray-600">Ou continue com</span>
+                                <span className="px-4 bg-white text-gray-600">{t("login.ouContinueCom")}</span>
                             </div>
                         </div>
 
                         {/* Login social: Google, Facebook, GitHub */}
-                        <BotoesLoginSocial acao="Entrar" onErro={setErro} disabled={loading} />
+                        <BotoesLoginSocial acao={t("acesso.entrar")} onErro={setErro} disabled={loading} />
 
                         {/* Link para cadastro */}
                         <div className="mt-6 text-center">
                             <p className="text-gray-600">
-                                Não tem uma conta?{' '}
+                                {t("login.naoTemConta")}{' '}
                                 <Link href="/cadastro" className="text-blue-600 font-semibold hover:text-blue-700 hover:underline">
-                                    Cadastre-se grátis
+                                    {t("login.cadastreSe")}
                                 </Link>
                             </p>
                         </div>
@@ -197,19 +199,19 @@ export default function Login() {
                                 <img src="/uniscore_star_logo.png" alt="" className="w-full h-full object-contain" />
                             </div>
                             <h2 className="text-4xl font-bold mb-4">
-                                Avalie eventos universitários
+                                {t("login.painelTitulo")}
                             </h2>
                             <p className="text-xl text-blue-100 leading-relaxed">
-                                Compartilhe suas experiências e ajude outros estudantes a descobrir os melhores eventos culturais e acadêmicos.
+                                {t("login.painelTexto")}
                             </p>
                         </div>
 
                         {/* Features */}
                         <div className="space-y-4 mt-12">
                             {[
-                                { icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z", text: "Avalie eventos e universidades" },
-                                { icon: "M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z", text: "Participe do fórum estudantil" },
-                                { icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z", text: "Acesse relatórios e estatísticas" }
+                                { icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z", text: t("login.recursoAvalie") },
+                                { icon: "M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z", text: t("login.recursoForum") },
+                                { icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z", text: t("login.recursoRelatorios") }
                             ].map((feature, index) => (
                                 <div key={index} className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-4">
                                     <div className="flex-shrink-0">

@@ -151,6 +151,146 @@ const enUS = {
     }
   },
 
+  acesso: {
+    tiposAcesso: "Access type",
+    estudante: "Student / Visitor",
+    universidade: "Partner university",
+    avisoAdmin: "Are you a platform administrator? Sign in here — access is granted automatically based on your registered email.",
+    email: "Email",
+    senha: "Password",
+    placeholderEmail: "you@email.com",
+    mostrarSenha: "Show password",
+    ocultarSenha: "Hide password",
+    entrando: "Signing in...",
+    entrar: "Sign in",
+    continuar: "Continue"
+  },
+
+  loginSocial: {
+    acaoComProvedor: "{acao} with {provedor}"
+  },
+
+  login: {
+    titulo: "Welcome back!",
+    subtitulo: "Sign in to keep reviewing university events",
+    credenciaisInvalidas: "Invalid username or password.",
+    ouContinueCom: "Or continue with",
+    naoTemConta: "Don't have an account?",
+    cadastreSe: "Sign up for free",
+    painelTitulo: "Review university events",
+    painelTexto: "Share your experiences and help other students discover the best cultural and academic events.",
+    recursoAvalie: "Review events and universities",
+    recursoForum: "Join the student forum",
+    recursoRelatorios: "Access reports and statistics"
+  },
+
+  loginUniversidades: {
+    titulo: "Institutional Access",
+    subtitulo: "Sign-in exclusively for partner universities",
+    erroVerificar: "Error verifying the account. Please try again.",
+    naoEUniversidade: "This account does not belong to a partner university. Use the student sign-in or register your university.",
+    usuarioNaoEncontrado: "User not found. Check whether your university is registered.",
+    senhaIncorreta: "Incorrect password. Please try again.",
+    emailInvalido: "Invalid email. Check the email format.",
+    erroLogin: "Error signing in. Check your credentials.",
+    emailInstitucional: "Institutional Email",
+    placeholderEmail: "dean@university.edu",
+    ajudaEmail: "Use your institution's official email",
+    acessarDashboard: "Open Dashboard",
+    esqueceuSenha: "Forgot your password?",
+    aindaNaoParceira: "Not a partner yet?",
+    solicitarParceria: "Request Partnership",
+    precisaAjuda: "Need help? Contact our",
+    suporte: "dedicated support team",
+    painelTitulo: "Institutional Dashboard",
+    painelTexto: "Manage events, monitor reviews and strengthen your university's reputation.",
+    recursoMetricas: "Metrics and performance analysis",
+    recursoEventos: "Complete event management",
+    recursoFeedbacks: "Feedback monitoring",
+    recursoSeguranca: "Secure data and privacy",
+    statUniversidades: "Partner Universities",
+    statEventos: "Registered Events"
+  },
+
+  cadastro: {
+    titulo: "Sign up",
+    escolhaAvatar: "Choose your avatar",
+    avatarMasculino: "Male avatar",
+    avatarFeminino: "Female avatar",
+    nome: "Name",
+    placeholderSenha: "Password (at least 6 characters)",
+    ajudaSenha: "At least 6 characters.",
+    escolhaTipoPerfil: "Choose your profile type.",
+    erroCadastrar: "Sign-up error: {mensagem}",
+    sucesso: "Sign-up successful! Redirecting...",
+    cadastrando: "Signing up...",
+    cadastrar: "Sign up",
+    ouCadastreCom: "Or sign up with",
+    jaTemConta: "Already have an account?"
+  },
+
+  seletorPerfil: {
+    escolha: "Choose your profile type",
+    tipo: "Profile type",
+    universidade: "University",
+    opcional: "(optional)",
+    prefiroNaoInformar: "I'd rather not say"
+  },
+
+  cadastroUniversidades: {
+    voltar: "Back",
+    tituloAntes: "Institutional",
+    tituloDestaque: "registration",
+    subtitulo: "Become a UniScore partner university",
+    senhasNaoCoincidem: "Passwords do not match",
+    erroCriar: "Error creating the account. Please try again.",
+    nomeUniversidade: "University Name",
+    placeholderNome: "Federal University of...",
+    cnpj: "CNPJ (Brazilian company ID)",
+    emailInstitucional: "Institutional Email",
+    placeholderEmail: "contact@university.edu",
+    telefone: "Phone",
+    placeholderTelefone: "(11) 99999-9999",
+    endereco: "Address",
+    placeholderEndereco: "City, State",
+    responsavel: "Contact person",
+    placeholderResponsavel: "Full name",
+    cargo: "Position",
+    placeholderCargo: "Dean, Director, etc.",
+    senha: "Password",
+    confirmarSenha: "Confirm Password",
+    processoTitulo: "Approval process:",
+    processoTexto: "After you submit, our team will review your request. The process may take up to 3 business days. You will receive an email with the result.",
+    enviando: "Sending request...",
+    solicitar: "Request partnership",
+    jaPossuiConta: "Already have an account?",
+    fazerLogin: "Sign In"
+  },
+
+  cadastroSucesso: {
+    tituloAntes: "Request",
+    tituloDestaque: "Sent!",
+    obrigado: "Thank you for your interest in becoming a UniScore partner university!",
+    proximosPassos: "Next Steps",
+    passo1Titulo: "Request Review",
+    passo1Texto: "Our team will review all the information provided and verify the institution's authenticity.",
+    passo2Titulo: "Email Contact",
+    passo2Texto: "You will receive an email with the review result within 3 business days.",
+    passo3Titulo: "Account Activation",
+    passo3Texto: "Once approved, your account will be activated and you will be able to access the institutional dashboard.",
+    enquantoIsso: "In the meantime, you can already sign in with the credentials you provided.",
+    fazerLogin: "Sign In",
+    voltarInicio: "Back to Home",
+    duvidas: "Questions? Contact us:"
+  },
+
+  redirecionamento: {
+    paraAvaliacao: "Redirecting to the review...",
+    paraPainelAntes: "Redirecting to the",
+    painelAdministrativo: "admin panel",
+    paraPainelDepois: "..."
+  },
+
   // @@novas-secoes
 };
 
