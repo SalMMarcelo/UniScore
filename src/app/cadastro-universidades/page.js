@@ -91,7 +91,7 @@ export default function CadastroUniversidades() {
             <header className="bg-white border-b border-gray-200 shadow-sm">
                 <div className="container mx-auto flex items-center justify-between px-6 py-4">
                     <Link href="/para-universidades" className="flex items-center gap-4 text-gray-700 hover:text-gray-900 transition-colors">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                         </svg>
                         <span className="font-bold text-lg">Voltar</span>
@@ -266,7 +266,7 @@ export default function CadastroUniversidades() {
 
                             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                                 <div className="flex gap-3">
-                                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg aria-hidden="true" className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
                                     </svg>
                                     <div className="text-sm text-blue-900 leading-relaxed">

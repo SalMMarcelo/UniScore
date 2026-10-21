@@ -28,10 +28,10 @@ function Estrelas({ nota, tamanho = "w-5 h-5" }) {
     return (
         <div className="flex items-center gap-1" aria-label={`${n} estrelas`}>
             {Array(n).fill().map((_, i) => (
-                <svg key={`c${i}`} className={`${tamanho} text-yellow-400`} fill="currentColor" viewBox="0 0 20 20"><path d={ESTRELA} /></svg>
+                <svg aria-hidden="true" key={`c${i}`} className={`${tamanho} text-yellow-400`} fill="currentColor" viewBox="0 0 20 20"><path d={ESTRELA} /></svg>
             ))}
             {Array(5 - n).fill().map((_, i) => (
-                <svg key={`v${i}`} className={`${tamanho} text-gray-300`} fill="currentColor" viewBox="0 0 20 20"><path d={ESTRELA} /></svg>
+                <svg aria-hidden="true" key={`v${i}`} className={`${tamanho} text-gray-300`} fill="currentColor" viewBox="0 0 20 20"><path d={ESTRELA} /></svg>
             ))}
         </div>
     );
@@ -189,7 +189,7 @@ export default function DetalhesEvento() {
             <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
                 <div className="container mx-auto flex items-center justify-between px-6 py-4">
                     <Link href="/" className="flex items-center gap-4 text-gray-700 hover:text-gray-900 transition-colors">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                         </svg>
                         <span className="font-bold text-lg">Voltar</span>
