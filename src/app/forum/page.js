@@ -19,6 +19,7 @@ import Link from "next/link";
 import { isAdminEmail } from "../../lib/admin";
 import { chaveComentario } from "../../lib/denuncias";
 import BotaoDenunciar from "../../components/BotaoDenunciar";
+import MenuMobile from "../../components/MenuMobile";
 
 // ─── Utilitário de timestamp ───────────────────────────────────────────────
 function formatTimestamp(timestamp) {
@@ -75,22 +76,22 @@ function PostCard({ post, user, onLike, onComment }) {
     };
 
     return (
-        <div id={post.id} className="bg-white rounded-2xl p-6 shadow-md border border-gray-200 hover:shadow-lg transition-all duration-300">
-            <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+        <div id={post.id} className="bg-white rounded-2xl p-4 sm:p-6 shadow-md border border-gray-200 hover:shadow-lg transition-all duration-300">
+            <div className="flex items-start gap-3 sm:gap-4">
+                <div aria-hidden="true" className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                     {post.autor.foto ? (
-                        <img src={post.autor.foto} alt={post.autor.nome} className="w-full h-full rounded-full object-cover" />
+                        <img src={post.autor.foto} alt="" className="w-full h-full rounded-full object-cover" />
                     ) : (
                         post.autor.nome?.charAt(0)?.toUpperCase() || "A"
                     )}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-2">
                         <span className="font-bold text-gray-900 truncate">{post.autor.nome}</span>
-                        <span className="text-gray-500 text-sm">@{post.autor.email?.split('@')[0]}</span>
-                        <span className="text-gray-400 text-sm">·</span>
-                        <span className="text-gray-500 text-sm">{formatTimestamp(post.criadoEm)}</span>
+                        <span className="text-gray-600 text-sm break-all">@{post.autor.email?.split('@')[0]}</span>
+                        <span className="text-gray-600 text-sm" aria-hidden="true">·</span>
+                        <span className="text-gray-600 text-sm">{formatTimestamp(post.criadoEm)}</span>
                     </div>
 
                     {post.moderado && (
@@ -106,7 +107,7 @@ function PostCard({ post, user, onLike, onComment }) {
                     {post.mediaUrl && (
                         <div className="mb-4 rounded-xl overflow-hidden border border-gray-200">
                             {post.mediaType === "image" ? (
-                                <img src={post.mediaUrl} alt="Imagem do post" className="w-full max-h-96 object-cover" />
+                                <img src={post.mediaUrl} alt={`Imagem publicada por ${post.autor.nome}`} className="w-full max-h-96 object-cover" />
                             ) : post.mediaType === "video" ? (
                                 <video src={post.mediaUrl} controls className="w-full max-h-96" />
                             ) : null}
@@ -114,25 +115,31 @@ function PostCard({ post, user, onLike, onComment }) {
                     )}
 
                     {/* Ações */}
-                    <div className="flex items-center gap-6 pt-3 border-t border-gray-200">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-6 pt-3 border-t border-gray-200">
                         {/* Curtir */}
                         <button
+                            type="button"
                             onClick={() => onLike(post.id, post.curtidas || [])}
+                            aria-pressed={!!(user && post.curtidas?.includes(user.uid))}
                             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
                                 user && post.curtidas?.includes(user.uid)
-                                    ? "text-red-500 bg-red-50"
-                                    : "text-gray-600 hover:text-red-500 hover:bg-red-50"
+                                    ? "text-red-600 bg-red-50"
+                                    : "text-gray-600 hover:text-red-600 hover:bg-red-50"
                             }`}
                         >
                             <svg aria-hidden="true" className="w-5 h-5" fill={user && post.curtidas?.includes(user.uid) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                             </svg>
+                            <span className="sr-only">Curtidas:</span>
                             <span className="text-sm font-medium">{post.curtidas?.length || 0}</span>
                         </button>
 
                         {/* Comentários */}
                         <button
+                            type="button"
                             onClick={() => setShowComments((v) => !v)}
+                            aria-expanded={showComments}
+                            aria-controls={`comentarios-${post.id}`}
                             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
                                 showComments ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                             }`}
@@ -140,13 +147,16 @@ function PostCard({ post, user, onLike, onComment }) {
                             <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                             </svg>
+                            <span className="sr-only">Comentários:</span>
                             <span className="text-sm font-medium">{post.comentarios?.length || 0}</span>
                         </button>
 
                         {/* Compartilhar */}
                         <button
+                            type="button"
                             onClick={handleShare}
                             title="Compartilhar"
+                            aria-label="Compartilhar"
                             className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:text-green-600 hover:bg-green-50 transition-all duration-200"
                         >
                             <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -162,11 +172,11 @@ function PostCard({ post, user, onLike, onComment }) {
 
                     {/* Seção de comentários expandível */}
                     {showComments && (
-                        <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                        <div id={`comentarios-${post.id}`} className="mt-4 pt-4 border-t border-gray-100 space-y-3">
                             {post.comentarios?.length > 0 ? (
                                 post.comentarios.map((c, i) => (
                                     <div key={i} className="flex gap-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                        <div aria-hidden="true" className="w-8 h-8 bg-gradient-to-br from-gray-500 to-gray-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                                             {c.autorNome?.charAt(0)?.toUpperCase() || "?"}
                                         </div>
                                         <div className="bg-gray-50 rounded-xl px-4 py-2 flex-1">
@@ -185,17 +195,19 @@ function PostCard({ post, user, onLike, onComment }) {
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-gray-400 text-sm text-center">Nenhum comentário ainda.</p>
+                                <p className="text-gray-600 text-sm text-center">Nenhum comentário ainda.</p>
                             )}
 
                             {user && (
                                 <form onSubmit={handleSubmitComment} className="flex gap-2 mt-2">
+                                    <label htmlFor={`comentario-${post.id}`} className="sr-only">Escreva um comentário</label>
                                     <input
+                                        id={`comentario-${post.id}`}
                                         type="text"
                                         value={commentText}
                                         onChange={(e) => setCommentText(e.target.value)}
                                         placeholder="Escreva um comentário..."
-                                        className="flex-1 bg-gray-50 border border-gray-300 rounded-full px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
+                                        className="flex-1 min-w-0 bg-gray-50 border border-gray-300 rounded-full px-4 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
                                         maxLength={280}
                                     />
                                     <button
@@ -216,7 +228,7 @@ function PostCard({ post, user, onLike, onComment }) {
 }
 
 // ─── Formulário de novo post ───────────────────────────────────────────────
-function CreatePostForm({ user, onSubmit, loading }) {
+function CreatePostForm({ user, onSubmit, loading, erro }) {
     const [newPost, setNewPost] = useState("");
     const [mediaFile, setMediaFile] = useState(null);
     const [mediaPreview, setMediaPreview] = useState(null);
@@ -241,12 +253,12 @@ function CreatePostForm({ user, onSubmit, loading }) {
     };
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-md border border-gray-200">
             <form onSubmit={handleSubmit}>
-                <div className="flex gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="flex gap-3 sm:gap-4">
+                    <div aria-hidden="true" className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center flex-shrink-0">
                         {user?.photoURL ? (
-                            <img src={user.photoURL} alt={user.displayName} className="w-full h-full rounded-full object-cover" />
+                            <img src={user.photoURL} alt="" className="w-full h-full rounded-full object-cover" />
                         ) : (
                             <svg aria-hidden="true" className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -254,8 +266,11 @@ function CreatePostForm({ user, onSubmit, loading }) {
                         )}
                     </div>
 
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
+                        <label htmlFor="forum-novo-post" className="sr-only">Escreva sua publicação</label>
                         <textarea
+                            id="forum-novo-post"
+                            aria-describedby="forum-novo-post-contador"
                             value={newPost}
                             onChange={(e) => setNewPost(e.target.value)}
                             placeholder="Cada evento é uma história: poste a sua"
@@ -265,7 +280,7 @@ function CreatePostForm({ user, onSubmit, loading }) {
 
                         {mediaType !== "none" && (
                             <div className="mt-4">
-                                <label className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-dashed border-gray-300 hover:border-blue-400 text-gray-600 hover:text-blue-600 px-4 py-3 rounded-lg cursor-pointer transition-colors">
+                                <label htmlFor="forum-midia" className="flex items-center justify-center gap-2 bg-gray-50 border-2 border-dashed border-gray-300 hover:border-blue-400 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-300 text-gray-600 hover:text-blue-600 px-4 py-3 rounded-lg cursor-pointer transition-colors">
                                     <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                     </svg>
@@ -273,9 +288,10 @@ function CreatePostForm({ user, onSubmit, loading }) {
                                         {mediaFile ? mediaFile.name : (mediaType === "image" ? "Escolher imagem" : "Escolher vídeo")}
                                     </span>
                                     <input
+                                        id="forum-midia"
                                         type="file"
                                         accept={mediaType === "image" ? "image/*" : "video/*"}
-                                        className="hidden"
+                                        className="sr-only"
                                         onChange={(e) => {
                                             const file = e.target.files?.[0];
                                             if (file) {
@@ -288,25 +304,34 @@ function CreatePostForm({ user, onSubmit, loading }) {
                                 {mediaPreview && (
                                     <div className="mt-3 relative">
                                         {mediaType === "image" ? (
-                                            <img src={mediaPreview} alt="Preview" className="w-full max-h-48 object-cover rounded-lg border border-gray-200" />
+                                            <img src={mediaPreview} alt="Pré-visualização da imagem selecionada" className="w-full max-h-48 object-cover rounded-lg border border-gray-200" />
                                         ) : (
                                             <video src={mediaPreview} controls className="w-full max-h-48 rounded-lg border border-gray-200" />
                                         )}
                                         <button
                                             type="button"
                                             onClick={() => { setMediaFile(null); setMediaPreview(null); }}
-                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                                            aria-label="Remover arquivo"
+                                            className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm hover:bg-red-700"
                                         >
-                                            ×
+                                            <span aria-hidden="true">×</span>
                                         </button>
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                        {erro && (
+                            <div role="alert" className="mt-4 bg-red-50 border border-red-300 text-red-800 rounded-lg px-4 py-3 text-sm">
+                                {erro}
+                            </div>
+                        )}
+
+                        <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-200">
                             <div className="flex items-center gap-2">
                                 <button type="button" onClick={() => toggleMedia("image")}
+                                    aria-label="Anexar imagem"
+                                    aria-pressed={mediaType === "image"}
                                     className={`p-2 rounded-lg transition-all duration-200 ${mediaType === "image" ? "bg-blue-100 text-blue-600" : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"}`}
                                 >
                                     <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -315,6 +340,8 @@ function CreatePostForm({ user, onSubmit, loading }) {
                                 </button>
 
                                 <button type="button" onClick={() => toggleMedia("video")}
+                                    aria-label="Anexar vídeo"
+                                    aria-pressed={mediaType === "video"}
                                     className={`p-2 rounded-lg transition-all duration-200 ${mediaType === "video" ? "bg-green-100 text-green-600" : "text-gray-600 hover:text-green-600 hover:bg-green-50"}`}
                                 >
                                     <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -322,7 +349,7 @@ function CreatePostForm({ user, onSubmit, loading }) {
                                     </svg>
                                 </button>
 
-                                <span className="text-gray-500 text-sm ml-4">{newPost.length}/280</span>
+                                <span id="forum-novo-post-contador" className="text-gray-600 text-sm ml-2 sm:ml-4">{newPost.length}/280</span>
                             </div>
 
                             <button
@@ -345,6 +372,8 @@ export default function Forum() {
     const [user, setUser] = useState(undefined);
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(false);
+    // Erro ao publicar, exibido no formulário (substitui alert())
+    const [erroPost, setErroPost] = useState("");
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
@@ -368,6 +397,7 @@ export default function Forum() {
 
     const handleSubmitPost = useCallback(async (text, mediaFile, mediaType) => {
         if (!user) return false;
+        setErroPost("");
         setLoading(true);
         try {
             let uploadedUrl = null;
@@ -392,7 +422,7 @@ export default function Forum() {
             setLoading(false);
             return true;
         } catch (error) {
-            alert("Erro ao publicar: " + error.message);
+            setErroPost("Erro ao publicar: " + error.message);
             setLoading(false);
             return false;
         }
@@ -435,64 +465,61 @@ export default function Forum() {
     return (
         <div className="min-h-screen bg-gray-50">
             <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200">
-                <div className="max-w-4xl mx-auto flex items-center justify-between px-6 py-4">
+                <div className="max-w-4xl mx-auto flex items-center justify-between gap-2 px-4 sm:px-6 py-4">
                     <Link href="/" className="flex items-center gap-3 text-gray-900 hover:text-gray-600 transition-colors">
                         <svg aria-hidden="true" className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
-                        <span className="font-bold text-lg">Voltar</span>
+                        <span className="font-bold text-lg sr-only sm:not-sr-only">Voltar</span>
                     </Link>
 
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                        <svg aria-hidden="true" className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <h1 className="text-lg sm:text-2xl font-bold text-gray-900 flex items-center gap-3 text-center">
+                        <svg aria-hidden="true" className="hidden sm:block w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
                         </svg>
                         Fórum universitário
                     </h1>
 
-                    <div className="w-20 flex justify-end">
+                    <div className="sm:w-20 flex justify-end items-center gap-2">
                         {user && isAdminEmail(user.email) && (
-                            <Link href="/admin" title="Painel Admin">
-                                <button className="bg-gray-800 hover:bg-gray-900 text-white p-2 rounded-lg transition-all">
-                                    <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                    </svg>
-                                </button>
+                            <Link href="/admin" title="Painel Admin" aria-label="Painel Admin" className="bg-gray-800 hover:bg-gray-900 text-white p-2 rounded-lg transition-all">
+                                <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
                             </Link>
                         )}
+                        <MenuMobile />
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-4xl mx-auto px-6 py-8">
+            <main id="conteudo" className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
                 {user === undefined ? (
-                    <div className="text-center py-12">
-                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4" />
+                    <div className="text-center py-12" role="status">
+                        <div aria-hidden="true" className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4" />
                         <div className="text-gray-600 text-lg">Carregando...</div>
                     </div>
                 ) : !user ? (
                     <div className="text-center py-12">
-                        <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 max-w-md mx-auto">
+                        <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg border border-gray-200 max-w-md mx-auto">
                             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <svg aria-hidden="true" className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                 </svg>
                             </div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-4">Entre na conversa</h3>
+                            <h2 className="text-2xl font-bold text-gray-900 mb-4">Entre na conversa</h2>
                             <p className="text-gray-600 mb-8 text-base leading-relaxed">
                                 Faça login para participar das discussões sobre eventos universitários e conectar-se com outros estudantes.
                             </p>
-                            <Link href="/login">
-                                <button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-3 rounded-lg font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-md hover:shadow-lg">
-                                    Fazer login
-                                </button>
+                            <Link href="/login" className="inline-block bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-3 rounded-lg font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-md hover:shadow-lg">
+                                Fazer login
                             </Link>
                         </div>
                     </div>
                 ) : (
                     <div className="space-y-6">
                         <div className="text-center mb-8">
-                            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
                                 Conecte-se com <span className="text-green-600">a comunidade acadêmica</span>
                             </h2>
                             <p className="text-xl text-gray-600">
@@ -500,7 +527,7 @@ export default function Forum() {
                             </p>
                         </div>
 
-                        <CreatePostForm user={user} onSubmit={handleSubmitPost} loading={loading} />
+                        <CreatePostForm user={user} onSubmit={handleSubmitPost} loading={loading} erro={erroPost} />
 
                         <div className="space-y-4">
                             {postsVisiveis.map((post) => (
