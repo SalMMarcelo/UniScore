@@ -291,7 +291,7 @@ export default function Home() {
           <div className="w-full max-w-2xl mx-auto relative">
             <form
               role="search"
-              className="relative bg-white rounded-xl shadow-2xl"
+              className="relative bg-white rounded-xl shadow-2xl focus-within:ring-4 focus-within:ring-yellow-400"
               onSubmit={e => {
                 e.preventDefault();
                 const termo = search.trim();
@@ -328,7 +328,7 @@ export default function Home() {
                   <li key={uni.id} className="border-b border-gray-100 last:border-0">
                     <button
                       type="button"
-                      className="w-full px-6 py-4 cursor-pointer hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors"
+                      className="w-full px-6 py-4 cursor-pointer hover:bg-gray-50 focus:bg-gray-100 transition-colors"
                       onClick={() => router.push(`/universidade/${uni.id}`)}
                     >
                       <div className="flex items-center gap-4">

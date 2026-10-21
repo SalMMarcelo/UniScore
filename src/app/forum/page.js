@@ -274,7 +274,7 @@ function CreatePostForm({ user, onSubmit, loading, erro }) {
                             value={newPost}
                             onChange={(e) => setNewPost(e.target.value)}
                             placeholder="Cada evento é uma história: poste a sua"
-                            className="w-full bg-transparent border-none outline-none text-gray-900 text-lg placeholder-gray-500 resize-none min-h-[120px] p-0"
+                            className="w-full bg-transparent border-none outline-none text-gray-900 text-lg placeholder-gray-500 resize-none min-h-[120px] p-1 rounded-lg focus:ring-2 focus:ring-blue-500"
                             maxLength={280}
                         />
 
