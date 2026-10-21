@@ -5,6 +5,8 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { buscarUniversidadeId } from "../../lib/universidades";
+import { notaSegura } from "../../lib/notas";
 
 export default function DashboardUniversidade() {
     const [user, setUser] = useState(null);
@@ -13,6 +15,7 @@ export default function DashboardUniversidade() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [isUniversidade, setIsUniversidade] = useState(false);
+    const [semVinculo, setSemVinculo] = useState(false);
     const [stats, setStats] = useState({
         totalAvaliacoes: 0,
         mediaGeral: 0,
@@ -138,13 +141,47 @@ export default function DashboardUniversidade() {
                 });
             } else {
                 // Modo produção - buscar dados reais
-                try {
+                // As avaliações guardam o id de public/universidades.json ("1", "2"...),
+                // não o uid da conta. Cadastros antigos não têm universidadeId: buscar pelo nome.
+                let cancelado = false;
+                let unsubscribe = null;
+
+                const zerarStats = () => setStats({
+                    totalAvaliacoes: 0,
+                    mediaGeral: 0,
+                    eventosAvaliados: 0,
+                    ultimaAvaliacao: null
+                });
+
+                const iniciar = async () => {
+                    let universidadeId = universidadeData.universidadeId || null;
+                    if (!universidadeId) {
+                        try {
+                            universidadeId = await buscarUniversidadeId({
+                                nome: universidadeData.nomeUniversidade,
+                                sigla: universidadeData.sigla
+                            });
+                        } catch (lookupErr) {
+                            console.error("Erro ao buscar universidade na lista:", lookupErr);
+                        }
+                    }
+                    if (cancelado) return;
+
+                    if (!universidadeId) {
+                        // Sem vínculo com a lista de universidades: não há como buscar avaliações
+                        setSemVinculo(true);
+                        setAvaliacoes([]);
+                        zerarStats();
+                        return;
+                    }
+                    setSemVinculo(false);
+
                     const q = query(
                         collection(db, "avaliacoes"),
-                        where("universidadeId", "==", user.uid)
+                        where("universidadeId", "==", String(universidadeId))
                     );
 
-                    const unsubscribe = onSnapshot(q, (snapshot) => {
+                    unsubscribe = onSnapshot(q, (snapshot) => {
                         const avaliacoesData = snapshot.docs.map(doc => ({
                             id: doc.id,
                             ...doc.data()
@@ -153,7 +190,7 @@ export default function DashboardUniversidade() {
                         setAvaliacoes(avaliacoesData);
 
                         if (avaliacoesData.length > 0) {
-                            const media = avaliacoesData.reduce((acc, av) => acc + av.nota, 0) / avaliacoesData.length;
+                            const media = avaliacoesData.reduce((acc, av) => acc + notaSegura(av.nota), 0) / avaliacoesData.length;
                             const eventosUnicos = [...new Set(avaliacoesData.map(av => av.eventoId))];
 
                             setStats({
@@ -163,19 +200,19 @@ export default function DashboardUniversidade() {
                                 ultimaAvaliacao: avaliacoesData[0]?.criadoEm
                             });
                         } else {
-                            setStats({
-                                totalAvaliacoes: 0,
-                                mediaGeral: 0,
-                                eventosAvaliados: 0,
-                                ultimaAvaliacao: null
-                            });
+                            zerarStats();
                         }
+                    }, (err) => {
+                        console.error("Erro ao buscar avaliações:", err);
                     });
+                };
 
-                    return () => unsubscribe();
-                } catch (error) {
-                    console.error("Erro ao buscar avaliações:", error);
-                }
+                iniciar();
+
+                return () => {
+                    cancelado = true;
+                    if (unsubscribe) unsubscribe();
+                };
             }
         }
     }, [user, universidadeData, isUniversidade, error]);
@@ -266,6 +303,17 @@ export default function DashboardUniversidade() {
                                 <p className="text-gray-700 mb-4">Esta é uma prévia do dashboard que estará disponível após aprovação.</p>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* Conta sem vínculo com a lista de universidades */}
+                {semVinculo && universidadeData?.status !== "pendente" && (
+                    <div className="bg-yellow-50 border-2 border-yellow-200 px-8 py-6 rounded-2xl mb-8">
+                        <h3 className="font-bold text-xl text-gray-900 mb-1">Nenhuma avaliação vinculada</h3>
+                        <p className="text-gray-700">
+                            Não encontramos "{universidadeData?.nomeUniversidade}" na lista de universidades da UniScore,
+                            por isso ainda não é possível exibir avaliações. Entre em contato com a equipe UniScore para vincular sua conta.
+                        </p>
                     </div>
                 )}
 

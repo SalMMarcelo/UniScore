@@ -5,6 +5,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { buscarUniversidadeId } from "../../lib/universidades";
 
 export default function CadastroUniversidades() {
     const [formData, setFormData] = useState({
@@ -51,8 +52,17 @@ export default function CadastroUniversidades() {
                 formData.senha
             );
 
+            // Vincular à universidade de public/universidades.json (id usado nas avaliações)
+            let universidadeId = null;
+            try {
+                universidadeId = await buscarUniversidadeId({ nome: formData.nomeUniversidade });
+            } catch (lookupErr) {
+                console.error("Erro ao buscar universidade na lista:", lookupErr);
+            }
+
             // Salvar dados da universidade no Firestore
             await setDoc(doc(db, "universidades", userCredential.user.uid), {
+                ...(universidadeId ? { universidadeId } : {}),
                 nomeUniversidade: formData.nomeUniversidade,
                 cnpj: formData.cnpj,
                 emailInstitucional: formData.emailInstitucional,
