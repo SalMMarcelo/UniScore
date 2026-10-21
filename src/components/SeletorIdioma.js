@@ -11,12 +11,14 @@ const OPCOES = [
 // um grupo rotulado; o nome completo do idioma é lido pelos leitores de tela.
 export default function SeletorIdioma({ className = "" }) {
   const { idioma, setIdioma, t } = useI18n();
+  // Sem classe de display em className, usa inline-flex (evita conflito com "hidden md:inline-flex")
+  const exibicao = /(^|\s)(hidden|flex|inline-flex|block)(\s|$)/.test(className) ? "" : "inline-flex";
 
   return (
     <div
       role="group"
       aria-label={t("idioma.rotulo")}
-      className={`inline-flex items-center rounded-lg border border-gray-300 bg-white p-0.5 text-xs font-semibold ${className}`}
+      className={`${exibicao} items-center rounded-lg border border-gray-300 bg-white p-0.5 text-xs font-semibold ${className}`}
     >
       {OPCOES.map((opcao, i) => {
         const ativo = idioma === opcao.idioma;
