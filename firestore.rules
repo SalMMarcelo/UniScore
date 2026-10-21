@@ -71,11 +71,33 @@ service cloud.firestore {
     // ------------------------------------------------------------------
     // Avaliações - leitura pública; criação apenas pelo próprio autor
     // ------------------------------------------------------------------
+    // Critério do RF03: null = "Não se aplica"; senão inteiro de 1 a 5.
+    function isValidCriterio(valor) {
+      return valor == null || (valor is int && valor >= 1 && valor <= 5);
+    }
+
+    // Mapa `criterios` gravado por /avaliar: só as 5 chaves conhecidas.
+    // Chave ausente é tratada como null.
+    function isValidCriterios(c) {
+      return c is map
+        && c.keys().hasOnly(['acessibilidade', 'conforto', 'interculturalidade', 'politizacao', 'impacto'])
+        && isValidCriterio(c.get('acessibilidade', null))
+        && isValidCriterio(c.get('conforto', null))
+        && isValidCriterio(c.get('interculturalidade', null))
+        && isValidCriterio(c.get('politizacao', null))
+        && isValidCriterio(c.get('impacto', null));
+    }
+
+    // `criterios`, `intercultural` e `titulo` são opcionais para que
+    // avaliações antigas (sem esses campos) continuem válidas ao serem editadas.
     function isValidAvaliacao(data) {
       return data.nota is int
         && data.nota >= 1
         && data.nota <= 5
-        && (!('comentario' in data) || (data.comentario is string && data.comentario.size() <= 2000));
+        && (!('comentario' in data) || (data.comentario is string && data.comentario.size() <= 2000))
+        && (!('titulo' in data) || (data.titulo is string && data.titulo.size() <= 200))
+        && (!('criterios' in data) || isValidCriterios(data.criterios))
+        && (!('intercultural' in data) || data.intercultural is map);
     }
 
     match /avaliacoes/{avaliacaoId} {
