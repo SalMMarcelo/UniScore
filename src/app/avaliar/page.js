@@ -1,24 +1,126 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { auth, db, storage } from "../../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 import { notaSegura } from "../../lib/notas";
+import { listarEventos, buscarEvento } from "../../lib/eventos";
 
-export default function AvaliarEvento() {
+// Critérios de avaliação do evento (RF03). Cada um recebe de 1 a 5 estrelas
+// ou "Não se aplica" (gravado como null em avaliacoes.criterios).
+const CRITERIOS = [
+    {
+        id: 'acessibilidade',
+        nome: 'Acessibilidade',
+        descricao: 'O local e as atividades eram acessíveis a pessoas com deficiência ou mobilidade reduzida (rampas, Libras, materiais acessíveis)?'
+    },
+    {
+        id: 'conforto',
+        nome: 'Conforto',
+        descricao: 'Espaço, assentos, temperatura, som e estrutura foram adequados para o público?'
+    },
+    {
+        id: 'interculturalidade',
+        nome: 'Interculturalidade',
+        descricao: 'O evento valorizou a diversidade de culturas, origens e visões de mundo?'
+    },
+    {
+        id: 'politizacao',
+        nome: 'Politização',
+        descricao: 'O evento estimulou o debate crítico sobre questões sociais e políticas?'
+    },
+    {
+        id: 'impacto',
+        nome: 'Impacto',
+        descricao: 'O evento trouxe contribuições relevantes para você e para a comunidade acadêmica?'
+    }
+];
+
+// Valor usado no formulário para "Não se aplica" (0 = ainda não respondido)
+const NAO_SE_APLICA = 'na';
+
+// Limites alinhados com isValidAvaliacao em firestore.rules
+const LIMITE_TITULO = 200;
+const LIMITE_TEXTO = 2000;
+
+function criteriosIniciais() {
+    return Object.fromEntries(CRITERIOS.map(c => [c.id, 0]));
+}
+
+// Converte o valor de estrelas do formulário em inteiro 1-5, ou null
+function estrelasOuNull(valor) {
+    const n = Math.round(Number(valor));
+    return Number.isInteger(n) && n >= 1 && n <= 5 ? n : null;
+}
+
+// Normaliza nomes para comparar a universidade de um evento com universidades.json
+function normalizarNome(texto) {
+    return String(texto || '')
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .toLowerCase()
+        .trim();
+}
+
+// Id (string) da universidade de um evento: usa evt.universidadeId e, se não
+// houver, procura pelo nome em universidades.json. Sem correspondência, usa o
+// próprio nome como id para o evento continuar selecionável.
+function universidadeDoEvento(evt, listaUnis) {
+    if (evt.universidadeId !== undefined && evt.universidadeId !== null && evt.universidadeId !== '') {
+        return String(evt.universidadeId);
+    }
+    const nomeOriginal = evt.universidadeNome || evt.universidade || '';
+    const nome = normalizarNome(nomeOriginal);
+    if (!nome) return '';
+    const uni = listaUnis.find(u => normalizarNome(u.nome) === nome);
+    return uni ? uni.id : String(nomeOriginal);
+}
+
+// Lista de universidades do select: public/universidades.json + universidades
+// que aparecem nos eventos e não estão no JSON.
+function montarUniversidades(json, eventos) {
+    const lista = (Array.isArray(json) ? json : []).map(u => ({ id: String(u.id), nome: u.nome }));
+    eventos.forEach(evt => {
+        const id = universidadeDoEvento(evt, lista);
+        if (id && !lista.some(u => u.id === id)) {
+            lista.push({ id, nome: evt.universidadeNome || evt.universidade || id });
+        }
+    });
+    return lista;
+}
+
+function TelaCarregando() {
+    return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="text-center">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Carregando...</p>
+            </div>
+        </div>
+    );
+}
+
+function AvaliarEventoConteudo() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    // Pré-seleção vinda de /evento/[id], /evento/[id]/avaliar e /universidade/[id]/avaliar
+    const eventoIdParam = searchParams.get('eventoId') || '';
+    const universidadeIdParam = searchParams.get('universidadeId') || '';
+
     const [user, setUser] = useState(null);
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [universidades, setUniversidades] = useState([]);
     const [todosEventos, setTodosEventos] = useState([]);
     const [eventos, setEventos] = useState([]);
+    const [carregandoEventos, setCarregandoEventos] = useState(true);
+    const [avisoEvento, setAvisoEvento] = useState('');
     const [loading, setLoading] = useState(false);
     const [imagemFile, setImagemFile] = useState(null);
     const [imagemPreview, setImagemPreview] = useState(null);
-    
+
     const [avaliacao, setAvaliacao] = useState({
         universidadeId: '',
         eventoId: '',
@@ -26,18 +128,19 @@ export default function AvaliarEvento() {
         titulo: '',
         comentario: '',
         data: '',
-        impactoCultural: '',
+        criterios: criteriosIniciais(),
+        // Etapa intercultural (gravada em avaliacoes.intercultural)
         diversidadePromovida: 0,
         ampliacaoCosmivisao: 0,
         conexaoIntercultural: 0,
         identidadeCultural: '',
         mudancaPerspectiva: '',
         recomendaria: true,
-        categoria: 'multicultural'
+        categoria: ''
     });
 
     const [etapa, setEtapa] = useState(1);
-    const totalEtapas = 3;
+    const totalEtapas = 4;
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -52,7 +155,7 @@ export default function AvaliarEvento() {
             }
             setUser(currentUser);
             setLoadingAuth(false);
-            
+
             if (!currentUser) {
                 alert('Você precisa estar logado para avaliar!');
                 router.push('/login');
@@ -61,52 +164,117 @@ export default function AvaliarEvento() {
         return () => unsubscribe();
     }, [router]);
 
+    // Carrega universidades e eventos e aplica a pré-seleção da query string
     useEffect(() => {
-        fetch("/universidades.json")
-            .then(res => res.json())
-            .then(data => {
-                setUniversidades(data);
-                if (data.length > 0) {
-                    setAvaliacao(prev => ({ ...prev, universidadeId: data[0].id }));
-                }
-            });
-        
-        fetch("/events.json")
-            .then(res => res.json())
-            .then(data => {
-                console.log('Eventos carregados:', data);
-                setTodosEventos(data);
-            });
-    }, []);
+        let cancelado = false;
 
-    useEffect(() => {
-        if (avaliacao.universidadeId && todosEventos.length > 0) {
-            const uni = universidades.find(u => u.id === Number(avaliacao.universidadeId));
-            if (uni) {
-                // Filtrar eventos pela universidade
-                const eventosUni = todosEventos.filter(evt => evt.universidade === uni.nome);
-                console.log('Eventos filtrados para', uni.nome, ':', eventosUni);
-                setEventos(eventosUni);
-                if (eventosUni.length > 0) {
-                    setAvaliacao(prev => ({ ...prev, eventoId: eventosUni[0].id }));
+        async function carregar() {
+            setCarregandoEventos(true);
+            try {
+                const [jsonUnis, listaEventos, eventoPre] = await Promise.all([
+                    fetch("/universidades.json")
+                        .then(res => (res.ok ? res.json() : []))
+                        .catch(() => []),
+                    listarEventos().catch(err => {
+                        console.error('Erro ao carregar eventos:', err);
+                        return [];
+                    }),
+                    eventoIdParam
+                        ? buscarEvento(eventoIdParam).catch(err => {
+                            console.error('Erro ao buscar evento:', err);
+                            return null;
+                        })
+                        : Promise.resolve(null)
+                ]);
+                if (cancelado) return;
+
+                let eventosBase = Array.isArray(listaEventos) ? listaEventos : [];
+                if (eventoPre && !eventosBase.some(evt => String(evt.id) === String(eventoPre.id))) {
+                    eventosBase = [...eventosBase, eventoPre];
                 }
+
+                const unis = montarUniversidades(jsonUnis, eventosBase);
+                const eventosAnotados = eventosBase.map(evt => ({
+                    ...evt,
+                    id: String(evt.id),
+                    _uniId: universidadeDoEvento(evt, unis)
+                }));
+                console.log('Eventos carregados:', eventosAnotados);
+
+                let uniInicial = unis.length > 0 ? unis[0].id : '';
+                let eventoInicial = '';
+                let dataInicial = '';
+
+                if (universidadeIdParam && unis.some(u => u.id === String(universidadeIdParam))) {
+                    uniInicial = String(universidadeIdParam);
+                }
+
+                if (eventoPre) {
+                    const anotado = eventosAnotados.find(evt => evt.id === String(eventoPre.id));
+                    if (anotado && anotado._uniId) {
+                        uniInicial = anotado._uniId;
+                        eventoInicial = anotado.id;
+                    }
+                    if (typeof eventoPre.data === 'string' && /^\d{4}-\d{2}-\d{2}/.test(eventoPre.data)) {
+                        dataInicial = eventoPre.data.slice(0, 10);
+                    }
+                    setAvisoEvento('');
+                } else if (eventoIdParam) {
+                    setAvisoEvento('O evento indicado no link não foi encontrado. Selecione a universidade e o evento abaixo.');
+                }
+
+                setUniversidades(unis);
+                setTodosEventos(eventosAnotados);
+                setAvaliacao(prev => ({
+                    ...prev,
+                    universidadeId: uniInicial,
+                    eventoId: eventoInicial || prev.eventoId,
+                    data: prev.data || dataInicial
+                }));
+            } finally {
+                if (!cancelado) setCarregandoEventos(false);
             }
-        } else {
-            setEventos([]);
         }
-    }, [avaliacao.universidadeId, universidades, todosEventos]);
+
+        carregar();
+        return () => { cancelado = true; };
+    }, [eventoIdParam, universidadeIdParam]);
+
+    // Filtra os eventos pela universidade selecionada. Mantém o evento atual se
+    // ele pertence à universidade (pré-seleção); senão seleciona o primeiro.
+    useEffect(() => {
+        const uniId = String(avaliacao.universidadeId || '');
+        const eventosUni = uniId ? todosEventos.filter(evt => evt._uniId === uniId) : [];
+        setEventos(eventosUni);
+        setAvaliacao(prev => {
+            if (eventosUni.some(evt => evt.id === String(prev.eventoId))) return prev;
+            const novo = eventosUni.length > 0 ? eventosUni[0].id : '';
+            return novo === prev.eventoId ? prev : { ...prev, eventoId: novo };
+        });
+    }, [avaliacao.universidadeId, todosEventos]);
+
+    const setCriterio = (id, valor) => {
+        setAvaliacao(prev => ({ ...prev, criterios: { ...prev.criterios, [id]: valor } }));
+    };
+
+    // Critérios sem estrelas e sem "Não se aplica"
+    const criteriosPendentes = CRITERIOS.filter(c => !avaliacao.criterios[c.id]);
+
+    const avisarCriteriosPendentes = () => {
+        alert(`Avalie com estrelas ou marque "Não se aplica" em: ${criteriosPendentes.map(c => c.nome).join(', ')}.`);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         console.log('handleSubmit chamado! Etapa atual:', etapa);
-        
+
         // Só permite submeter na última etapa
         if (etapa !== totalEtapas) {
             console.log('Bloqueado: não está na última etapa');
             return;
         }
-        
+
         if (!user) {
             alert('Você precisa estar logado para avaliar!');
             router.push('/login');
@@ -134,6 +302,12 @@ export default function AvaliarEvento() {
             return;
         }
 
+        if (criteriosPendentes.length > 0) {
+            avisarCriteriosPendentes();
+            setEtapa(2);
+            return;
+        }
+
         setLoading(true);
         try {
             let imagemUrl = null;
@@ -143,22 +317,39 @@ export default function AvaliarEvento() {
                 imagemUrl = await getDownloadURL(storageRef);
             }
 
+            // "Não se aplica" (ou qualquer valor fora de 1-5) vira null
+            const criterios = Object.fromEntries(
+                CRITERIOS.map(c => [c.id, estrelasOuNull(avaliacao.criterios[c.id])])
+            );
+
+            const intercultural = {
+                categoria: avaliacao.categoria || null,
+                diversidadePromovida: estrelasOuNull(avaliacao.diversidadePromovida),
+                ampliacaoCosmivisao: estrelasOuNull(avaliacao.ampliacaoCosmivisao),
+                conexaoIntercultural: estrelasOuNull(avaliacao.conexaoIntercultural),
+                identidadeCultural: (avaliacao.identidadeCultural || '').trim().slice(0, LIMITE_TEXTO),
+                mudancaPerspectiva: (avaliacao.mudancaPerspectiva || '').trim().slice(0, LIMITE_TEXTO),
+                recomendaria: Boolean(avaliacao.recomendaria)
+            };
+
             const avaliacaoData = {
                 universidadeId: String(avaliacao.universidadeId),
                 eventoId: String(avaliacao.eventoId),
                 nota: notaInt,
-                titulo: avaliacao.titulo || '',
-                comentario: avaliacao.comentario || '',
+                titulo: (avaliacao.titulo || '').slice(0, LIMITE_TITULO),
+                comentario: (avaliacao.comentario || '').slice(0, LIMITE_TEXTO),
                 data: avaliacao.data,
                 imagem: imagemUrl,
                 usuario: user.displayName || user.email || 'Usuário',
                 usuarioId: user.uid,
                 photoURL: user.photoURL || null,
+                criterios,
+                intercultural,
                 criadoEm: serverTimestamp()
             };
 
             console.log('Tentando salvar avaliação:', avaliacaoData);
-            
+
             await addDoc(collection(db, "avaliacoes"), avaliacaoData);
 
             alert('Obrigado por sua avaliação transcultural! Sua perspectiva é valiosa para construir um ambiente universitário mais diverso e inclusivo.');
@@ -173,6 +364,11 @@ export default function AvaliarEvento() {
 
     const proximaEtapa = (e) => {
         if (e) e.preventDefault(); // Prevenir submit do formulário
+        // Na etapa de critérios, todos precisam de estrelas ou "Não se aplica"
+        if (etapa === 2 && criteriosPendentes.length > 0) {
+            avisarCriteriosPendentes();
+            return;
+        }
         console.log('Avançando da etapa', etapa, 'para', etapa + 1);
         if (etapa < totalEtapas) setEtapa(etapa + 1);
     };
@@ -184,6 +380,7 @@ export default function AvaliarEvento() {
     };
 
     const renderStars = (current, setter) => {
+        const valorAtual = typeof current === 'number' ? current : 0;
         return (
             <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map(num => (
@@ -191,9 +388,10 @@ export default function AvaliarEvento() {
                         key={num}
                         type="button"
                         onClick={() => setter(num)}
+                        aria-label={`${num} ${num === 1 ? 'estrela' : 'estrelas'}`}
                         className={`transition-all duration-200 hover:scale-110`}
                     >
-                        <svg className={`w-8 h-8 ${num <= current ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                        <svg className={`w-8 h-8 ${num <= valorAtual ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-200'}`} fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                         </svg>
                     </button>
@@ -202,15 +400,9 @@ export default function AvaliarEvento() {
         );
     };
 
+
     if (loadingAuth) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Carregando...</p>
-                </div>
-            </div>
-        );
+        return <TelaCarregando />;
     }
 
     return (
@@ -255,7 +447,7 @@ export default function AvaliarEvento() {
                     {/* Progresso */}
                     <div className="max-w-md mx-auto mb-8">
                         <div className="flex items-center justify-between mb-4">
-                            {[1, 2, 3].map(num => (
+                            {Array.from({ length: totalEtapas }, (_, i) => i + 1).map(num => (
                                 <div key={num} className={`flex items-center ${num < totalEtapas ? 'flex-1' : ''}`}>
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${num <= etapa ? 'bg-white text-blue-600 shadow-lg' : 'bg-white/20 text-white/60'
                                         }`}>
@@ -291,6 +483,12 @@ export default function AvaliarEvento() {
                                     </div>
                                     <h2 className="text-3xl font-bold text-gray-900 mb-4">Avaliação geral do evento</h2>
                                 </div>
+
+                                {avisoEvento && (
+                                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl p-4 text-sm">
+                                        {avisoEvento}
+                                    </div>
+                                )}
 
                                 {/* Universidade e Evento */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -333,7 +531,9 @@ export default function AvaliarEvento() {
                                                 <option key={evt.id} value={evt.id}>{evt.nome}</option>
                                             ))}
                                         </select>
-                                        {eventos.length === 0 && avaliacao.universidadeId && (
+                                        {carregandoEventos ? (
+                                            <p className="text-sm text-gray-500 mt-2">Carregando eventos...</p>
+                                        ) : eventos.length === 0 && avaliacao.universidadeId && (
                                             <p className="text-sm text-gray-500 mt-2">Nenhum evento disponível para esta universidade</p>
                                         )}
                                     </div>
@@ -454,6 +654,7 @@ export default function AvaliarEvento() {
                                         value={avaliacao.titulo}
                                         onChange={(e) => setAvaliacao({ ...avaliacao, titulo: e.target.value })}
                                         placeholder="Ex: Uma experiência transformadora que ampliou minha visão de mundo"
+                                        maxLength={LIMITE_TITULO}
                                         className="w-full bg-white text-gray-900 rounded-lg p-4 border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none placeholder-gray-400"
                                     />
                                 </div>
@@ -471,14 +672,69 @@ export default function AvaliarEvento() {
                                         onChange={(e) => setAvaliacao({ ...avaliacao, comentario: e.target.value })}
                                         placeholder="Descreva sua experiência geral no evento..."
                                         rows={4}
+                                        maxLength={LIMITE_TEXTO}
                                         className="w-full bg-white text-gray-900 rounded-lg p-4 border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none placeholder-gray-400 resize-none"
                                     />
+                                    <div className="text-right text-xs text-gray-500 mt-1">
+                                        {avaliacao.comentario.length}/{LIMITE_TEXTO}
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Etapa 2: Impacto Cultural */}
+                        {/* Etapa 2: Critérios do evento (RF03) */}
                         {etapa === 2 && (
+                            <div className="space-y-8">
+                                <div className="text-center">
+                                    <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg className="w-8 h-8 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                    </div>
+                                    <h2 className="text-3xl font-bold text-gray-900 mb-4">Critérios do evento</h2>
+                                    <p className="text-gray-600">Dê de 1 a 5 estrelas para cada critério ou marque &quot;Não se aplica&quot;</p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {CRITERIOS.map(criterio => {
+                                        const valor = avaliacao.criterios[criterio.id];
+                                        const naoSeAplica = valor === NAO_SE_APLICA;
+                                        return (
+                                            <div key={criterio.id} className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                                    <div className="md:max-w-md">
+                                                        <div className="text-gray-900 font-bold mb-1">{criterio.nome}</div>
+                                                        <p className="text-gray-600 text-sm">{criterio.descricao}</p>
+                                                    </div>
+                                                    <div className="flex flex-col items-start md:items-end gap-2">
+                                                        <div className={naoSeAplica ? 'opacity-40' : ''}>
+                                                            {renderStars(naoSeAplica ? 0 : valor, (nota) => setCriterio(criterio.id, nota))}
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setCriterio(criterio.id, naoSeAplica ? 0 : NAO_SE_APLICA)}
+                                                            aria-pressed={naoSeAplica}
+                                                            className={`text-sm font-medium px-3 py-1 rounded-full border transition-colors ${naoSeAplica
+                                                                ? 'bg-gray-700 text-white border-gray-700'
+                                                                : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'
+                                                                }`}
+                                                        >
+                                                            Não se aplica
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className={`text-sm mt-3 ${valor ? 'text-gray-600' : 'text-orange-600'}`}>
+                                                    {naoSeAplica ? 'Não se aplica' : valor ? `${valor}/5 estrelas` : 'Pendente: avalie ou marque "Não se aplica"'}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Etapa 3: Impacto Cultural */}
+                        {etapa === 3 && (
                             <div className="space-y-8">
                                 <div className="text-center">
                                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -554,6 +810,7 @@ export default function AvaliarEvento() {
                                         onChange={(e) => setAvaliacao({ ...avaliacao, identidadeCultural: e.target.value })}
                                         placeholder="Como este evento influenciou ou reforçou sua identidade cultural? Descreva mudanças em sua autopercepção..."
                                         rows={4}
+                                        maxLength={LIMITE_TEXTO}
                                         className="w-full bg-white text-gray-900 rounded-lg p-4 border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none placeholder-gray-400 resize-none"
                                     />
                                 </div>
@@ -571,14 +828,15 @@ export default function AvaliarEvento() {
                                         onChange={(e) => setAvaliacao({ ...avaliacao, mudancaPerspectiva: e.target.value })}
                                         placeholder="Que novas perspectivas você adquiriu sobre outras culturas?"
                                         rows={4}
+                                        maxLength={LIMITE_TEXTO}
                                         className="w-full bg-white text-gray-900 rounded-lg p-4 border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none placeholder-gray-400 resize-none"
                                     />
                                 </div>
                             </div>
                         )}
 
-                        {/* Etapa 3: Confirmação */}
-                        {etapa === 3 && (
+                        {/* Etapa 4: Confirmação */}
+                        {etapa === 4 && (
                             <div className="space-y-8">
                                 <div className="text-center">
                                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -612,11 +870,38 @@ export default function AvaliarEvento() {
                                         </div>
                                         <div>
                                             <div className="text-gray-600 text-sm mb-1">Categoria</div>
-                                            <div className="text-gray-900 font-medium capitalize">{avaliacao.categoria.replace('-', ' ')}</div>
+                                            <div className="text-gray-900 font-medium">{avaliacao.categoria || 'Não informado'}</div>
                                         </div>
                                         <div className="md:col-span-2">
                                             <div className="text-gray-600 text-sm mb-1">Título</div>
                                             <div className="text-gray-900 font-medium">{avaliacao.titulo || 'Não informado'}</div>
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <div className="text-gray-600 text-sm mb-2">Critérios</div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {CRITERIOS.map(criterio => {
+                                                    const valor = avaliacao.criterios[criterio.id];
+                                                    return (
+                                                        <div key={criterio.id} className="flex items-center justify-between bg-white/70 rounded-lg px-3 py-2 border border-blue-200">
+                                                            <span className="text-gray-900 font-medium text-sm">{criterio.nome}</span>
+                                                            {valor === NAO_SE_APLICA ? (
+                                                                <span className="text-gray-500 text-sm">Não se aplica</span>
+                                                            ) : valor ? (
+                                                                <span className="flex items-center gap-0.5">
+                                                                    {Array(notaSegura(valor)).fill().map((_, i) => (
+                                                                        <svg key={i} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                                                        </svg>
+                                                                    ))}
+                                                                    <span className="text-gray-900 font-bold text-sm ml-1">({valor}/5)</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-orange-600 text-sm">Pendente</span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -728,5 +1013,13 @@ export default function AvaliarEvento() {
                 </form>
             </div>
         </div>
+    );
+}
+// useSearchParams exige um limite <Suspense> no App Router
+export default function AvaliarEvento() {
+    return (
+        <Suspense fallback={<TelaCarregando />}>
+            <AvaliarEventoConteudo />
+        </Suspense>
     );
 }
