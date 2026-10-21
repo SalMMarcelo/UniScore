@@ -597,6 +597,48 @@ const ptBR = {
     enviar: "Enviar Avaliação"
   },
 
+  forum: {
+    agora: "Agora",
+    minutos: "{n}min",
+    horas: "{n}h",
+    dias: "{n}d",
+    tituloCompartilhar: "UniScore – Fórum",
+    linkCopiado: "Link copiado para a área de transferência!",
+    removidoModeracao: "Este post foi removido pela moderação e não aparece para os demais usuários.",
+    imagemPublicada: "Imagem publicada por {nome}",
+    curtidas: "Curtidas:",
+    comentarios: "Comentários:",
+    compartilhar: "Compartilhar",
+    nenhumComentario: "Nenhum comentário ainda.",
+    escrevaComentario: "Escreva um comentário",
+    placeholderComentario: "Escreva um comentário...",
+    enviar: "Enviar",
+    escrevaPublicacao: "Escreva sua publicação",
+    placeholderPost: "Cada evento é uma história: poste a sua",
+    escolherImagem: "Escolher imagem",
+    escolherVideo: "Escolher vídeo",
+    previaImagem: "Pré-visualização da imagem selecionada",
+    removerArquivo: "Remover arquivo",
+    anexarImagem: "Anexar imagem",
+    anexarVideo: "Anexar vídeo",
+    publicando: "Publicando...",
+    publicar: "Publicar",
+    erroPublicar: "Erro ao publicar: {mensagem}",
+    erroCurtir: "Erro ao curtir: {mensagem}",
+    erroComentar: "Erro ao comentar: {mensagem}",
+    voltar: "Voltar",
+    titulo: "Fórum universitário",
+    painelAdmin: "Painel Admin",
+    carregando: "Carregando...",
+    entreConversa: "Entre na conversa",
+    facaLogin: "Faça login para participar das discussões sobre eventos universitários e conectar-se com outros estudantes.",
+    fazerLogin: "Fazer login",
+    conecteAntes: "Conecte-se com",
+    conecteDestaque: "a comunidade acadêmica",
+    compartilheTexto: "Compartilhe experiências, fotos e vídeos de eventos universitários",
+    nenhumaDiscussao: "Nenhuma discussão ainda. Seja o primeiro a compartilhar!"
+  },
+
   // @@novas-secoes
 };
 

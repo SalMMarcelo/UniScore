@@ -590,6 +590,48 @@ const enUS = {
     enviar: "Submit Review"
   },
 
+  forum: {
+    agora: "Now",
+    minutos: "{n}m",
+    horas: "{n}h",
+    dias: "{n}d",
+    tituloCompartilhar: "UniScore – Forum",
+    linkCopiado: "Link copied to the clipboard!",
+    removidoModeracao: "This post was removed by moderation and is not shown to other users.",
+    imagemPublicada: "Image posted by {nome}",
+    curtidas: "Likes:",
+    comentarios: "Comments:",
+    compartilhar: "Share",
+    nenhumComentario: "No comments yet.",
+    escrevaComentario: "Write a comment",
+    placeholderComentario: "Write a comment...",
+    enviar: "Send",
+    escrevaPublicacao: "Write your post",
+    placeholderPost: "Every event is a story: post yours",
+    escolherImagem: "Choose image",
+    escolherVideo: "Choose video",
+    previaImagem: "Preview of the selected image",
+    removerArquivo: "Remove file",
+    anexarImagem: "Attach image",
+    anexarVideo: "Attach video",
+    publicando: "Posting...",
+    publicar: "Post",
+    erroPublicar: "Error posting: {mensagem}",
+    erroCurtir: "Error liking: {mensagem}",
+    erroComentar: "Error commenting: {mensagem}",
+    voltar: "Back",
+    titulo: "University forum",
+    painelAdmin: "Admin Panel",
+    carregando: "Loading...",
+    entreConversa: "Join the conversation",
+    facaLogin: "Sign in to take part in discussions about university events and connect with other students.",
+    fazerLogin: "Sign in",
+    conecteAntes: "Connect with",
+    conecteDestaque: "the academic community",
+    compartilheTexto: "Share experiences, photos and videos from university events",
+    nenhumaDiscussao: "No discussions yet. Be the first to share!"
+  },
+
   // @@novas-secoes
 };
 
