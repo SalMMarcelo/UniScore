@@ -207,7 +207,7 @@ export default function Home() {
           ) : (
             <>
               {isAdminEmail(user.email) && (
-                <Link href="/forum/moderacao">
+                <Link href="/admin">
                   <button className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-sm transition-all">
                     Painel Admin
                   </button>
