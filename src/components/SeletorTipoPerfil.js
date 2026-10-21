@@ -65,7 +65,7 @@ export default function SeletorTipoPerfil({
       {tipoPerfil === "universitario" && (
         <div className="mt-3">
           <label htmlFor={`${idBase}-universidade`} className="block text-sm font-semibold text-gray-900 mb-1">
-            Universidade <span className="font-normal text-gray-500">(opcional)</span>
+            Universidade <span className="font-normal text-gray-600">(opcional)</span>
           </label>
           <select
             id={`${idBase}-universidade`}

@@ -89,46 +89,48 @@ export default function CadastroUniversidades() {
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <header className="bg-white border-b border-gray-200 shadow-sm">
-                <div className="container mx-auto flex items-center justify-between px-6 py-4">
+                <div className="container mx-auto flex items-center justify-between gap-3 px-4 md:px-6 py-4">
                     <Link href="/para-universidades" className="flex items-center gap-4 text-gray-700 hover:text-gray-900 transition-colors">
                         <svg aria-hidden="true" className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                         </svg>
                         <span className="font-bold text-lg">Voltar</span>
                     </Link>
-                    <img src="/uniscore_star_logo.png" alt="UniScore Logo" className="h-16 w-auto max-w-[220px]" />
-                    <div className="w-20"></div>
+                    <img src="/uniscore_star_logo.png" alt="UniScore" className="h-10 sm:h-16 w-auto max-w-[140px] sm:max-w-[220px]" />
+                    <div className="w-10 sm:w-20"></div>
                 </div>
             </header>
 
             {/* Conteúdo principal */}
-            <div className="container mx-auto px-4 py-12">
+            <main id="conteudo" className="container mx-auto px-4 py-12">
                 <div className="max-w-2xl mx-auto">
                     <div className="text-center mb-8">
-                        <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
                             Cadastro <span className="text-red-600">institucional</span>
-                        </h2>
+                        </h1>
                         <p className="text-xl text-gray-600">
                             Torne-se uma universidade parceira da UniScore
                         </p>
                     </div>
 
-                    <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
+                    <div className="bg-white rounded-2xl p-5 sm:p-8 border border-gray-200 shadow-sm">
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {error && (
-                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-center">
+                                <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-center">
                                     {error}
                                 </div>
                             )}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                    <label htmlFor="cad-uni-nomeUniversidade" className="block text-sm font-semibold text-gray-900 mb-2">
                                         Nome da Universidade
                                     </label>
                                     <input
                                         type="text"
                                         name="nomeUniversidade"
+                                        id="cad-uni-nomeUniversidade"
+                                        autoComplete="organization"
                                         className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-200"
                                         placeholder="Universidade Federal do..."
                                         value={formData.nomeUniversidade}
@@ -138,12 +140,13 @@ export default function CadastroUniversidades() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                    <label htmlFor="cad-uni-cnpj" className="block text-sm font-semibold text-gray-900 mb-2">
                                         CNPJ
                                     </label>
                                     <input
                                         type="text"
                                         name="cnpj"
+                                        id="cad-uni-cnpj"
                                         className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-200"
                                         placeholder="00.000.000/0000-00"
                                         value={formData.cnpj}
@@ -154,12 +157,14 @@ export default function CadastroUniversidades() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                <label htmlFor="cad-uni-emailInstitucional" className="block text-sm font-semibold text-gray-900 mb-2">
                                     Email Institucional
                                 </label>
                                 <input
                                     type="email"
                                     name="emailInstitucional"
+                                    id="cad-uni-emailInstitucional"
+                                    autoComplete="email"
                                     className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-200"
                                     placeholder="contato@universidade.edu.br"
                                     value={formData.emailInstitucional}
@@ -170,12 +175,14 @@ export default function CadastroUniversidades() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                    <label htmlFor="cad-uni-telefone" className="block text-sm font-semibold text-gray-900 mb-2">
                                         Telefone
                                     </label>
                                     <input
                                         type="tel"
                                         name="telefone"
+                                        id="cad-uni-telefone"
+                                        autoComplete="tel"
                                         className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-200"
                                         placeholder="(11) 99999-9999"
                                         value={formData.telefone}
@@ -185,12 +192,14 @@ export default function CadastroUniversidades() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                    <label htmlFor="cad-uni-endereco" className="block text-sm font-semibold text-gray-900 mb-2">
                                         Endereço
                                     </label>
                                     <input
                                         type="text"
                                         name="endereco"
+                                        id="cad-uni-endereco"
+                                        autoComplete="address-level2"
                                         className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-200"
                                         placeholder="Cidade, Estado"
                                         value={formData.endereco}
@@ -202,12 +211,14 @@ export default function CadastroUniversidades() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                    <label htmlFor="cad-uni-responsavel" className="block text-sm font-semibold text-gray-900 mb-2">
                                         Responsável
                                     </label>
                                     <input
                                         type="text"
                                         name="responsavel"
+                                        id="cad-uni-responsavel"
+                                        autoComplete="name"
                                         className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-200"
                                         placeholder="Nome completo"
                                         value={formData.responsavel}
@@ -217,12 +228,14 @@ export default function CadastroUniversidades() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                    <label htmlFor="cad-uni-cargo" className="block text-sm font-semibold text-gray-900 mb-2">
                                         Cargo
                                     </label>
                                     <input
                                         type="text"
                                         name="cargo"
+                                        id="cad-uni-cargo"
+                                        autoComplete="organization-title"
                                         className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-200"
                                         placeholder="Reitor, Diretor, etc."
                                         value={formData.cargo}
@@ -234,12 +247,14 @@ export default function CadastroUniversidades() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                    <label htmlFor="cad-uni-senha" className="block text-sm font-semibold text-gray-900 mb-2">
                                         Senha
                                     </label>
                                     <input
                                         type="password"
                                         name="senha"
+                                        id="cad-uni-senha"
+                                        autoComplete="new-password"
                                         className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-200"
                                         placeholder="••••••••"
                                         value={formData.senha}
@@ -249,12 +264,14 @@ export default function CadastroUniversidades() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                    <label htmlFor="cad-uni-confirmarSenha" className="block text-sm font-semibold text-gray-900 mb-2">
                                         Confirmar Senha
                                     </label>
                                     <input
                                         type="password"
                                         name="confirmarSenha"
+                                        id="cad-uni-confirmarSenha"
+                                        autoComplete="new-password"
                                         className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-200"
                                         placeholder="••••••••"
                                         value={formData.confirmarSenha}
@@ -283,7 +300,7 @@ export default function CadastroUniversidades() {
                             >
                                 {loading ? (
                                     <div className="flex items-center justify-center gap-2">
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        <div aria-hidden="true" className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                                         Enviando solicitação...
                                     </div>
                                 ) : (
@@ -295,19 +312,17 @@ export default function CadastroUniversidades() {
                                 <p className="text-gray-600 text-sm mb-3">
                                     Já possui uma conta?
                                 </p>
-                                <Link href="/login-universidades">
-                                    <button
-                                        type="button"
-                                        className="bg-gray-100 text-gray-700 px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-200 transition-all duration-200 border border-gray-300"
-                                    >
-                                        Fazer Login
-                                    </button>
+                                <Link
+                                    href="/login-universidades"
+                                    className="inline-block bg-gray-100 text-gray-700 px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-200 transition-all duration-200 border border-gray-300"
+                                >
+                                    Fazer Login
                                 </Link>
                             </div>
                         </form>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }

@@ -89,7 +89,7 @@ export default function BotoesLoginSocial({ acao = "Entrar", onErro, disabled = 
           className="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
         >
           {carregando === provedor.id ? (
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-500"></div>
+            <div aria-hidden="true" className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-500"></div>
           ) : (
             provedor.icone
           )}

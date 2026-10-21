@@ -68,56 +68,81 @@ export default function Cadastro() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-mackenzie-light">
-            <form className="bg-white p-8 rounded shadow-md w-full max-w-md flex flex-col gap-4" onSubmit={handleSubmit}>
-                <h2 className="text-2xl font-bold text-mackenzie-red mb-4 text-center">Cadastro</h2>
-                <div className="flex justify-center gap-4 mb-2">
+        <main id="conteudo" className="min-h-screen flex items-center justify-center bg-mackenzie-light p-4">
+            <form className="bg-white p-5 sm:p-8 rounded shadow-md w-full max-w-md flex flex-col gap-4" onSubmit={handleSubmit}>
+                <h1 className="text-2xl font-bold text-mackenzie-red mb-4 text-center">Cadastro</h1>
+                <p id="cadastro-avatar-rotulo" className="sr-only">Escolha seu avatar</p>
+                <div className="flex justify-center gap-4 mb-2" role="group" aria-labelledby="cadastro-avatar-rotulo">
                     <button
                         type="button"
                         className={`border-2 rounded-full p-1 ${avatar === "/avatar-default.png" ? "border-mackenzie-red" : "border-gray-200"}`}
                         onClick={() => setAvatar("/avatar-default.png")}
                         title="Avatar masculino"
+                        aria-label="Avatar masculino"
+                        aria-pressed={avatar === "/avatar-default.png"}
                     >
-                        <img src="/avatar-default.png" alt="Avatar masculino" className="w-12 h-12 rounded-full object-cover" />
+                        <img src="/avatar-default.png" alt="" className="w-12 h-12 rounded-full object-cover" />
                     </button>
                     <button
                         type="button"
                         className={`border-2 rounded-full p-1 ${avatar === "/avatar-feminino-default.jpg" ? "border-mackenzie-red" : "border-gray-200"}`}
                         onClick={() => setAvatar("/avatar-feminino-default.jpg")}
                         title="Avatar feminino"
+                        aria-label="Avatar feminino"
+                        aria-pressed={avatar === "/avatar-feminino-default.jpg"}
                     >
-                        <img src="/avatar-feminino-default.jpg" alt="Avatar feminino" className="w-12 h-12 rounded-full object-cover" />
+                        <img src="/avatar-feminino-default.jpg" alt="" className="w-12 h-12 rounded-full object-cover" />
                     </button>
                 </div>
-                <input
-                    type="text"
-                    placeholder="Nome"
-                    value={nome}
-                    onChange={e => setNome(e.target.value)}
-                    className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    maxLength={NOME_MAX}
-                    aria-label="Nome"
-                    required
-                />
-                <input
-                    type="email"
-                    placeholder="E-mail"
-                    aria-label="E-mail"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                />
-                <input
-                    type="password"
-                    placeholder="Senha (mínimo 6 caracteres)"
-                    aria-label="Senha"
-                    minLength={6}
-                    value={senha}
-                    onChange={e => setSenha(e.target.value)}
-                    className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                />
+                <div>
+                    <label htmlFor="cadastro-nome" className="block text-sm font-medium text-gray-700 mb-1">
+                        Nome
+                    </label>
+                    <input
+                        id="cadastro-nome"
+                        type="text"
+                        autoComplete="name"
+                        placeholder="Nome"
+                        value={nome}
+                        onChange={e => setNome(e.target.value)}
+                        className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        maxLength={NOME_MAX}
+                        required
+                    />
+                </div>
+                <div>
+                    <label htmlFor="cadastro-email" className="block text-sm font-medium text-gray-700 mb-1">
+                        E-mail
+                    </label>
+                    <input
+                        id="cadastro-email"
+                        type="email"
+                        autoComplete="email"
+                        placeholder="E-mail"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    />
+                </div>
+                <div>
+                    <label htmlFor="cadastro-senha" className="block text-sm font-medium text-gray-700 mb-1">
+                        Senha
+                    </label>
+                    <input
+                        id="cadastro-senha"
+                        type="password"
+                        autoComplete="new-password"
+                        placeholder="Senha (mínimo 6 caracteres)"
+                        aria-describedby="cadastro-senha-ajuda"
+                        minLength={6}
+                        value={senha}
+                        onChange={e => setSenha(e.target.value)}
+                        className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    />
+                    <p id="cadastro-senha-ajuda" className="text-xs text-gray-600 mt-1">Mínimo de 6 caracteres.</p>
+                </div>
                 <SeletorTipoPerfil
                     tipoPerfil={tipoPerfil}
                     onTipoPerfilChange={setTipoPerfil}
@@ -132,14 +157,14 @@ export default function Cadastro() {
                 >
                     {loading ? "Cadastrando..." : "Cadastrar"}
                 </button>
-                {sucesso && <div className="text-green-600 text-center mt-2">{sucesso}</div>}
-                {erro && <div className="text-red-600 text-center mt-2" role="alert">{erro}</div>}
+                {sucesso && <div className="text-green-700 text-center mt-2" role="status">{sucesso}</div>}
+                {erro && <div className="text-red-700 text-center mt-2" role="alert">{erro}</div>}
                 <div className="relative my-2">
                     <div className="absolute inset-0 flex items-center">
                         <div className="w-full border-t border-gray-300"></div>
                     </div>
                     <div className="relative flex justify-center text-sm">
-                        <span className="px-4 bg-white text-gray-500">Ou cadastre-se com</span>
+                        <span className="px-4 bg-white text-gray-600">Ou cadastre-se com</span>
                     </div>
                 </div>
                 <BotoesLoginSocial acao="Continuar" onErro={setErro} disabled={loading} />
@@ -150,6 +175,6 @@ export default function Cadastro() {
                     </Link>
                 </p>
             </form>
-        </div>
+        </main>
     );
 }

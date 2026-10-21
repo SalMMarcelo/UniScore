@@ -68,14 +68,14 @@ export default function LoginUniversidades() {
     };
 
     return (
-        <div className="min-h-screen flex bg-gray-50">
+        <main id="conteudo" className="min-h-screen flex bg-gray-50">
             {/* Lado esquerdo - Formulário */}
-            <div className="flex-1 flex items-center justify-center p-8">
+            <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
                 <div className="w-full max-w-md">
                     {/* Logo e Título */}
                     <div className="text-center mb-8">
                         <Link href="/para-universidades" className="inline-block mb-6">
-                            <img src="/uniscore_star_logo.png" alt="UniScore Logo" className="h-16 w-auto mx-auto max-w-[200px]" />
+                            <img src="/uniscore_star_logo.png" alt="UniScore" className="h-16 w-auto mx-auto max-w-[200px]" />
                         </Link>
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">Acesso Institucional</h1>
                         <p className="text-gray-600">Login exclusivo para universidades parceiras</p>
@@ -84,11 +84,11 @@ export default function LoginUniversidades() {
                     <AccessTypeTabs active="universidade" />
 
                     {/* Card do formulário */}
-                    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5 sm:p-8">
                         <form onSubmit={handleLogin} className="space-y-5">
                             {/* Mensagem de erro */}
                             {error && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                                <div id="login-uni-erro" role="alert" className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
                                     <svg aria-hidden="true" className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
@@ -98,7 +98,7 @@ export default function LoginUniversidades() {
 
                             {/* Campo Email */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="login-uni-email" className="block text-sm font-medium text-gray-700 mb-2">
                                     Email Institucional
                                 </label>
                                 <div className="relative">
@@ -108,7 +108,11 @@ export default function LoginUniversidades() {
                                         </svg>
                                     </div>
                                     <input
+                                        id="login-uni-email"
                                         type="email"
+                                        autoComplete="email"
+                                        aria-describedby={error ? "login-uni-email-ajuda login-uni-erro" : "login-uni-email-ajuda"}
+                                        aria-invalid={error ? true : undefined}
                                         placeholder="reitor@universidade.edu.br"
                                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
                                         value={email}
@@ -116,12 +120,12 @@ export default function LoginUniversidades() {
                                         required
                                     />
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">Use seu email oficial da instituição</p>
+                                <p id="login-uni-email-ajuda" className="text-xs text-gray-600 mt-1">Use seu email oficial da instituição</p>
                             </div>
 
                             {/* Campo Senha */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="login-uni-senha" className="block text-sm font-medium text-gray-700 mb-2">
                                     Senha
                                 </label>
                                 <div className="relative">
@@ -131,6 +135,8 @@ export default function LoginUniversidades() {
                                         </svg>
                                     </div>
                                     <input
+                                        id="login-uni-senha"
+                                        autoComplete="current-password"
                                         type={showPassword ? "text" : "password"}
                                         placeholder="••••••••"
                                         className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
@@ -141,7 +147,9 @@ export default function LoginUniversidades() {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                                        aria-pressed={showPassword}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
                                     >
                                         {showPassword ? (
                                             <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -165,7 +173,7 @@ export default function LoginUniversidades() {
                             >
                                 {loading ? (
                                     <>
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                        <div aria-hidden="true" className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                                         Entrando...
                                     </>
                                 ) : (
@@ -182,7 +190,7 @@ export default function LoginUniversidades() {
                         {/* Links adicionais */}
                         <div className="mt-6 space-y-4">
                             <div className="text-center">
-                                <button className="text-sm text-gray-600 hover:text-red-600 hover:underline transition-colors">
+                                <button type="button" className="text-sm text-gray-600 hover:text-red-600 hover:underline transition-colors">
                                     Esqueceu sua senha?
                                 </button>
                             </div>
@@ -192,18 +200,16 @@ export default function LoginUniversidades() {
                                     <div className="w-full border-t border-gray-300"></div>
                                 </div>
                                 <div className="relative flex justify-center text-sm">
-                                    <span className="px-4 bg-white text-gray-500">Ainda não é parceira?</span>
+                                    <span className="px-4 bg-white text-gray-600">Ainda não é parceira?</span>
                                 </div>
                             </div>
 
                             <div className="text-center">
-                                <Link href="/cadastro-universidades">
-                                    <button className="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 flex items-center justify-center gap-2">
-                                        <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                        </svg>
-                                        Solicitar Parceria
-                                    </button>
+                                <Link href="/cadastro-universidades" className="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 flex items-center justify-center gap-2">
+                                    <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    Solicitar Parceria
                                 </Link>
                             </div>
                         </div>
@@ -286,6 +292,6 @@ export default function LoginUniversidades() {
                 <div className="absolute top-20 right-20 w-32 h-32 bg-yellow-400/20 rounded-full blur-3xl"></div>
                 <div className="absolute bottom-20 left-20 w-40 h-40 bg-blue-400/20 rounded-full blur-3xl"></div>
             </div>
-        </div>
+        </main>
     );
 }

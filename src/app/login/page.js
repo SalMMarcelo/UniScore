@@ -40,14 +40,14 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen flex bg-gray-50">
+        <main id="conteudo" className="min-h-screen flex bg-gray-50">
             {/* Lado esquerdo - Formulário */}
-            <div className="flex-1 flex items-center justify-center p-8">
+            <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
                 <div className="w-full max-w-md">
                     {/* Logo e Título */}
                     <div className="text-center mb-8">
                         <Link href="/" className="inline-block mb-6">
-                            <img src="/uniscore_star_logo.png" alt="UniScore Logo" className="h-16 w-auto mx-auto max-w-[200px]" />
+                            <img src="/uniscore_star_logo.png" alt="UniScore" className="h-16 w-auto mx-auto max-w-[200px]" />
                         </Link>
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">Bem-vindo de volta!</h1>
                         <p className="text-gray-600">Entre para continuar avaliando eventos universitários</p>
@@ -56,11 +56,11 @@ export default function Login() {
                     <AccessTypeTabs active="estudante" />
 
                     {/* Card do formulário */}
-                    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-5 sm:p-8">
                         <form onSubmit={handleLogin} className="space-y-5">
                             {/* Campo Email */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-2">
                                     E-mail
                                 </label>
                                 <div className="relative">
@@ -70,7 +70,11 @@ export default function Login() {
                                         </svg>
                                     </div>
                                     <input
+                                        id="login-email"
                                         type="email"
+                                        autoComplete="email"
+                                        aria-invalid={erro ? true : undefined}
+                                        aria-describedby={erro ? "login-erro" : undefined}
                                         placeholder="seu@email.com"
                                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                         value={email}
@@ -82,7 +86,7 @@ export default function Login() {
 
                             {/* Campo Senha */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="login-senha" className="block text-sm font-medium text-gray-700 mb-2">
                                     Senha
                                 </label>
                                 <div className="relative">
@@ -92,6 +96,8 @@ export default function Login() {
                                         </svg>
                                     </div>
                                     <input
+                                        id="login-senha"
+                                        autoComplete="current-password"
                                         type={showPassword ? "text" : "password"}
                                         placeholder="••••••••"
                                         className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
@@ -102,7 +108,9 @@ export default function Login() {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                                        aria-pressed={showPassword}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
                                     >
                                         {showPassword ? (
                                             <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,7 +128,7 @@ export default function Login() {
 
                             {/* Mensagem de erro */}
                             {erro && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
+                                <div id="login-erro" role="alert" className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
                                     <svg aria-hidden="true" className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
@@ -136,7 +144,7 @@ export default function Login() {
                             >
                                 {loading ? (
                                     <>
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                        <div aria-hidden="true" className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                                         Entrando...
                                     </>
                                 ) : (
@@ -156,7 +164,7 @@ export default function Login() {
                                 <div className="w-full border-t border-gray-300"></div>
                             </div>
                             <div className="relative flex justify-center text-sm">
-                                <span className="px-4 bg-white text-gray-500">Ou continue com</span>
+                                <span className="px-4 bg-white text-gray-600">Ou continue com</span>
                             </div>
                         </div>
 
@@ -186,7 +194,7 @@ export default function Login() {
                     <div className="max-w-md text-center">
                         <div className="mb-8">
                             <div className="w-32 h-32 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm p-6">
-                                <img src="/uniscore_star_logo.png" alt="UniScore Logo" className="w-full h-full object-contain" />
+                                <img src="/uniscore_star_logo.png" alt="" className="w-full h-full object-contain" />
                             </div>
                             <h2 className="text-4xl font-bold mb-4">
                                 Avalie eventos universitários
@@ -220,6 +228,6 @@ export default function Login() {
                 <div className="absolute top-20 right-20 w-32 h-32 bg-yellow-400/20 rounded-full blur-3xl"></div>
                 <div className="absolute bottom-20 left-20 w-40 h-40 bg-green-400/20 rounded-full blur-3xl"></div>
             </div>
-        </div>
+        </main>
     );
 }
