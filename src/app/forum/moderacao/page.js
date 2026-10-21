@@ -20,6 +20,7 @@ export default function ModeradorForum() {
     const [posts, setPosts] = useState([]);
     const [filtro, setFiltro] = useState("todos");
     const [loading, setLoading] = useState(false);
+    const [erroCarregamento, setErroCarregamento] = useState("");
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
@@ -44,12 +45,17 @@ export default function ModeradorForum() {
             q = query(collection(db, "forumPosts"), orderBy("criadoEm", "desc"));
         }
 
+        setErroCarregamento("");
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const postsData = [];
             snapshot.forEach((doc) => {
                 postsData.push({ id: doc.id, ...doc.data() });
             });
             setPosts(postsData);
+            setErroCarregamento("");
+        }, (error) => {
+            console.error("Erro ao carregar posts:", error);
+            setErroCarregamento("Erro ao carregar posts: " + error.message);
         });
         return () => unsubscribe();
     }, [filtro]);
@@ -87,7 +93,10 @@ export default function ModeradorForum() {
 
     const formatTimestamp = (timestamp) => {
         if (!timestamp) return "Agora";
-        return timestamp.toDate().toLocaleString("pt-BR");
+        // Aceita Timestamp do Firestore, Date, string ISO ou número
+        const data = typeof timestamp.toDate === "function" ? timestamp.toDate() : new Date(timestamp);
+        if (isNaN(data.getTime())) return "Data desconhecida";
+        return data.toLocaleString("pt-BR");
     };
 
     if (user === undefined) {
@@ -181,6 +190,12 @@ export default function ModeradorForum() {
                     </div>
                 </div>
 
+                {erroCarregamento && (
+                    <div className="bg-red-500/20 border border-red-300/40 text-white rounded-2xl p-4 mb-4 text-center">
+                        {erroCarregamento}
+                    </div>
+                )}
+
                 {/* Lista de Posts */}
                 <div className="space-y-4">
                     {posts.map((post) => (
@@ -270,7 +285,7 @@ export default function ModeradorForum() {
                         </div>
                     ))}
 
-                    {posts.length === 0 && (
+                    {posts.length === 0 && !erroCarregamento && (
                         <div className="text-center py-12">
                             <div className="text-white/60 text-lg">
                                 Nenhum post encontrado para este filtro.
