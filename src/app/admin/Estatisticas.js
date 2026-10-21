@@ -84,7 +84,7 @@ export default function Estatisticas({ dados }) {
                     </table>
                 </div>
             )}
-            <p className="text-xs text-gray-400 mt-3">
+            <p className="text-xs text-gray-600 mt-3">
                 Contagens calculadas no servidor (getCountFromServer / getAggregateFromServer) em{" "}
                 {dados.geradoEm?.toLocaleString("pt-BR")}. A nota média por tema considera só avaliações de eventos existentes.
             </p>

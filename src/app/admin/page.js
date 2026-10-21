@@ -115,12 +115,12 @@ export default function PainelAdmin() {
     return (
         <div className="min-h-screen bg-gray-50">
             <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200">
-                <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 px-6 py-4">
+                <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 px-4 md:px-6 py-4">
                     <Link href="/" className="flex items-center gap-3 text-gray-900 hover:text-gray-600 transition-colors">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
-                        <span className="font-bold text-lg">Voltar</span>
+                        <span className="font-bold text-lg sr-only sm:not-sr-only">Voltar</span>
                     </Link>
                     <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-3">
                         <svg className="w-7 h-7 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -132,7 +132,7 @@ export default function PainelAdmin() {
                 </div>
             </header>
 
-            <main className="max-w-6xl mx-auto px-6 py-6">
+            <main id="conteudo" className="max-w-6xl mx-auto px-4 md:px-6 py-6">
                 {!user.emailVerified && (
                     <div role="alert" className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl px-4 py-3 mb-4 text-sm">
                         Seu e-mail ainda não foi verificado. As regras do Firestore exigem e-mail verificado para moderadores,
@@ -161,7 +161,7 @@ export default function PainelAdmin() {
                     ))}
                 </div>
 
-                <section id={`painel-${aba}`} role="tabpanel" aria-labelledby={`aba-${aba}`} tabIndex={0} className="focus:outline-none">
+                <section id={`painel-${aba}`} role="tabpanel" aria-labelledby={`aba-${aba}`} tabIndex={0} className="rounded-xl">
                     {aba === "denuncias" && <AbaDenuncias user={user} />}
                     {aba === "universidades" && <AbaUniversidades user={user} />}
                     {aba === "avaliacoes" && <AbaAvaliacoes user={user} />}

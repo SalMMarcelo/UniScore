@@ -46,20 +46,20 @@ async function carregarAlvo(d) {
 
 function Previa({ grupo }) {
     const { alvo, tipo } = grupo;
-    if (alvo === undefined) return <p className="text-gray-400 text-sm">Carregando conteúdo...</p>;
+    if (alvo === undefined) return <p className="text-gray-600 text-sm">Carregando conteúdo...</p>;
     if (alvo === null) {
         return <p className="text-gray-500 text-sm italic">Conteúdo não encontrado (provavelmente já foi excluído).</p>;
     }
     if (tipo === "post") {
         return (
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <div className="text-sm text-gray-500 mb-1">
+                <div className="text-sm text-gray-600 mb-1">
                     {alvo.autor?.nome} ({alvo.autor?.email}) · {formatarDataHora(alvo.criadoEm)}
                     {alvo.moderado && <span className="ml-2"><Selo cor="amarelo">OCULTO</Selo></span>}
                 </div>
                 <p className="text-gray-800 whitespace-pre-wrap">{alvo.conteudo}</p>
                 {alvo.mediaUrl && alvo.mediaType === "image" && (
-                    <img src={alvo.mediaUrl} alt="Imagem do post" className="mt-2 max-h-40 rounded-lg border border-gray-200" />
+                    <img src={alvo.mediaUrl} alt={`Imagem do post de ${alvo.autor?.nome || "usuário"}`} className="mt-2 max-h-40 rounded-lg border border-gray-200" />
                 )}
                 {alvo.mediaUrl && alvo.mediaType === "video" && (
                     <video src={alvo.mediaUrl} controls className="mt-2 max-h-40 rounded-lg" />
@@ -75,7 +75,7 @@ function Previa({ grupo }) {
                 </div>
                 <p className="text-gray-800 whitespace-pre-wrap">{alvo.texto}</p>
                 {alvo.postConteudo && (
-                    <p className="text-xs text-gray-400 mt-2 truncate">No post: “{alvo.postConteudo}”</p>
+                    <p className="text-xs text-gray-600 mt-2 truncate">No post: “{alvo.postConteudo}”</p>
                 )}
             </div>
         );
@@ -194,7 +194,7 @@ export default function AbaDenuncias({ user }) {
                                     <Selo cor={abertas ? "vermelho" : "cinza"}>
                                         {g.denuncias.length} {g.denuncias.length === 1 ? "denúncia" : "denúncias"}
                                     </Selo>
-                                    <span className="text-xs text-gray-400">id: {g.alvoId}</span>
+                                    <span className="text-xs text-gray-600">id: {g.alvoId}</span>
                                 </div>
 
                                 <Previa grupo={g} />
@@ -203,10 +203,10 @@ export default function AbaDenuncias({ user }) {
                                     {g.denuncias.map(d => (
                                         <li key={d.id}>
                                             <span className="font-semibold">{rotuloMotivo(d.motivo)}</span>
-                                            <span className="text-gray-400"> · {formatarDataHora(d.criadoEm)}</span>
+                                            <span className="text-gray-600"> · {formatarDataHora(d.criadoEm)}</span>
                                             {d.detalhe && <span className="text-gray-600"> — “{d.detalhe}”</span>}
                                             {d.status !== "aberta" && (
-                                                <span className="text-gray-400"> · {d.status} por {d.resolvidoPor || "?"} em {formatarDataHora(d.resolvidoEm)}</span>
+                                                <span className="text-gray-600"> · {d.status} por {d.resolvidoPor || "?"} em {formatarDataHora(d.resolvidoEm)}</span>
                                             )}
                                         </li>
                                     ))}

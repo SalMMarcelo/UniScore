@@ -137,7 +137,7 @@ export default function RelatorioAdmin() {
                 </div>
             </div>
 
-            <main className="max-w-5xl mx-auto px-6 py-8">
+            <main id="conteudo" className="max-w-5xl mx-auto px-4 md:px-6 py-8">
                 <header className="flex items-center justify-between gap-4 border-b border-gray-200 pb-4 mb-6">
                     <div>
                         <h1 className="text-2xl font-bold">Relatório UniScore</h1>

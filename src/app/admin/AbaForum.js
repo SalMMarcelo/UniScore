@@ -92,9 +92,9 @@ export default function AbaForum({ user }) {
                                     </div>
                                     <p className="text-gray-800 whitespace-pre-wrap break-words">{post.conteudo}</p>
                                     {post.mediaUrl && post.mediaType === "image" && (
-                                        <img src={post.mediaUrl} alt="Imagem do post" className="mt-2 max-h-40 rounded-lg border border-gray-200" />
+                                        <img src={post.mediaUrl} alt={`Imagem do post de ${post.autor?.nome || "usuário"}`} className="mt-2 max-h-40 rounded-lg border border-gray-200" />
                                     )}
-                                    <div className="text-xs text-gray-400 mt-2">
+                                    <div className="text-xs text-gray-600 mt-2">
                                         {post.curtidas?.length || 0} curtidas · {post.comentarios?.length || 0} comentários
                                     </div>
                                 </div>

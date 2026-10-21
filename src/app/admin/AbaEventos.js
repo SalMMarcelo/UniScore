@@ -91,7 +91,7 @@ export default function AbaEventos() {
                                     <td className="px-4 py-3 text-gray-600">{ev.tema || "—"}</td>
                                     <td className="px-4 py-3">
                                         {ev.legado ? (
-                                            <span className="text-xs text-gray-400">Somente leitura</span>
+                                            <span className="text-xs text-gray-600">Somente leitura</span>
                                         ) : (
                                             <div className="flex gap-2">
                                                 <Link

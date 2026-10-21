@@ -18,7 +18,7 @@ export default function ModeracaoForumRedirect() {
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="text-center" role="status">
-                <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
+                <div aria-hidden="true" className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
                 <p className="text-gray-700">
                     Redirecionando para o <Link href="/admin?aba=denuncias" className="text-blue-600 hover:underline">painel administrativo</Link>...
                 </p>

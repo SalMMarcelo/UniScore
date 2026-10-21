@@ -77,7 +77,7 @@ export default function AbaExportar() {
                 </Cartao>
             </div>
 
-            <p className="text-xs text-gray-400 mt-4">
+            <p className="text-xs text-gray-600 mt-4">
                 Os CSVs usam vírgula como separador, campos entre aspas e codificação UTF-8 com BOM (abrem com acentos no Excel).
             </p>
         </div>
