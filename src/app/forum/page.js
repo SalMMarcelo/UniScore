@@ -66,8 +66,9 @@ function PostCard({ post, user, onLike, onComment }) {
         e.preventDefault();
         if (!commentText.trim() || !user) return;
         setSubmitting(true);
-        await onComment(post.id, commentText.trim());
-        setCommentText("");
+        const ok = await onComment(post.id, commentText.trim());
+        // Só limpa o campo se o comentário foi salvo, para não perder o texto digitado
+        if (ok) setCommentText("");
         setSubmitting(false);
     };
 
@@ -378,11 +379,12 @@ export default function Forum() {
             });
         } catch (error) {
             console.error("Erro ao curtir:", error);
+            alert("Erro ao curtir: " + error.message);
         }
     }, [user]);
 
     const handleComment = useCallback(async (postId, texto) => {
-        if (!user) return;
+        if (!user) return false;
         const postRef = doc(db, "forumPosts", postId);
         try {
             await updateDoc(postRef, {
@@ -393,8 +395,11 @@ export default function Forum() {
                     criadoEm: new Date().toISOString(),
                 }),
             });
+            return true;
         } catch (error) {
             console.error("Erro ao comentar:", error);
+            alert("Erro ao comentar: " + error.message);
+            return false;
         }
     }, [user]);
 
