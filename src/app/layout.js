@@ -41,6 +41,9 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning={true}
       >
+        <a href="#conteudo" className="skip-link">
+          Pular para o conteúdo
+        </a>
         {children}
         <PwaInstall />
       </body>
