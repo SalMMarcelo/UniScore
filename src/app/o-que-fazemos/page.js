@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
+import MenuMobile from "../../components/MenuMobile";
 
 export default function OQueFazemos() {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <header className="bg-white border-b border-gray-200 shadow-sm">
-                <div className="container mx-auto flex items-center justify-between px-6 py-4">
+                <div className="container mx-auto flex items-center justify-between gap-3 px-4 md:px-6 py-4">
                     <Link href="/" className="flex items-center gap-4 text-gray-700 hover:text-gray-900 transition-colors">
                         <svg aria-hidden="true" className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -14,9 +15,9 @@ export default function OQueFazemos() {
                         <span className="font-bold text-lg">Voltar</span>
                     </Link>
 
-                    <img src="/uniscore_star_logo.png" alt="UniScore Logo" className="h-16 w-auto max-w-[220px]" />
+                    <img src="/uniscore_star_logo.png" alt="UniScore" className="h-10 sm:h-16 w-auto max-w-[140px] sm:max-w-[220px]" />
 
-                    <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600">
+                    <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label="Principal">
                         <Link href="/forum" className="hover:text-blue-600 transition-colors flex items-center gap-1">
                             <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
@@ -25,14 +26,16 @@ export default function OQueFazemos() {
                         </Link>
                         <Link href="/relatorio" className="hover:text-yellow-600 transition-colors">Relatórios</Link>
                     </nav>
+                    <MenuMobile />
                 </div>
             </header>
 
+            <main id="conteudo">
             {/* Hero Section */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 py-20">
                 <div className="container mx-auto px-6">
                     <div className="text-center">
-                        <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
                             O que <span className="text-yellow-300">fazemos</span>
                         </h1>
                         <p className="text-xl text-blue-100 max-w-4xl mx-auto leading-relaxed">
@@ -43,9 +46,9 @@ export default function OQueFazemos() {
             </div>
 
             {/* Main Content */}
-            <div className="container mx-auto px-6 py-12">
+            <div className="container mx-auto px-4 md:px-6 py-12">
                 {/* Video Section */}
-                <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm mb-12">
+                <div className="bg-white rounded-2xl p-5 sm:p-8 border border-gray-200 shadow-sm mb-12">
                     <div className="text-center mb-8">
                         <h2 className="text-4xl font-bold text-gray-900 mb-4">Conheça nossa plataforma</h2>
                         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
@@ -59,7 +62,7 @@ export default function OQueFazemos() {
                                 width="800"
                                 height="450"
                                 controls
-                                className="rounded-xl shadow-lg border border-gray-200"
+                                className="w-full max-w-full h-auto rounded-xl shadow-lg border border-gray-200"
                                 poster="/video-poster.jpg"
                             >
                                 <source src="/Avalie_o_Impacto_dos_Eventos_Universitrios_com_Nos.mp4" type="video/mp4" />
@@ -204,15 +207,15 @@ export default function OQueFazemos() {
                 </div>
 
                 {/* CTA Section */}
-                <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-12 text-center shadow-lg mb-12">
-                    <h3 className="text-4xl font-bold text-white mb-6">Pronto para fazer a diferença?</h3>
-                    <p className="text-xl text-green-100 mb-8 max-w-2xl mx-auto">
+                <div className="bg-gradient-to-r from-green-700 to-green-800 rounded-2xl p-6 sm:p-12 text-center shadow-lg mb-12">
+                    <h3 className="text-3xl sm:text-4xl font-bold text-white mb-6">Pronto para fazer a diferença?</h3>
+                    <p className="text-xl text-white mb-8 max-w-2xl mx-auto">
                         Junte-se à revolução da transparência universitária e ajude a construir um futuro melhor para a educação superior
                     </p>
                     <div className="flex flex-col md:flex-row gap-4 justify-center">
                         <Link
                             href="/cadastro"
-                            className="bg-white text-green-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition-all duration-300 shadow-xl"
+                            className="bg-white text-green-700 px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition-all duration-300 shadow-xl"
                         >
                             Começar Agora
                         </Link>
@@ -225,6 +228,7 @@ export default function OQueFazemos() {
                     </div>
                 </div>
             </div>
+            </main>
         </div>
     );
 }

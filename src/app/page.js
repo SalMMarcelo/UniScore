@@ -373,7 +373,7 @@ export default function Home() {
       {/* CTA - Avaliações */}
       <section className="w-full py-6 bg-white">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl py-5 px-6 md:px-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+          <div className="bg-gradient-to-r from-green-700 to-green-800 rounded-xl py-5 px-6 md:px-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                 <svg aria-hidden="true" className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

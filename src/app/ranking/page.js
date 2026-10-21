@@ -5,6 +5,7 @@
 // Por isso o ranking reflete a participação recente, não o histórico completo.
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import MenuMobile from "../../components/MenuMobile";
 import {
     carregarRanking,
     LIMITE_RANKING_AVALIACOES,
@@ -59,7 +60,7 @@ export default function Ranking() {
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <header className="bg-white border-b border-gray-200 shadow-sm">
-                <div className="container mx-auto flex items-center justify-between px-6 py-4">
+                <div className="container mx-auto flex items-center justify-between gap-3 px-4 md:px-6 py-4">
                     <Link href="/" className="flex items-center gap-4 text-gray-700 hover:text-gray-900 transition-colors">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -67,19 +68,20 @@ export default function Ranking() {
                         <span className="font-bold text-lg">Voltar</span>
                     </Link>
 
-                    <img src="/uniscore_star_logo.png" alt="UniScore Logo" className="h-16 w-auto max-w-[220px]" />
+                    <img src="/uniscore_star_logo.png" alt="UniScore" className="h-10 sm:h-16 w-auto max-w-[140px] sm:max-w-[220px]" />
 
-                    <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600">
+                    <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label="Principal">
                         <Link href="/forum" className="hover:text-blue-600 transition-colors">Fórum</Link>
                         <Link href="/perfil" className="hover:text-blue-600 transition-colors">Meu Perfil</Link>
                     </nav>
+                    <MenuMobile />
                 </div>
             </header>
 
-            <div className="container mx-auto px-4 py-12">
+            <main id="conteudo" className="container mx-auto px-4 py-12">
                 <div className="max-w-2xl mx-auto">
                     <div className="text-center mb-8">
-                        <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
                             Ranking da <span className="bg-gradient-to-r from-yellow-300 to-green-400 bg-clip-text text-transparent">comunidade</span>
                         </h1>
                         <p className="text-gray-600">
@@ -89,12 +91,12 @@ export default function Ranking() {
 
                     <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-200 shadow-sm">
                         {carregando ? (
-                            <div className="flex flex-col items-center gap-4 py-8" aria-busy="true">
-                                <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            <div className="flex flex-col items-center gap-4 py-8" aria-busy="true" role="status">
+                                <div aria-hidden="true" className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                                 <p className="text-gray-600">Carregando ranking...</p>
                             </div>
                         ) : erro ? (
-                            <p className="text-center text-red-600 py-8">{erro}</p>
+                            <p role="alert" className="text-center text-red-700 py-8">{erro}</p>
                         ) : ranking.length === 0 ? (
                             <div className="text-center text-gray-600 py-8">
                                 <p className="mb-4">Ainda não há participação suficiente para montar o ranking.</p>
@@ -108,8 +110,8 @@ export default function Ranking() {
                         ) : (
                             <ol className="divide-y divide-gray-100" aria-label={`Top ${TAMANHO_RANKING} da comunidade`}>
                                 {ranking.map((u, i) => (
-                                    <li key={u.uid} className="flex items-center gap-4 py-4">
-                                        <span className="w-8 text-center text-lg font-bold text-gray-500 flex-shrink-0" aria-label={`${i + 1}º lugar`}>
+                                    <li key={u.uid} className="flex items-center gap-2 sm:gap-4 py-4">
+                                        <span className="w-8 text-center text-lg font-bold text-gray-600 flex-shrink-0" role="img" aria-label={`${i + 1}º lugar`}>
                                             {MEDALHAS[i] || `${i + 1}º`}
                                         </span>
                                         {u.foto ? (
@@ -125,7 +127,7 @@ export default function Ranking() {
                                                 <Estrelas quantidade={u.estrelas} />
                                                 <span>{u.totalSelos} {u.totalSelos === 1 ? "selo" : "selos"}</span>
                                                 {u.selos.length > 0 && (
-                                                    <span aria-label={`Selos: ${u.selos.map(s => s.nome).join(", ")}`}>
+                                                    <span role="img" aria-label={`Selos: ${u.selos.map(s => s.nome).join(", ")}`}>
                                                         {u.selos.map(s => (
                                                             <span key={s.id} title={s.nome} aria-hidden="true">{s.emoji}</span>
                                                         ))}
@@ -135,7 +137,7 @@ export default function Ranking() {
                                         </div>
                                         <div className="text-right flex-shrink-0">
                                             <p className="text-xl font-bold text-blue-600">{u.pontos}</p>
-                                            <p className="text-xs text-gray-500">pontos</p>
+                                            <p className="text-xs text-gray-600">pontos</p>
                                         </div>
                                     </li>
                                 ))}
@@ -143,11 +145,11 @@ export default function Ranking() {
                         )}
                     </div>
 
-                    <p className="text-xs text-gray-500 text-center mt-6">
+                    <p className="text-xs text-gray-600 text-center mt-6">
                         Calculado a partir das últimas {LIMITE_RANKING_AVALIACOES} avaliações e dos últimos {LIMITE_RANKING_POSTS} posts do fórum.
                     </p>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }

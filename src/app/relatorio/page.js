@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import MenuMobile from "../../components/MenuMobile";
 import { useState, useEffect } from "react";
 
 export default function RelatorioPublico() {
@@ -17,6 +18,12 @@ export default function RelatorioPublico() {
             usuarios: 28394,
             eventos: 1205
         };
+
+        // Movimento reduzido: mostra os valores finais sem animar a contagem
+        if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+            setAnimatedStats(targets);
+            return;
+        }
 
         const duration = 2000;
         const steps = 60;
@@ -52,7 +59,7 @@ export default function RelatorioPublico() {
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <header className="bg-white shadow-sm border-b border-gray-200">
-                <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+                <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 md:px-6 py-4">
                     <Link href="/" className="flex items-center gap-3 text-gray-900 hover:text-gray-600 transition-colors">
                         <svg aria-hidden="true" className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -60,7 +67,7 @@ export default function RelatorioPublico() {
                         <span className="font-bold text-xl">UniScore</span>
                     </Link>
 
-                    <nav className="hidden md:flex gap-8 text-sm font-medium">
+                    <nav className="hidden md:flex gap-8 text-sm font-medium" aria-label="Principal">
                         <Link href="/forum" className="text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-2">
                             <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
@@ -70,22 +77,27 @@ export default function RelatorioPublico() {
                         <Link href="/o-que-fazemos" className="text-gray-600 hover:text-blue-600 transition-colors">O que fazemos</Link>
                     </nav>
 
-                    <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-green-700 text-sm font-medium">Ao vivo</span>
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg">
+                            <div aria-hidden="true" className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-green-700 text-sm font-medium">Ao vivo</span>
+                        </div>
+                        <MenuMobile />
                     </div>
                 </div>
             </header>
 
+            <main id="conteudo">
+
             {/* Page Title */}
             <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-6 py-8">
+                <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard de Relatórios</h1>
                     <p className="text-gray-600">Transparência e impacto intercultural no ensino superior brasileiro</p>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
                 {/* Principais Métricas - Estilo do template */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     {/* Avaliações - Pink/Magenta */}
@@ -184,8 +196,8 @@ export default function RelatorioPublico() {
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-gray-900">Crescimento de Usuários</h3>
                             <div className="flex gap-2">
-                                <button className="px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded">Mês</button>
-                                <button className="px-3 py-1 text-xs font-medium bg-blue-500 text-white rounded">Ano</button>
+                                <button type="button" aria-pressed="false" className="px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded">Mês</button>
+                                <button type="button" aria-pressed="true" className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded">Ano</button>
                             </div>
                         </div>
                         <div className="h-64 relative">
@@ -339,29 +351,30 @@ export default function RelatorioPublico() {
                         ].map((item, index) => (
                             <div key={index} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                                    <div aria-hidden="true" className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
                                         {item.usuario.charAt(0)}
                                     </div>
                                     <div>
                                         <div className="text-sm font-medium text-gray-900">{item.usuario}</div>
-                                        <div className="text-xs text-gray-500">{item.universidade} • {item.evento}</div>
+                                        <div className="text-xs text-gray-600">{item.universidade} • {item.evento}</div>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1" role="img" aria-label={`${item.nota} de 5 estrelas`}>
                                         {[...Array(5)].map((_, i) => (
                                             <svg aria-hidden="true" key={i} className={`w-4 h-4 ${i < item.nota ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                             </svg>
                                         ))}
                                     </div>
-                                    <span className="text-xs text-gray-500">{item.tempo}</span>
+                                    <span className="text-xs text-gray-600">{item.tempo}</span>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
+            </main>
         </div>
     );
 }

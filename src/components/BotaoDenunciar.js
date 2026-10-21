@@ -111,7 +111,7 @@ export default function BotaoDenunciar({ user, tipo, alvoId, alvoPostId, autorUi
                 aria-haspopup="dialog"
                 title={jaEnviada ? "Você já denunciou este conteúdo" : "Denunciar conteúdo"}
                 className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg transition-colors ${
-                    jaEnviada ? "text-gray-400" : "text-gray-500 hover:text-red-600 hover:bg-red-50"
+                    jaEnviada ? "text-gray-600" : "text-gray-600 hover:text-red-600 hover:bg-red-50"
                 } ${className}`}
             >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -139,7 +139,7 @@ export default function BotaoDenunciar({ user, tipo, alvoId, alvoPostId, autorUi
                                 type="button"
                                 onClick={fechar}
                                 aria-label="Fechar"
-                                className="text-gray-400 hover:text-gray-700 rounded-lg p-1"
+                                className="text-gray-600 hover:text-gray-900 rounded-lg p-1"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -194,7 +194,7 @@ export default function BotaoDenunciar({ user, tipo, alvoId, alvoPostId, autorUi
                                 </fieldset>
 
                                 <label className="block font-semibold text-gray-800 mb-1" htmlFor={`${tituloId}-detalhe`}>
-                                    Detalhes <span className="font-normal text-gray-500">(opcional)</span>
+                                    Detalhes <span className="font-normal text-gray-600">(opcional)</span>
                                 </label>
                                 <textarea
                                     id={`${tituloId}-detalhe`}
@@ -205,9 +205,9 @@ export default function BotaoDenunciar({ user, tipo, alvoId, alvoPostId, autorUi
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-200"
                                     placeholder="Explique o problema, se quiser"
                                 />
-                                <div className="text-right text-xs text-gray-400 mb-3">{detalhe.length}/{LIMITE_DETALHE}</div>
+                                <div className="text-right text-xs text-gray-600 mb-3">{detalhe.length}/{LIMITE_DETALHE}</div>
 
-                                {erro && <p role="alert" className="text-red-600 text-sm mb-3">{erro}</p>}
+                                {erro && <p role="alert" className="text-red-700 text-sm mb-3">{erro}</p>}
 
                                 <div className="flex justify-end gap-3">
                                     <button
