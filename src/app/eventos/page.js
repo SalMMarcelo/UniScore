@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import MenuMobile from "../../components/MenuMobile";
+import SeletorIdioma from "../../components/SeletorIdioma";
+import { useI18n } from "../../i18n/I18nProvider";
 import { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { notaSegura } from "../../lib/notas";
@@ -26,13 +28,9 @@ const CAMINHO_ESTRELA = "M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 
 const classeCampo = "w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
 const classeRotulo = "block text-sm font-semibold text-gray-700 mb-1";
 
-function formatarData(data) {
-  return data ? data.split("-").reverse().join("/") : "";
-}
-
-function formatarPreco(preco) {
-  if (!preco || preco <= 0) return "Gratuito";
-  return preco.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+function formatarPreco(preco, { t, formatarMoeda }) {
+  if (!preco || preco <= 0) return t("eventos.gratuito");
+  return formatarMoeda(preco);
 }
 
 function contarFiltrosAtivos(f) {
@@ -49,10 +47,12 @@ function contarFiltrosAtivos(f) {
 }
 
 function Estrelas({ media, total }) {
+  const { t, formatarNumero } = useI18n();
+  const mediaTexto = formatarNumero(media, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const cheias = notaSegura(media);
   return (
     <div className="flex items-center gap-1">
-      <span className="flex items-center gap-1" role="img" aria-label={total ? `Nota média ${media.toFixed(1).replace(".", ",")} de 5` : "Sem avaliações"}>
+      <span className="flex items-center gap-1" role="img" aria-label={total ? t("eventos.notaMedia", { nota: mediaTexto }) : t("eventos.semAvaliacoes")}>
       {Array(cheias).fill().map((_, i) => (
         <svg key={`c${i}`} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
           <path d={CAMINHO_ESTRELA} />
@@ -65,14 +65,16 @@ function Estrelas({ media, total }) {
       ))}
       </span>
       <span className="text-sm text-gray-600 ml-1">
-        {total > 0 && <span className="font-semibold text-gray-800 mr-1">{media.toFixed(1).replace(".", ",")}</span>}
-        ({total} {total === 1 ? "avaliação" : "avaliações"})
+        {total > 0 && <span className="font-semibold text-gray-800 mr-1">{mediaTexto}</span>}
+        {total === 1 ? t("eventos.avaliacaoUm", { n: total }) : t("eventos.avaliacoesN", { n: total })}
       </span>
     </div>
   );
 }
 
 function CartaoEvento({ ev, estatistica }) {
+  const i18n = useI18n();
+  const { t, rotulo, formatarData } = i18n;
   const detalhes = `/evento/${encodeURIComponent(ev.id)}/detalhes`;
   return (
     <article className="bg-white rounded-2xl shadow-md border-2 border-gray-200 hover:border-green-500 transition-all duration-300 overflow-hidden group flex flex-col">
@@ -87,7 +89,7 @@ function CartaoEvento({ ev, estatistica }) {
       </Link>
       <div className="p-5 flex flex-col flex-1">
         <Link href={detalhes} className="text-lg font-bold text-gray-900 group-hover:text-green-600 transition-colors">
-          {ev.nome || "Evento sem nome"}
+          {ev.nome || t("eventos.semNome")}
         </Link>
         {ev.universidadeNome && (
           <p className="text-sm text-gray-600 mt-1">{ev.universidadeNome}</p>
@@ -102,13 +104,13 @@ function CartaoEvento({ ev, estatistica }) {
             </span>
           )}
           <span className={ev.preco > 0 ? "font-semibold text-gray-800" : "font-semibold text-green-700"}>
-            {formatarPreco(ev.preco)}
+            {formatarPreco(ev.preco, i18n)}
           </span>
         </div>
         {(ev.tema || ev.tipo) && (
           <div className="flex flex-wrap gap-2 mt-3">
-            {ev.tema && <span className="bg-blue-50 text-blue-700 text-xs font-semibold px-2 py-1 rounded-full">{ev.tema}</span>}
-            {ev.tipo && <span className="bg-green-50 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">{ev.tipo}</span>}
+            {ev.tema && <span className="bg-blue-50 text-blue-700 text-xs font-semibold px-2 py-1 rounded-full">{rotulo("valores.temas", ev.tema)}</span>}
+            {ev.tipo && <span className="bg-green-50 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">{rotulo("valores.tipos", ev.tipo)}</span>}
           </div>
         )}
         <div className="mt-3">
@@ -119,13 +121,13 @@ function CartaoEvento({ ev, estatistica }) {
             href={`/avaliar?eventoId=${encodeURIComponent(ev.id)}`}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition-colors text-sm"
           >
-            Avaliar
+            {t("geral.avaliar")}
           </Link>
           <Link
             href={detalhes}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition-colors text-sm"
           >
-            Ver detalhes
+            {t("eventos.verDetalhes")}
           </Link>
         </div>
       </div>
@@ -134,17 +136,19 @@ function CartaoEvento({ ev, estatistica }) {
 }
 
 function TelaCarregando() {
+  const { t } = useI18n();
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center" role="status">
         <div aria-hidden="true" className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Carregando...</p>
+        <p className="text-gray-600">{t("comum.carregando")}</p>
       </div>
     </div>
   );
 }
 
 function BuscarEventosConteudo() {
+  const { t, rotulo } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   // Estado inicial lido da URL (somente na montagem)
@@ -230,11 +234,11 @@ function BuscarEventosConteudo() {
             </svg>
             <span className="font-bold text-xl">UniScore</span>
           </Link>
-          <nav className="hidden md:flex gap-8 text-sm font-medium" aria-label="Principal">
-            <Link href="/forum" className="text-gray-600 hover:text-blue-600 transition-colors">Fórum</Link>
-            <Link href="/avaliar" className="text-gray-600 hover:text-green-600 transition-colors">Escreva uma avaliação</Link>
+          <nav className="hidden md:flex gap-8 text-sm font-medium" aria-label={t("menu.navPrincipal")}>
+            <Link href="/forum" className="text-gray-600 hover:text-blue-600 transition-colors">{t("menu.forum")}</Link>
+            <Link href="/avaliar" className="text-gray-600 hover:text-green-600 transition-colors">{t("menu.escrevaAvaliacao")}</Link>
           </nav>
-          <div className="w-20 hidden md:block"></div>
+          <SeletorIdioma className="hidden md:inline-flex" />
           <MenuMobile />
         </div>
       </header>
@@ -243,18 +247,18 @@ function BuscarEventosConteudo() {
       {/* Hero + busca */}
       <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 py-10 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6">Buscar eventos</h1>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6">{t("eventos.titulo")}</h1>
           <form
             role="search"
             onSubmit={e => e.preventDefault()}
             className="relative bg-white rounded-xl shadow-2xl"
           >
-            <label htmlFor="busca-texto" className="sr-only">Buscar por nome ou descrição do evento</label>
+            <label htmlFor="busca-texto" className="sr-only">{t("eventos.buscaRotulo")}</label>
             <input
               id="busca-texto"
               type="search"
               className="w-full bg-transparent border-0 outline-none px-6 py-4 pr-16 text-gray-800 text-lg placeholder-gray-500 rounded-xl focus:ring-2 focus:ring-yellow-400"
-              placeholder="Nome do evento, palavra-chave ou universidade..."
+              placeholder={t("eventos.buscaPlaceholder")}
               value={filtros.texto}
               onChange={alterar("texto")}
             />
@@ -277,7 +281,7 @@ function BuscarEventosConteudo() {
             aria-controls="painel-filtros"
             onClick={() => setMostrarFiltros(v => !v)}
           >
-            <span>Filtros{filtrosAtivos > 0 ? ` (${filtrosAtivos})` : ""}</span>
+            <span>{filtrosAtivos > 0 ? t("eventos.filtrosComContagem", { n: filtrosAtivos }) : t("eventos.filtros")}</span>
             <svg className={`w-5 h-5 transition-transform ${mostrarFiltros ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
             </svg>
@@ -288,34 +292,34 @@ function BuscarEventosConteudo() {
             className={`${mostrarFiltros ? "block" : "hidden"} md:block mt-3 md:mt-0 bg-white rounded-2xl shadow-md border border-gray-200 p-5 space-y-4`}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">Filtros</h2>
+              <h2 className="text-lg font-bold text-gray-900">{t("eventos.filtros")}</h2>
               {filtrosAtivos > 0 && (
                 <button type="button" onClick={limparFiltros} className="text-sm text-blue-600 hover:text-blue-800 font-semibold">
-                  Limpar filtros
+                  {t("eventos.limparFiltros")}
                 </button>
               )}
             </div>
 
             <div>
-              <label htmlFor="filtro-tema" className={classeRotulo}>Tema</label>
+              <label htmlFor="filtro-tema" className={classeRotulo}>{t("eventos.tema")}</label>
               <select id="filtro-tema" className={classeCampo} value={filtros.tema} onChange={alterar("tema")}>
-                <option value="">Todos os temas</option>
-                {TEMAS.map(t => <option key={t} value={t}>{t}</option>)}
+                <option value="">{t("eventos.todosTemas")}</option>
+                {TEMAS.map(tema => <option key={tema} value={tema}>{rotulo("valores.temas", tema)}</option>)}
               </select>
             </div>
 
             <div>
-              <label htmlFor="filtro-tipo" className={classeRotulo}>Tipo</label>
+              <label htmlFor="filtro-tipo" className={classeRotulo}>{t("eventos.tipo")}</label>
               <select id="filtro-tipo" className={classeCampo} value={filtros.tipo} onChange={alterar("tipo")}>
-                <option value="">Todos os tipos</option>
-                {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+                <option value="">{t("eventos.todosTipos")}</option>
+                {TIPOS.map(tipo => <option key={tipo} value={tipo}>{rotulo("valores.tipos", tipo)}</option>)}
               </select>
             </div>
 
             <div>
-              <label htmlFor="filtro-universidade" className={classeRotulo}>Universidade</label>
+              <label htmlFor="filtro-universidade" className={classeRotulo}>{t("eventos.universidade")}</label>
               <select id="filtro-universidade" className={classeCampo} value={filtros.universidadeId} onChange={alterar("universidadeId")}>
-                <option value="">Todas as universidades</option>
+                <option value="">{t("eventos.todasUniversidades")}</option>
                 {universidades.map(uni => (
                   <option key={uni.id} value={String(uni.id)}>
                     {uni.nome}{uni.sigla && uni.sigla !== uni.nome ? ` (${uni.sigla})` : ""}
@@ -326,7 +330,7 @@ function BuscarEventosConteudo() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="filtro-data-inicio" className={classeRotulo}>De</label>
+                <label htmlFor="filtro-data-inicio" className={classeRotulo}>{t("eventos.de")}</label>
                 <input
                   id="filtro-data-inicio"
                   type="date"
@@ -337,7 +341,7 @@ function BuscarEventosConteudo() {
                 />
               </div>
               <div>
-                <label htmlFor="filtro-data-fim" className={classeRotulo}>Até</label>
+                <label htmlFor="filtro-data-fim" className={classeRotulo}>{t("eventos.ate")}</label>
                 <input
                   id="filtro-data-fim"
                   type="date"
@@ -350,16 +354,16 @@ function BuscarEventosConteudo() {
             </div>
 
             <div>
-              <label htmlFor="filtro-nota" className={classeRotulo}>Nota mínima</label>
+              <label htmlFor="filtro-nota" className={classeRotulo}>{t("eventos.notaMinima")}</label>
               <select id="filtro-nota" className={classeCampo} value={String(filtros.notaMinima)} onChange={alterar("notaMinima")}>
-                <option value="0">Qualquer nota</option>
-                {[1, 2, 3, 4].map(n => <option key={n} value={String(n)}>{n} estrela{n > 1 ? "s" : ""} ou mais</option>)}
-                <option value="5">5 estrelas</option>
+                <option value="0">{t("eventos.qualquerNota")}</option>
+                {[1, 2, 3, 4].map(n => <option key={n} value={String(n)}>{n > 1 ? t("eventos.estrelasOuMais", { n }) : t("eventos.estrelaOuMais", { n })}</option>)}
+                <option value="5">{t("eventos.cincoEstrelas")}</option>
               </select>
             </div>
 
             <div>
-              <label htmlFor="filtro-min-avaliacoes" className={classeRotulo}>Mínimo de avaliações</label>
+              <label htmlFor="filtro-min-avaliacoes" className={classeRotulo}>{t("eventos.minimoAvaliacoes")}</label>
               <input
                 id="filtro-min-avaliacoes"
                 type="number"
@@ -384,7 +388,7 @@ function BuscarEventosConteudo() {
                 checked={filtros.apenasGratuitos}
                 onChange={alterar("apenasGratuitos")}
               />
-              <label htmlFor="filtro-gratuitos" className="text-sm font-semibold text-gray-700">Apenas eventos gratuitos</label>
+              <label htmlFor="filtro-gratuitos" className="text-sm font-semibold text-gray-700">{t("eventos.apenasGratuitos")}</label>
             </div>
           </div>
         </aside>
@@ -394,33 +398,35 @@ function BuscarEventosConteudo() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
             <h2 id="titulo-resultados" className="text-gray-700" aria-live="polite">
               {carregando
-                ? "Carregando eventos..."
-                : `${resultados.length} ${resultados.length === 1 ? "evento encontrado" : "eventos encontrados"}`}
+                ? t("eventos.carregandoEventos")
+                : resultados.length === 1
+                  ? t("eventos.encontradoUm", { n: resultados.length })
+                  : t("eventos.encontradosN", { n: resultados.length })}
             </h2>
             <div className="flex items-center gap-2">
-              <label htmlFor="ordenacao" className="text-sm font-semibold text-gray-700 whitespace-nowrap">Ordenar por</label>
+              <label htmlFor="ordenacao" className="text-sm font-semibold text-gray-700 whitespace-nowrap">{t("eventos.ordenarPor")}</label>
               <select
                 id="ordenacao"
                 className={`${classeCampo} sm:w-52`}
                 value={ordem}
                 onChange={e => setOrdem(e.target.value || ORDENACAO_PADRAO)}
               >
-                {ORDENACOES.map(o => <option key={o.valor} value={o.valor}>{o.rotulo}</option>)}
+                {ORDENACOES.map(o => <option key={o.valor} value={o.valor}>{t(`eventos.ordenacoes.${o.valor}`)}</option>)}
               </select>
             </div>
           </div>
 
           {carregando ? (
             <div className="flex justify-center py-16">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" role="status" aria-label="Carregando"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" role="status" aria-label={t("comum.carregando")}></div>
             </div>
           ) : resultados.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center">
-              <p className="text-lg font-semibold text-gray-800">Nenhum evento encontrado.</p>
+              <p className="text-lg font-semibold text-gray-800">{t("eventos.nenhumEncontrado")}</p>
               <p className="text-gray-600 mt-2">
                 {eventos.length === 0
-                  ? "Ainda não há eventos cadastrados."
-                  : "Tente outras palavras-chave ou remova alguns filtros."}
+                  ? t("eventos.nenhumCadastrado")
+                  : t("eventos.tenteOutras")}
               </p>
               {(filtrosAtivos > 0 || filtros.texto) && (
                 <button
@@ -428,7 +434,7 @@ function BuscarEventosConteudo() {
                   onClick={() => setFiltros({ ...FILTROS_VAZIOS })}
                   className="mt-5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold text-sm shadow-sm transition-all"
                 >
-                  Limpar busca e filtros
+                  {t("eventos.limparBuscaFiltros")}
                 </button>
               )}
             </div>
