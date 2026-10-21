@@ -50,21 +50,49 @@ service cloud.firestore {
     // ------------------------------------------------------------------
     // O dono lê e escreve o próprio documento, mas não pode gravar os
     // campos reservados (pontos, selos, estrelas, papel, role).
+    //
+    // Campos validados (RF01), sempre "se presentes":
+    //  - nome: string com até 100 caracteres;
+    //  - tipoPerfil: 'universitario' | 'familiar' | 'visitante' | 'convidado'
+    //    (mantenha sincronizado com TIPOS_PERFIL em src/lib/usuarios.js);
+    //  - universidadeId: id de public/universidades.json (string) ou null.
+    // Na criação valida todos os campos enviados; na atualização só os campos
+    // alterados, para que documentos antigos continuem editáveis.
+    // Gravações legítimas: src/lib/usuarios.js (garantirDocumentoUsuario),
+    // src/app/cadastro/page.js e src/app/perfil/page.js.
+    function isValidTipoPerfil(valor) {
+      return valor in ['universitario', 'familiar', 'visitante', 'convidado'];
+    }
+
+    function isValidUsuario(data, campos) {
+      return (!campos.hasAny(['nome']) || !('nome' in data)
+              || (data.nome is string && data.nome.size() <= 100))
+        && (!campos.hasAny(['tipoPerfil']) || !('tipoPerfil' in data)
+              || isValidTipoPerfil(data.tipoPerfil))
+        && (!campos.hasAny(['universidadeId']) || !('universidadeId' in data)
+              || data.universidadeId == null
+              || (data.universidadeId is string && data.universidadeId.size() <= 50));
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
-        && !request.resource.data.keys().hasAny(reservedUserFields());
+        && !request.resource.data.keys().hasAny(reservedUserFields())
+        && isValidUsuario(request.resource.data, request.resource.data.keys());
       allow update: if isOwner(userId)
-        && !changedKeys().hasAny(reservedUserFields());
+        && !changedKeys().hasAny(reservedUserFields())
+        && isValidUsuario(request.resource.data, changedKeys());
       allow delete: if isOwner(userId);
     }
 
     match /usuarios/{userId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
-        && !request.resource.data.keys().hasAny(reservedUserFields());
+        && !request.resource.data.keys().hasAny(reservedUserFields())
+        && isValidUsuario(request.resource.data, request.resource.data.keys());
       allow update: if isOwner(userId)
-        && !changedKeys().hasAny(reservedUserFields());
+        && !changedKeys().hasAny(reservedUserFields())
+        && isValidUsuario(request.resource.data, changedKeys());
       allow delete: if isOwner(userId);
     }
 

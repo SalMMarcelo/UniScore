@@ -7,6 +7,8 @@ import { onAuthStateChanged, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import PainelConquistas from "../../components/PainelConquistas";
+import SeletorTipoPerfil from "../../components/SeletorTipoPerfil";
+import { NOME_MAX, isTipoPerfilValido, rotuloTipoPerfil, carregarUniversidades, destinoDaUrl } from "../../lib/usuarios";
 
 export default function Perfil() {
     const [user, setUser] = useState(null);
@@ -17,7 +19,23 @@ export default function Perfil() {
     const [loadingData, setLoadingData] = useState(true);
     const [sucesso, setSucesso] = useState("");
     const [erro, setErro] = useState("");
+    const [tipoPerfil, setTipoPerfil] = useState("");
+    const [universidadeId, setUniversidadeId] = useState(null);
+    const [universidades, setUniversidades] = useState([]);
+    // /perfil?completar=1: usuário veio de um login social sem tipo de perfil
+    const [completar, setCompletar] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+        setCompletar(new URLSearchParams(window.location.search).get("completar") === "1");
+        carregarUniversidades()
+            .then(setUniversidades)
+            .catch(err => console.error("Erro ao carregar universidades:", err));
+    }, []);
+
+    const nomeUniversidade = universidadeId
+        ? (universidades.find(uni => String(uni.id) === String(universidadeId)) || {}).nome
+        : "";
 
     // Carregar dados do usuário autenticado
     useEffect(() => {
@@ -36,6 +54,8 @@ export default function Perfil() {
                     const data = snap.data();
                     setNome(data.nome || "");
                     setFoto(data.avatar || "/avatar-default.png");
+                    setTipoPerfil(isTipoPerfilValido(data.tipoPerfil) ? data.tipoPerfil : "");
+                    setUniversidadeId(data.universidadeId || null);
                 } else {
                     setNome(u.displayName || "");
                     setFoto(u.photoURL || "/avatar-default.png");
@@ -61,9 +81,14 @@ export default function Perfil() {
     // Salvar perfil
     const handleSalvar = async () => {
         if (!user) return;
-        setLoading(true);
         setSucesso("");
         setErro("");
+        if (!isTipoPerfilValido(tipoPerfil)) {
+            setErro("Escolha seu tipo de perfil.");
+            return;
+        }
+        setLoading(true);
+        const nomeFinal = nome.trim().slice(0, NOME_MAX);
         let avatarUrl = foto;
         
         try {
@@ -81,7 +106,7 @@ export default function Perfil() {
             
             // Atualizar perfil no Auth
             try {
-                await updateProfile(user, { displayName: nome, photoURL: avatarUrl });
+                await updateProfile(user, { displayName: nomeFinal, photoURL: avatarUrl });
             } catch (err) {
                 console.error("Erro ao atualizar Auth:", err);
             }
@@ -89,15 +114,27 @@ export default function Perfil() {
             // Salvar no Firestore
             try {
                 await setDoc(doc(db, "usuarios", user.uid), {
-                    nome,
+                    nome: nomeFinal,
                     avatar: avatarUrl,
-                    email: user.email,
+                    email: user.email || null,
+                    tipoPerfil,
+                    universidadeId: tipoPerfil === "universitario" ? (universidadeId || null) : null,
                     updatedAt: new Date().toISOString()
                 }, { merge: true });
             } catch (err) {
                 console.error("Erro ao salvar no Firestore:", err);
+                setErro("Erro ao salvar perfil. Tente novamente.");
+                setLoading(false);
+                return;
             }
-            
+            if (tipoPerfil !== "universitario") setUniversidadeId(null);
+
+            // Perfil completado após o primeiro login social: segue para o destino
+            if (completar) {
+                window.location.href = destinoDaUrl("/");
+                return;
+            }
+
             setSucesso("Perfil salvo com sucesso!");
             setTimeout(() => setSucesso(""), 3000);
         } catch (err) {
@@ -151,6 +188,12 @@ export default function Perfil() {
                         <p className="text-gray-600">Personalize suas informações</p>
                     </div>
 
+                    {completar && (
+                        <div className="mb-6 bg-yellow-50 border border-yellow-300 text-yellow-900 px-4 py-3 rounded-lg text-center" role="status">
+                            <strong>Escolha seu tipo de perfil</strong> para concluir seu cadastro e depois clique em &quot;Salvar Perfil&quot;.
+                        </div>
+                    )}
+
                     <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
                         <div className="flex flex-col items-center mb-8">
                             {/* Avatar Preview */}
@@ -168,6 +211,14 @@ export default function Perfil() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Tipo de perfil (RF01) */}
+                            {tipoPerfil && (
+                                <p className="-mt-2 mb-6 inline-flex items-center gap-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-full px-3 py-1 text-sm font-semibold">
+                                    {rotuloTipoPerfil(tipoPerfil)}
+                                    {tipoPerfil === "universitario" && nomeUniversidade ? ` · ${nomeUniversidade}` : ""}
+                                </p>
+                            )}
 
                             {/* Avatar Options */}
                             <div className="mb-6">
@@ -224,6 +275,19 @@ export default function Perfil() {
                                     onChange={e => setNome(e.target.value)}
                                     className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                                     placeholder="Seu nome completo"
+                                    maxLength={NOME_MAX}
+                                />
+                            </div>
+
+                            {/* Tipo de perfil */}
+                            <div className="w-full max-w-md mb-6">
+                                <SeletorTipoPerfil
+                                    tipoPerfil={tipoPerfil}
+                                    onTipoPerfilChange={setTipoPerfil}
+                                    universidadeId={universidadeId}
+                                    onUniversidadeIdChange={setUniversidadeId}
+                                    destacar={completar && !tipoPerfil}
+                                    idBase="perfil-tipo-perfil"
                                 />
                             </div>
 
