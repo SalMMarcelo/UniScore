@@ -8,6 +8,7 @@ import { auth, db } from "../../../../firebase";
 import { buscarEvento } from "../../../../lib/eventos";
 import { notaSegura } from "../../../../lib/notas";
 import { isAdminEmail } from "../../../../lib/admin";
+import BotaoDenunciar from "../../../../components/BotaoDenunciar";
 
 const LIMITE_AVALIACOES = 50;
 
@@ -112,7 +113,11 @@ export default function DetalhesEvento() {
                 }
             }
             if (cancelado) return;
-            const lista = docs.map(d => ({ id: d.id, ...d.data() }));
+            // Avaliações ocultadas pela moderação (painel /admin) não aparecem
+            // nem entram nas médias
+            const lista = docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .filter(av => av.moderado !== true);
             const ms = (av) => (av.criadoEm?.toMillis ? av.criadoEm.toMillis() : 0);
             lista.sort((a, b) => ms(b) - ms(a));
             setAvaliacoes(lista);
@@ -339,6 +344,9 @@ export default function DetalhesEvento() {
                                     {av.imagem && typeof av.imagem === "string" && (
                                         <img src={av.imagem} alt="Imagem da avaliação" className="w-full max-w-sm h-48 object-cover rounded-lg mt-3 border border-gray-200" />
                                     )}
+                                    <div className="flex justify-end mt-3">
+                                        <BotaoDenunciar user={user} tipo="avaliacao" alvoId={av.id} autorUid={av.usuarioId} />
+                                    </div>
                                 </div>
                             ))}
                         </div>

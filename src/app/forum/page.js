@@ -17,6 +17,8 @@ import {
 } from "firebase/firestore";
 import Link from "next/link";
 import { isAdminEmail } from "../../lib/admin";
+import { chaveComentario } from "../../lib/denuncias";
+import BotaoDenunciar from "../../components/BotaoDenunciar";
 
 // ─── Utilitário de timestamp ───────────────────────────────────────────────
 function formatTimestamp(timestamp) {
@@ -91,6 +93,12 @@ function PostCard({ post, user, onLike, onComment }) {
                         <span className="text-gray-500 text-sm">{formatTimestamp(post.criadoEm)}</span>
                     </div>
 
+                    {post.moderado && (
+                        <div className="mb-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm rounded-lg px-3 py-2">
+                            Este post foi removido pela moderação e não aparece para os demais usuários.
+                        </div>
+                    )}
+
                     <p className="text-gray-700 text-base leading-relaxed mb-4 whitespace-pre-wrap">
                         {post.conteudo}
                     </p>
@@ -145,6 +153,11 @@ function PostCard({ post, user, onLike, onComment }) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                             </svg>
                         </button>
+
+                        {/* Denunciar (RF07) */}
+                        <div className="ml-auto">
+                            <BotaoDenunciar user={user} tipo="post" alvoId={post.id} autorUid={post.autor?.uid} />
+                        </div>
                     </div>
 
                     {/* Seção de comentários expandível */}
@@ -157,7 +170,16 @@ function PostCard({ post, user, onLike, onComment }) {
                                             {c.autorNome?.charAt(0)?.toUpperCase() || "?"}
                                         </div>
                                         <div className="bg-gray-50 rounded-xl px-4 py-2 flex-1">
-                                            <span className="font-semibold text-gray-800 text-sm">{c.autorNome}</span>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="font-semibold text-gray-800 text-sm">{c.autorNome}</span>
+                                                <BotaoDenunciar
+                                                    user={user}
+                                                    tipo="comentario"
+                                                    alvoId={chaveComentario(c, i)}
+                                                    alvoPostId={post.id}
+                                                    autorUid={c.autorUid}
+                                                />
+                                            </div>
                                             <p className="text-gray-700 text-sm mt-0.5">{c.texto}</p>
                                         </div>
                                     </div>
@@ -337,6 +359,13 @@ export default function Forum() {
         return () => unsubscribe();
     }, []);
 
+    // Posts ocultados pela moderação (moderado == true) saem do feed público;
+    // o autor (e os moderadores) continuam vendo, com um aviso no card.
+    const ehModerador = !!user && isAdminEmail(user.email);
+    const postsVisiveis = posts.filter(
+        (p) => !p.moderado || ehModerador || (user && p.autor?.uid === user.uid)
+    );
+
     const handleSubmitPost = useCallback(async (text, mediaFile, mediaType) => {
         if (!user) return false;
         setLoading(true);
@@ -423,7 +452,7 @@ export default function Forum() {
 
                     <div className="w-20 flex justify-end">
                         {user && isAdminEmail(user.email) && (
-                            <Link href="/forum/moderacao" title="Painel Admin">
+                            <Link href="/admin" title="Painel Admin">
                                 <button className="bg-gray-800 hover:bg-gray-900 text-white p-2 rounded-lg transition-all">
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -474,7 +503,7 @@ export default function Forum() {
                         <CreatePostForm user={user} onSubmit={handleSubmitPost} loading={loading} />
 
                         <div className="space-y-4">
-                            {posts.map((post) => (
+                            {postsVisiveis.map((post) => (
                                 <PostCard
                                     key={post.id}
                                     post={post}
@@ -484,7 +513,7 @@ export default function Forum() {
                                 />
                             ))}
 
-                            {posts.length === 0 && (
+                            {postsVisiveis.length === 0 && (
                                 <div className="text-center py-12 bg-white rounded-2xl shadow-md border border-gray-200">
                                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
