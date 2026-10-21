@@ -32,7 +32,8 @@ export default function UniversidadePage() {
         );
         
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Avaliações ocultadas pela moderação não aparecem
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(av => !av.moderado);
             setAvaliacoes(data);
         });
         

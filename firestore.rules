@@ -140,6 +140,7 @@ service cloud.firestore {
       allow update: if isModerator()
         || (isOwner(resource.data.usuarioId)
             && request.resource.data.usuarioId == resource.data.usuarioId
+            && !changedKeys().hasAny(['moderado', 'moderadoPor', 'moderadoEm'])
             && isValidAvaliacao(request.resource.data));
 
       allow delete: if isModerator() || isOwner(resource.data.usuarioId);
@@ -272,11 +273,13 @@ service cloud.firestore {
         && (!('comentarios' in request.resource.data) || request.resource.data.comentarios == []);
 
       // Moderadores: qualquer campo (inclui moderado/moderadoPor/moderadoEm).
-      // Autor: qualquer campo, exceto o autor e os campos de moderação.
+      // Autor: qualquer campo, exceto o autor, os campos de moderação e
+      // curtidas/comentarios (que seguem as mesmas regras dos demais usuários,
+      // para que ninguém forje curtidas ou comentários e ganhe pontos).
       // Demais usuários logados: apenas curtidas/comentarios.
       allow update: if isModerator()
         || (isOwner(resource.data.autor.uid)
-            && !changedKeys().hasAny(['autor', 'moderado', 'moderadoPor', 'moderadoEm']))
+            && !changedKeys().hasAny(['autor', 'moderado', 'moderadoPor', 'moderadoEm', 'curtidas', 'comentarios']))
         || (isSignedIn()
             && changedKeys().hasOnly(['curtidas', 'comentarios'])
             && (!changedKeys().hasAny(['curtidas']) || isValidLikeChange())

@@ -324,8 +324,9 @@ export function nomePublico(nome) {
 // Leitura no Firestore (limitada)
 // ---------------------------------------------------------------------------
 
+// Conteúdo ocultado pela moderação não rende pontos
 function docsComId(snap) {
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(d => !d.moderado);
 }
 
 // Carrega a atividade de um usuário. Cada consulta falha de forma independente

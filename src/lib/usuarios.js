@@ -115,7 +115,7 @@ export function destinoDaUrl(padrao = "/") {
 // Para onde mandar o usuário depois de entrar/cadastrar (mesma regra em /login e /cadastro).
 // Com `exigirTipoPerfil`, quem ainda não escolheu o tipo de perfil vai para /perfil?completar=1.
 export function destinoAposLogin(user, dadosUsuario, { exigirTipoPerfil = false } = {}) {
-  if (isAdminEmail(user && user.email)) return "/forum/moderacao";
+  if (isAdminEmail(user && user.email)) return "/admin";
   const destino = destinoDaUrl("/");
   if (exigirTipoPerfil && !(dadosUsuario && isTipoPerfilValido(dadosUsuario.tipoPerfil))) {
     const params = new URLSearchParams({ completar: "1" });
