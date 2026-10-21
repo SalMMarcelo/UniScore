@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "../../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, collection, query, where, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, deleteDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { buscarUniversidadeId } from "../../lib/universidades";
@@ -16,6 +16,8 @@ export default function DashboardUniversidade() {
     const [error, setError] = useState("");
     const [isUniversidade, setIsUniversidade] = useState(false);
     const [semVinculo, setSemVinculo] = useState(false);
+    const [meusEventos, setMeusEventos] = useState([]);
+    const [excluindoId, setExcluindoId] = useState(null);
     const [stats, setStats] = useState({
         totalAvaliacoes: 0,
         mediaGeral: 0,
@@ -216,6 +218,39 @@ export default function DashboardUniversidade() {
             }
         }
     }, [user, universidadeData, isUniversidade, error]);
+
+    const aprovada = universidadeData?.status === "aprovado";
+
+    // Eventos cadastrados por esta conta (RF02) - só para universidades aprovadas
+    useEffect(() => {
+        if (!user || !aprovada) {
+            setMeusEventos([]);
+            return;
+        }
+        const q = query(collection(db, "eventos"), where("universidadeUid", "==", user.uid));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const lista = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            // Mais recentes primeiro (ordenação local para não exigir índice composto)
+            lista.sort((a, b) => String(b.data || "").localeCompare(String(a.data || "")));
+            setMeusEventos(lista);
+        }, (err) => {
+            console.error("Erro ao buscar eventos da universidade:", err);
+        });
+        return () => unsubscribe();
+    }, [user, aprovada]);
+
+    const excluirEvento = async (evento) => {
+        if (!window.confirm(`Excluir o evento "${evento.nome}"? Esta ação não pode ser desfeita.`)) return;
+        setExcluindoId(evento.id);
+        try {
+            await deleteDoc(doc(db, "eventos", evento.id));
+        } catch (err) {
+            console.error("Erro ao excluir evento:", err);
+            alert("Não foi possível excluir o evento. Tente novamente.");
+        } finally {
+            setExcluindoId(null);
+        }
+    };
 
     const handleLogout = async () => {
         try {
@@ -555,6 +590,69 @@ export default function DashboardUniversidade() {
                     </div>
                 </div>
 
+                {/* Meus Eventos (RF02) */}
+                <div id="meus-eventos" className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm mb-8 scroll-mt-28">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h3 className="text-2xl font-bold text-gray-900">Meus Eventos</h3>
+                            <p className="text-gray-600">Eventos cadastrados pela sua universidade</p>
+                        </div>
+                        {aprovada && (
+                            <Link href="/dashboard-universidade/eventos/novo" className="text-center bg-gradient-to-r from-yellow-400 to-red-500 text-white px-6 py-3 rounded-lg font-bold hover:from-yellow-500 hover:to-red-600 transition-all duration-300 shadow-md">
+                                + Cadastrar evento
+                            </Link>
+                        )}
+                    </div>
+
+                    {!aprovada ? (
+                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 px-6 py-5 rounded-xl text-gray-700">
+                            O cadastro de eventos fica disponível depois que a equipe UniScore aprovar a conta da sua universidade.
+                        </div>
+                    ) : meusEventos.length === 0 ? (
+                        <div className="text-gray-500 bg-gray-50 rounded-xl p-6 text-center">
+                            Nenhum evento cadastrado ainda. Clique em &quot;+ Cadastrar evento&quot; para criar o primeiro.
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {meusEventos.map(ev => (
+                                <div key={ev.id} className="flex flex-col md:flex-row md:items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-red-300 transition-all">
+                                    {ev.imagem ? (
+                                        <img src={ev.imagem} alt={ev.nome} className="w-20 h-20 rounded-xl object-cover border-2 border-gray-200 shrink-0" />
+                                    ) : (
+                                        <div className="w-20 h-20 rounded-xl bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white text-2xl font-bold shrink-0">
+                                            {ev.nome?.charAt(0)?.toUpperCase() || "E"}
+                                        </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <Link href={`/evento/${ev.id}/detalhes`} className="text-gray-900 font-bold text-lg hover:text-red-600 transition-colors">
+                                            {ev.nome}
+                                        </Link>
+                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-gray-600 text-sm mt-1">
+                                            <span>📅 {typeof ev.data === "string" && ev.data ? ev.data.split("-").reverse().join("/") : "Sem data"}</span>
+                                            {ev.local && <span>📍 {ev.local}</span>}
+                                            {ev.tipo && <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-full text-xs font-semibold">{ev.tipo}</span>}
+                                            {ev.tema && <span className="bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full text-xs font-semibold">{ev.tema}</span>}
+                                            <span>{Number(ev.preco) > 0 ? `R$ ${Number(ev.preco).toFixed(2).replace(".", ",")}` : "Gratuito"}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 shrink-0">
+                                        <Link href={`/dashboard-universidade/eventos/${ev.id}/editar`} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 transition-all duration-300">
+                                            ✏️ Editar
+                                        </Link>
+                                        <button
+                                            onClick={() => excluirEvento(ev)}
+                                            disabled={excluindoId === ev.id}
+                                            className="bg-red-50 text-red-600 px-4 py-2 rounded-lg font-bold hover:bg-red-100 transition-all duration-300 disabled:opacity-60"
+                                        >
+                                            {excluindoId === ev.id ? "Excluindo..." : "🗑️ Excluir"}
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 {/* Ferramentas de Gestão */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                     {/* Gerenciamento de Eventos */}
@@ -578,9 +676,15 @@ export default function DashboardUniversidade() {
                                         <h4 className="font-bold text-gray-900 text-lg">Criar Novo Evento</h4>
                                         <p className="text-gray-600 text-sm">Configure detalhes, datas e descrições</p>
                                     </div>
-                                    <button className="bg-gradient-to-r from-yellow-400 to-red-500 text-white px-4 py-2 rounded-lg font-bold hover:from-yellow-500 hover:to-red-600 transition-all duration-300 shadow-md">
-                                        + Criar
-                                    </button>
+                                    {aprovada ? (
+                                        <Link href="/dashboard-universidade/eventos/novo" className="bg-gradient-to-r from-yellow-400 to-red-500 text-white px-4 py-2 rounded-lg font-bold hover:from-yellow-500 hover:to-red-600 transition-all duration-300 shadow-md">
+                                            + Criar
+                                        </Link>
+                                    ) : (
+                                        <button disabled title="Disponível após a aprovação da universidade" className="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg font-bold cursor-not-allowed">
+                                            + Criar
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
@@ -590,9 +694,15 @@ export default function DashboardUniversidade() {
                                         <h4 className="font-bold text-gray-900 text-lg">Editar Eventos</h4>
                                         <p className="text-gray-600 text-sm">Atualize informações em tempo real</p>
                                     </div>
-                                    <button className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 transition-all duration-300">
-                                        ✏️ Editar
-                                    </button>
+                                    {aprovada ? (
+                                        <a href="#meus-eventos" className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 transition-all duration-300">
+                                            ✏️ Editar
+                                        </a>
+                                    ) : (
+                                        <button disabled title="Disponível após a aprovação da universidade" className="bg-gray-200 text-gray-400 px-4 py-2 rounded-lg font-bold cursor-not-allowed">
+                                            ✏️ Editar
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 

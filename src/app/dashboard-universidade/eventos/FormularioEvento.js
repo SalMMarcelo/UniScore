@@ -1,0 +1,362 @@
+"use client";
+// Formulário de cadastro/edição de eventos (RF02).
+// Usado por /dashboard-universidade/eventos/novo e /dashboard-universidade/eventos/[id]/editar.
+// Quem pode usar: contas de universidade com status 'aprovado' (seus próprios eventos)
+// e moderadores da plataforma (qualquer evento, apenas edição).
+// As regras correspondentes estão no bloco `eventos` de firestore.rules.
+import { useState, useEffect } from "react";
+import { auth, db, storage } from "../../../firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, addDoc, updateDoc, collection, serverTimestamp } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { isAdminEmail } from "../../../lib/admin";
+import { TEMAS, TIPOS, PUBLICOS } from "../../../lib/eventos";
+
+const LIMITE_IMAGEM = 5 * 1024 * 1024; // 5 MB (igual a storage.rules)
+
+const VAZIO = {
+    nome: "",
+    descricao: "",
+    data: "",
+    local: "",
+    publicoAlvo: "Todos",
+    preco: "0",
+    tema: "",
+    tipo: "",
+    imagem: null
+};
+
+export default function FormularioEvento({ eventoId = null }) {
+    const router = useRouter();
+    const editando = !!eventoId;
+
+    const [user, setUser] = useState(null);
+    const [universidade, setUniversidade] = useState(null);
+    const [moderador, setModerador] = useState(false);
+    const [carregando, setCarregando] = useState(true);
+    const [bloqueio, setBloqueio] = useState(null); // { titulo, mensagem }
+    const [form, setForm] = useState(VAZIO);
+    const [arquivo, setArquivo] = useState(null);
+    const [preview, setPreview] = useState(null);
+    const [salvando, setSalvando] = useState(false);
+    const [erro, setErro] = useState("");
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (u) => {
+            if (!u) {
+                router.push("/login-universidades");
+                return;
+            }
+            setUser(u);
+            const ehModerador = isAdminEmail(u.email);
+            setModerador(ehModerador);
+
+            try {
+                // Conta de universidade (moderadores normalmente não têm)
+                const uniSnap = await getDoc(doc(db, "universidades", u.uid));
+                const uni = uniSnap.exists() ? uniSnap.data() : null;
+                setUniversidade(uni);
+
+                if (!ehModerador) {
+                    if (!uni) {
+                        setBloqueio({
+                            titulo: "Acesso negado",
+                            mensagem: "Esta área é exclusiva para universidades cadastradas."
+                        });
+                        return;
+                    }
+                    if (uni.status !== "aprovado") {
+                        setBloqueio({
+                            titulo: "Aprovação necessária",
+                            mensagem: "O cadastro de eventos fica disponível depois que a equipe UniScore aprovar a conta da sua universidade."
+                        });
+                        return;
+                    }
+                }
+
+                if (editando) {
+                    const evSnap = await getDoc(doc(db, "eventos", String(eventoId)));
+                    if (!evSnap.exists()) {
+                        setBloqueio({
+                            titulo: "Evento não encontrado",
+                            mensagem: "Este evento não existe ou já foi excluído. Eventos antigos da lista estática não podem ser editados por aqui."
+                        });
+                        return;
+                    }
+                    const ev = evSnap.data();
+                    if (!ehModerador && ev.universidadeUid !== u.uid) {
+                        setBloqueio({
+                            titulo: "Sem permissão",
+                            mensagem: "Você só pode editar eventos cadastrados pela sua universidade."
+                        });
+                        return;
+                    }
+                    setForm({
+                        nome: ev.nome || "",
+                        descricao: ev.descricao || "",
+                        data: typeof ev.data === "string" ? ev.data : "",
+                        local: ev.local || "",
+                        publicoAlvo: ev.publicoAlvo || "Todos",
+                        preco: String(Number(ev.preco) || 0),
+                        tema: ev.tema || "",
+                        tipo: ev.tipo || "",
+                        imagem: ev.imagem || null
+                    });
+                } else if (!uni) {
+                    // Moderador sem conta de universidade não cadastra eventos
+                    setBloqueio({
+                        titulo: "Apenas universidades",
+                        mensagem: "Novos eventos são cadastrados pelas contas das universidades. Moderadores podem editar ou excluir eventos existentes."
+                    });
+                }
+            } catch (err) {
+                console.error("Erro ao carregar dados do evento:", err);
+                setBloqueio({
+                    titulo: "Erro",
+                    mensagem: "Não foi possível carregar os dados. Tente novamente."
+                });
+            } finally {
+                setCarregando(false);
+            }
+        });
+        return () => unsubscribe();
+    }, [router, eventoId, editando]);
+
+    // Libera a URL temporária do preview
+    useEffect(() => {
+        return () => {
+            if (preview) URL.revokeObjectURL(preview);
+        };
+    }, [preview]);
+
+    const alterar = (campo) => (e) => setForm(prev => ({ ...prev, [campo]: e.target.value }));
+
+    const escolherImagem = (e) => {
+        const file = e.target.files?.[0] || null;
+        setErro("");
+        if (!file) return;
+        if (!file.type.startsWith("image/")) {
+            setErro("Selecione um arquivo de imagem.");
+            return;
+        }
+        if (file.size >= LIMITE_IMAGEM) {
+            setErro("A imagem deve ter no máximo 5 MB.");
+            return;
+        }
+        setArquivo(file);
+        setPreview(URL.createObjectURL(file));
+    };
+
+    const removerImagem = () => {
+        setArquivo(null);
+        setPreview(null);
+        setForm(prev => ({ ...prev, imagem: null }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setErro("");
+
+        const nome = form.nome.trim();
+        const descricao = form.descricao.trim();
+        const local = form.local.trim();
+        const preco = Number(String(form.preco).replace(",", "."));
+
+        if (!nome || nome.length > 200) return setErro("Informe o nome do evento (até 200 caracteres).");
+        if (descricao.length > 5000) return setErro("A descrição pode ter no máximo 5000 caracteres.");
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(form.data)) return setErro("Informe a data do evento.");
+        if (!local || local.length > 300) return setErro("Informe o local do evento (até 300 caracteres).");
+        if (!Number.isFinite(preco) || preco < 0) return setErro("O preço deve ser um número maior ou igual a zero.");
+        if (!form.tipo) return setErro("Selecione o tipo do evento.");
+        if (!form.tema) return setErro("Selecione o tema do evento.");
+
+        setSalvando(true);
+        try {
+            let imagem = form.imagem || null;
+            if (arquivo) {
+                const ext = (arquivo.name.split(".").pop() || "jpg").toLowerCase();
+                const storageRef = ref(storage, `eventos/${user.uid}/${Date.now()}.${ext}`);
+                await uploadBytes(storageRef, arquivo, { contentType: arquivo.type });
+                imagem = await getDownloadURL(storageRef);
+            }
+
+            const dados = {
+                nome,
+                descricao,
+                data: form.data,
+                local,
+                publicoAlvo: form.publicoAlvo,
+                preco: Math.round(preco * 100) / 100,
+                tema: form.tema,
+                tipo: form.tipo,
+                imagem
+            };
+
+            // Vínculo com public/universidades.json: tem de ser igual ao da conta
+            // (firestore.rules confere universidades/{uid}.universidadeId)
+            const vinculo = universidade ? {
+                universidadeId: typeof universidade.universidadeId === "string" ? universidade.universidadeId : null,
+                universidadeNome: String(universidade.nomeUniversidade || "").slice(0, 200)
+            } : null;
+
+            if (editando) {
+                await updateDoc(doc(db, "eventos", String(eventoId)), {
+                    ...dados,
+                    // Moderador editando evento de outra universidade não mexe no vínculo
+                    ...(!moderador && vinculo ? vinculo : {}),
+                    atualizadoEm: serverTimestamp()
+                });
+            } else {
+                await addDoc(collection(db, "eventos"), {
+                    ...dados,
+                    ...vinculo,
+                    universidadeUid: user.uid,
+                    criadoEm: serverTimestamp()
+                });
+            }
+
+            router.push("/dashboard-universidade#meus-eventos");
+        } catch (err) {
+            console.error("Erro ao salvar evento:", err);
+            setErro(err.code === "permission-denied"
+                ? "Sem permissão para salvar este evento. Verifique se a conta da universidade está aprovada."
+                : "Erro ao salvar o evento. Tente novamente.");
+            setSalvando(false);
+        }
+    };
+
+    const imagemAtual = preview || form.imagem;
+    const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all";
+    const labelClass = "block text-sm font-semibold text-gray-700 mb-2";
+
+    return (
+        <div className="min-h-screen bg-gray-50">
+            {/* Header */}
+            <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+                    <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                        <img src="/uniscore_star_logo.png" alt="UniScore Logo" className="h-16 w-auto max-w-[220px]" />
+                    </Link>
+                    <Link href="/dashboard-universidade" className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-all">
+                        ← Voltar ao dashboard
+                    </Link>
+                </div>
+            </header>
+
+            <main className="max-w-3xl mx-auto px-6 py-8">
+                {carregando ? (
+                    <div className="text-center py-20">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
+                        <div className="text-gray-700 text-lg">Carregando...</div>
+                    </div>
+                ) : bloqueio ? (
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 px-8 py-6 rounded-2xl text-center">
+                        <h2 className="font-bold text-2xl text-gray-900 mb-2">{bloqueio.titulo}</h2>
+                        <p className="text-gray-700 mb-6">{bloqueio.mensagem}</p>
+                        <Link href="/dashboard-universidade" className="inline-block bg-red-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-red-700 transition-all">
+                            Voltar ao dashboard
+                        </Link>
+                    </div>
+                ) : (
+                    <>
+                        <div className="mb-8">
+                            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                                {editando ? "Editar evento" : "Cadastrar novo evento"}
+                            </h2>
+                            <p className="text-lg text-gray-600">
+                                {universidade?.nomeUniversidade
+                                    ? <>Evento de <span className="text-red-600 font-semibold">{universidade.nomeUniversidade}</span></>
+                                    : "Preencha as informações do evento"}
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm space-y-6">
+                            {erro && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">{erro}</div>
+                            )}
+
+                            <div>
+                                <label className={labelClass} htmlFor="nome">Nome do evento *</label>
+                                <input id="nome" className={inputClass} value={form.nome} onChange={alterar("nome")} maxLength={200} required placeholder="Ex.: Semana de Interculturalidade" />
+                            </div>
+
+                            <div>
+                                <label className={labelClass} htmlFor="descricao">Descrição</label>
+                                <textarea id="descricao" className={`${inputClass} min-h-[140px]`} value={form.descricao} onChange={alterar("descricao")} maxLength={5000} placeholder="Conte o que vai acontecer, programação, convidados..." />
+                                <div className="text-xs text-gray-500 text-right mt-1">{form.descricao.length}/5000</div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className={labelClass} htmlFor="data">Data *</label>
+                                    <input id="data" type="date" className={inputClass} value={form.data} onChange={alterar("data")} required />
+                                </div>
+                                <div>
+                                    <label className={labelClass} htmlFor="preco">Preço (R$) *</label>
+                                    <input id="preco" type="number" min="0" step="0.01" className={inputClass} value={form.preco} onChange={alterar("preco")} required />
+                                    <p className="text-xs text-gray-500 mt-1">Use 0 para evento gratuito.</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className={labelClass} htmlFor="local">Local *</label>
+                                <input id="local" className={inputClass} value={form.local} onChange={alterar("local")} maxLength={300} required placeholder="Ex.: Auditório Ruy Barbosa - Campus Higienópolis" />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label className={labelClass} htmlFor="tipo">Tipo *</label>
+                                    <select id="tipo" className={inputClass} value={form.tipo} onChange={alterar("tipo")} required>
+                                        <option value="">Selecione...</option>
+                                        {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+                                        {form.tipo && !TIPOS.includes(form.tipo) && <option value={form.tipo}>{form.tipo}</option>}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={labelClass} htmlFor="tema">Tema / matéria *</label>
+                                    <select id="tema" className={inputClass} value={form.tema} onChange={alterar("tema")} required>
+                                        <option value="">Selecione...</option>
+                                        {TEMAS.map(t => <option key={t} value={t}>{t}</option>)}
+                                        {form.tema && !TEMAS.includes(form.tema) && <option value={form.tema}>{form.tema}</option>}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={labelClass} htmlFor="publicoAlvo">Público-alvo *</label>
+                                    <select id="publicoAlvo" className={inputClass} value={form.publicoAlvo} onChange={alterar("publicoAlvo")} required>
+                                        {PUBLICOS.map(p => <option key={p} value={p}>{p}</option>)}
+                                        {form.publicoAlvo && !PUBLICOS.includes(form.publicoAlvo) && <option value={form.publicoAlvo}>{form.publicoAlvo}</option>}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className={labelClass}>Imagem (opcional)</label>
+                                {imagemAtual && (
+                                    <div className="flex items-center gap-4 mb-3">
+                                        <img src={imagemAtual} alt="Imagem do evento" className="w-32 h-32 rounded-xl object-cover border-2 border-gray-200" />
+                                        <button type="button" onClick={removerImagem} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 transition-all">
+                                            Remover imagem
+                                        </button>
+                                    </div>
+                                )}
+                                <input type="file" accept="image/*" onChange={escolherImagem} className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-bold file:bg-red-50 file:text-red-600 hover:file:bg-red-100" />
+                                <p className="text-xs text-gray-500 mt-1">JPG, PNG ou WEBP, até 5 MB.</p>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-4 justify-end pt-2">
+                                <Link href="/dashboard-universidade" className="text-center bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-bold hover:bg-gray-300 transition-all">
+                                    Cancelar
+                                </Link>
+                                <button type="submit" disabled={salvando} className="bg-gradient-to-r from-yellow-400 to-red-500 text-white px-6 py-3 rounded-lg font-bold hover:from-yellow-500 hover:to-red-600 transition-all duration-300 shadow-md disabled:opacity-60 disabled:cursor-not-allowed">
+                                    {salvando ? "Salvando..." : editando ? "Salvar alterações" : "Cadastrar evento"}
+                                </button>
+                            </div>
+                        </form>
+                    </>
+                )}
+            </main>
+        </div>
+    );
+}
