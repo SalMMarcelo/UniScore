@@ -32,19 +32,25 @@ export default function AvaliarUniversidade() {
             alert("Você precisa estar logado para enviar uma avaliação.");
             return;
         }
+        // Nota precisa ser um inteiro entre 1 e 5
+        const notaInt = Math.round(Number(nota));
+        if (!Number.isInteger(notaInt) || notaInt < 1 || notaInt > 5) {
+            alert("Por favor, dê uma nota de 1 a 5 estrelas.");
+            return;
+        }
         try {
             await addDoc(collection(db, "avaliacoes"), {
-                universidadeId: id,
-                nota,
+                universidadeId: String(id),
+                nota: notaInt,
                 comentario,
                 titulo,
                 data,
                 imagem: imagem ? imagem : null,
                 categoriaCultural: categoriaCultural || null,
                 criadoEm: serverTimestamp(),
-                usuario: user ? user.displayName || user.email : null,
-                usuarioId: user ? user.uid : null,
-                photoURL: user && user.photoURL ? user.photoURL : null,
+                usuario: user.displayName || user.email || "Usuário",
+                usuarioId: user.uid,
+                photoURL: user.photoURL || null,
             });
             setEnviado(true);
             router.push("/?sucesso=1");

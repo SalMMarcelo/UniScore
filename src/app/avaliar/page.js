@@ -113,7 +113,8 @@ export default function AvaliarEvento() {
             return;
         }
 
-        if (avaliacao.nota === 0) {
+        const notaInt = Math.round(Number(avaliacao.nota));
+        if (!Number.isInteger(notaInt) || notaInt < 1 || notaInt > 5) {
             alert('Por favor, dê uma nota ao evento!');
             return;
         }
@@ -145,7 +146,7 @@ export default function AvaliarEvento() {
             const avaliacaoData = {
                 universidadeId: String(avaliacao.universidadeId),
                 eventoId: String(avaliacao.eventoId),
-                nota: Number(avaliacao.nota),
+                nota: notaInt,
                 titulo: avaliacao.titulo || '',
                 comentario: avaliacao.comentario || '',
                 data: avaliacao.data,
