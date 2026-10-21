@@ -258,43 +258,69 @@ export default function Home() {
             Registre sua opinião sobre eventos acadêmicos, culturais e esportivos da sua universidade
           </p>
 
-          {/* Barra de busca profissional */}
+          {/* Barra de busca profissional: Enter ou o botão abre /eventos?q=... (RF06) */}
           <div className="w-full max-w-2xl mx-auto relative">
-            <div className="relative bg-white rounded-xl shadow-2xl">
+            <form
+              role="search"
+              className="relative bg-white rounded-xl shadow-2xl"
+              onSubmit={e => {
+                e.preventDefault();
+                const termo = search.trim();
+                router.push(termo ? `/eventos?q=${encodeURIComponent(termo)}` : "/eventos");
+              }}
+            >
+              <label htmlFor="busca-home" className="sr-only">Buscar eventos ou universidades</label>
               <input
-                className="w-full bg-transparent border-0 outline-none px-6 py-4 text-gray-800 text-lg placeholder-gray-500 focus:ring-0"
-                placeholder="Buscar universidade..."
+                id="busca-home"
+                type="search"
+                autoComplete="off"
+                className="w-full bg-transparent border-0 outline-none px-6 py-4 pr-16 text-gray-800 text-lg placeholder-gray-500 focus:ring-0"
+                placeholder="Buscar eventos ou universidade..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Escape") setSearch("");
+                }}
               />
-              <button className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 p-3 rounded-lg transition-colors">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button
+                type="submit"
+                aria-label="Buscar eventos"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 p-3 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
               </button>
-            </div>
+            </form>
 
             {search && suggestions.length > 0 && (
-              <ul className="absolute left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl z-20 overflow-hidden border border-gray-200">
+              <ul className="absolute left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl z-20 overflow-hidden border border-gray-200" aria-label="Universidades sugeridas">
                 {suggestions.map(uni => (
-                  <li
-                    key={uni.id}
-                    className="px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
-                    onClick={() => {
-                      window.location.href = `/universidade/${uni.id}`;
-                    }}
-                  >
-                    <div className="flex items-center gap-4">
-                      <img src={uni.imagem} alt={uni.nome} className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 shadow-sm" />
-                      <div className="flex-1 text-left">
-                        <span className="font-bold text-gray-800 text-base">{uni.nome}</span>
-                        <span className="text-sm text-gray-500 ml-3">{uni.sigla}</span>
+                  <li key={uni.id} className="border-b border-gray-100 last:border-0">
+                    <button
+                      type="button"
+                      className="w-full px-6 py-4 cursor-pointer hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors"
+                      onClick={() => router.push(`/universidade/${uni.id}`)}
+                    >
+                      <div className="flex items-center gap-4">
+                        <img src={uni.imagem} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 shadow-sm" />
+                        <div className="flex-1 text-left">
+                          <span className="font-bold text-gray-800 text-base">{uni.nome}</span>
+                          <span className="text-sm text-gray-500 ml-3">{uni.sigla}</span>
+                        </div>
                       </div>
-                    </div>
+                    </button>
                   </li>
                 ))}
               </ul>
             )}
+
+            <Link href="/eventos" className="inline-flex items-center gap-1 mt-4 text-blue-100 hover:text-white font-semibold underline-offset-4 hover:underline transition-colors">
+              Buscar eventos com filtros
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
 
           {/* Stats rápidos */}
