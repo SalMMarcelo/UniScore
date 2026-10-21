@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import MenuMobile from "../../components/MenuMobile";
 import { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { notaSegura } from "../../lib/notas";
@@ -50,7 +51,8 @@ function contarFiltrosAtivos(f) {
 function Estrelas({ media, total }) {
   const cheias = notaSegura(media);
   return (
-    <div className="flex items-center gap-1" aria-label={total ? `Nota média ${media.toFixed(1).replace(".", ",")} de 5` : "Sem avaliações"}>
+    <div className="flex items-center gap-1">
+      <span className="flex items-center gap-1" role="img" aria-label={total ? `Nota média ${media.toFixed(1).replace(".", ",")} de 5` : "Sem avaliações"}>
       {Array(cheias).fill().map((_, i) => (
         <svg key={`c${i}`} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
           <path d={CAMINHO_ESTRELA} />
@@ -61,6 +63,7 @@ function Estrelas({ media, total }) {
           <path d={CAMINHO_ESTRELA} />
         </svg>
       ))}
+      </span>
       <span className="text-sm text-gray-600 ml-1">
         {total > 0 && <span className="font-semibold text-gray-800 mr-1">{media.toFixed(1).replace(".", ",")}</span>}
         ({total} {total === 1 ? "avaliação" : "avaliações"})
@@ -98,7 +101,7 @@ function CartaoEvento({ ev, estatistica }) {
               {formatarData(ev.data)}
             </span>
           )}
-          <span className={ev.preco > 0 ? "font-semibold text-gray-800" : "font-semibold text-green-600"}>
+          <span className={ev.preco > 0 ? "font-semibold text-gray-800" : "font-semibold text-green-700"}>
             {formatarPreco(ev.preco)}
           </span>
         </div>
@@ -114,13 +117,13 @@ function CartaoEvento({ ev, estatistica }) {
         <div className="mt-auto pt-4 flex gap-2">
           <Link
             href={`/avaliar?eventoId=${encodeURIComponent(ev.id)}`}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold shadow-md transition-colors text-sm"
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition-colors text-sm"
           >
             Avaliar
           </Link>
           <Link
             href={detalhes}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow-md transition-colors text-sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition-colors text-sm"
           >
             Ver detalhes
           </Link>
@@ -133,8 +136,8 @@ function CartaoEvento({ ev, estatistica }) {
 function TelaCarregando() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <div className="text-center" role="status">
+        <div aria-hidden="true" className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
         <p className="text-gray-600">Carregando...</p>
       </div>
     </div>
@@ -220,25 +223,27 @@ function BuscarEventosConteudo() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="container mx-auto flex items-center justify-between px-6 py-4">
+        <div className="container mx-auto flex items-center justify-between gap-3 px-4 md:px-6 py-4">
           <Link href="/" className="flex items-center gap-3 text-gray-900 hover:text-gray-600 transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
             </svg>
             <span className="font-bold text-xl">UniScore</span>
           </Link>
-          <nav className="hidden md:flex gap-8 text-sm font-medium">
+          <nav className="hidden md:flex gap-8 text-sm font-medium" aria-label="Principal">
             <Link href="/forum" className="text-gray-600 hover:text-blue-600 transition-colors">Fórum</Link>
             <Link href="/avaliar" className="text-gray-600 hover:text-green-600 transition-colors">Escreva uma avaliação</Link>
           </nav>
-          <div className="w-20"></div>
+          <div className="w-20 hidden md:block"></div>
+          <MenuMobile />
         </div>
       </header>
 
+      <main id="conteudo">
       {/* Hero + busca */}
       <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 py-10 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6">Buscar eventos</h1>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6">Buscar eventos</h1>
           <form
             role="search"
             onSubmit={e => e.preventDefault()}
@@ -262,7 +267,7 @@ function BuscarEventosConteudo() {
         </div>
       </section>
 
-      <main className="container mx-auto px-4 md:px-6 py-8 flex flex-col md:flex-row gap-6">
+      <div className="container mx-auto px-4 md:px-6 py-8 flex flex-col md:flex-row gap-6">
         {/* Painel de filtros */}
         <aside className="md:w-72 shrink-0">
           <button
@@ -435,6 +440,7 @@ function BuscarEventosConteudo() {
             </div>
           )}
         </section>
+      </div>
       </main>
     </div>
   );
