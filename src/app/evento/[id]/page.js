@@ -4,16 +4,23 @@ import { useState } from "react";
 import { useEffect } from "react";
 import { auth } from "../../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { db } from "../../../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function AvaliarEvento() {
+    const router = useRouter();
     const [user, setUser] = useState(null);
     useEffect(() => {
-        const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+        const unsub = onAuthStateChanged(auth, (u) => {
+            setUser(u);
+            if (!u) {
+                alert('Você precisa estar logado para avaliar!');
+                router.push('/login');
+            }
+        });
         return () => unsub();
-    }, []);
+    }, [router]);
     const params = useParams();
     const eventoId = params?.id || "";
     const [nota, setNota] = useState(0);
@@ -69,19 +76,31 @@ export default function AvaliarEvento() {
     // Salvar avaliação no Firestore
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!user) {
+            alert('Você precisa estar logado para avaliar!');
+            router.push('/login');
+            return;
+        }
+        // Nota precisa ser um inteiro entre 1 e 5
+        const notaInt = Math.round(Number(nota));
+        if (!Number.isInteger(notaInt) || notaInt < 1 || notaInt > 5) {
+            setErro("Por favor, dê uma nota ao evento!");
+            return;
+        }
         setEnviando(true);
         setSucesso("");
         setErro("");
         try {
             await addDoc(collection(db, "avaliacoes"), {
-                eventoId,
-                nota,
+                eventoId: String(eventoId),
+                nota: notaInt,
                 respostas,
                 comentario,
                 imagem: imagem ? imagem.name : "", // placeholder
                 criadoEm: serverTimestamp(),
-                usuario: user?.displayName || "Usuário",
-                avatar: user?.photoURL || "",
+                usuario: user.displayName || user.email || "Usuário",
+                usuarioId: user.uid,
+                photoURL: user.photoURL || null,
             });
             setSucesso("Avaliação enviada com sucesso!");
             setNota(0);
