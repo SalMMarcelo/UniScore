@@ -6,6 +6,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged, updateProfile } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import PainelConquistas from "../../components/PainelConquistas";
 
 export default function Perfil() {
     const [user, setUser] = useState(null);
@@ -276,6 +277,7 @@ export default function Perfil() {
                             </button>
                         </div>
                     </div>
+                    {user && <PainelConquistas uid={user.uid} />}
                 </div>
             </div>
         </div>
