@@ -187,7 +187,7 @@ export default function UniversidadePage() {
                 {/* Botão de avaliação */}
                 <div className="text-center mb-12">
                     <Link
-                        href="/avaliar"
+                        href={`/avaliar?universidadeId=${encodeURIComponent(id)}`}
                         className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-4 rounded-lg font-bold text-lg hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg transform hover:scale-105"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,7 +214,7 @@ export default function UniversidadePage() {
                             </svg>
                             <p className="text-gray-600 text-lg mb-4">Nenhuma avaliação ainda</p>
                             <Link
-                                href="/avaliar"
+                                href={`/avaliar?universidadeId=${encodeURIComponent(id)}`}
                                 className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
                             >
                                 Seja o primeiro a avaliar
