@@ -235,20 +235,20 @@ export default function FormularioEvento({ eventoId = null }) {
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+                <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between gap-3">
                     <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                        <img src="/uniscore_star_logo.png" alt="UniScore Logo" className="h-16 w-auto max-w-[220px]" />
+                        <img src="/uniscore_star_logo.png" alt="UniScore - página inicial" className="h-10 sm:h-16 w-auto max-w-[140px] sm:max-w-[220px]" />
                     </Link>
                     <Link href="/dashboard-universidade" className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-all">
-                        ← Voltar ao dashboard
+                        <span aria-hidden="true">←</span> Voltar ao dashboard
                     </Link>
                 </div>
             </header>
 
-            <main className="max-w-3xl mx-auto px-6 py-8">
+            <main id="conteudo" className="max-w-3xl mx-auto px-4 md:px-6 py-8">
                 {carregando ? (
-                    <div className="text-center py-20">
-                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
+                    <div className="text-center py-20" role="status">
+                        <div aria-hidden="true" className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
                         <div className="text-gray-700 text-lg">Carregando...</div>
                     </div>
                 ) : bloqueio ? (
@@ -272,9 +272,9 @@ export default function FormularioEvento({ eventoId = null }) {
                             </p>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm space-y-6">
+                        <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-5 sm:p-8 border border-gray-200 shadow-sm space-y-6">
                             {erro && (
-                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">{erro}</div>
+                                <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">{erro}</div>
                             )}
 
                             <div>
@@ -284,8 +284,8 @@ export default function FormularioEvento({ eventoId = null }) {
 
                             <div>
                                 <label className={labelClass} htmlFor="descricao">Descrição</label>
-                                <textarea id="descricao" className={`${inputClass} min-h-[140px]`} value={form.descricao} onChange={alterar("descricao")} maxLength={5000} placeholder="Conte o que vai acontecer, programação, convidados..." />
-                                <div className="text-xs text-gray-500 text-right mt-1">{form.descricao.length}/5000</div>
+                                <textarea id="descricao" aria-describedby="descricao-contador" className={`${inputClass} min-h-[140px]`} value={form.descricao} onChange={alterar("descricao")} maxLength={5000} placeholder="Conte o que vai acontecer, programação, convidados..." />
+                                <div id="descricao-contador" className="text-xs text-gray-600 text-right mt-1">{form.descricao.length}/5000</div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -295,8 +295,8 @@ export default function FormularioEvento({ eventoId = null }) {
                                 </div>
                                 <div>
                                     <label className={labelClass} htmlFor="preco">Preço (R$) *</label>
-                                    <input id="preco" type="number" min="0" step="0.01" className={inputClass} value={form.preco} onChange={alterar("preco")} required />
-                                    <p className="text-xs text-gray-500 mt-1">Use 0 para evento gratuito.</p>
+                                    <input id="preco" aria-describedby="preco-ajuda" type="number" min="0" step="0.01" className={inputClass} value={form.preco} onChange={alterar("preco")} required />
+                                    <p id="preco-ajuda" className="text-xs text-gray-600 mt-1">Use 0 para evento gratuito.</p>
                                 </div>
                             </div>
 
@@ -332,24 +332,24 @@ export default function FormularioEvento({ eventoId = null }) {
                             </div>
 
                             <div>
-                                <label className={labelClass}>Imagem (opcional)</label>
+                                <label className={labelClass} htmlFor="imagem">Imagem (opcional)</label>
                                 {imagemAtual && (
                                     <div className="flex items-center gap-4 mb-3">
-                                        <img src={imagemAtual} alt="Imagem do evento" className="w-32 h-32 rounded-xl object-cover border-2 border-gray-200" />
+                                        <img src={imagemAtual} alt={form.nome ? `Imagem atual do evento ${form.nome}` : "Imagem atual do evento"} className="w-32 h-32 rounded-xl object-cover border-2 border-gray-200" />
                                         <button type="button" onClick={removerImagem} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 transition-all">
                                             Remover imagem
                                         </button>
                                     </div>
                                 )}
-                                <input type="file" accept="image/*" onChange={escolherImagem} className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-bold file:bg-red-50 file:text-red-600 hover:file:bg-red-100" />
-                                <p className="text-xs text-gray-500 mt-1">JPG, PNG ou WEBP, até 5 MB.</p>
+                                <input id="imagem" aria-describedby="imagem-ajuda" type="file" accept="image/*" onChange={escolherImagem} className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-bold file:bg-red-50 file:text-red-700 hover:file:bg-red-100" />
+                                <p id="imagem-ajuda" className="text-xs text-gray-600 mt-1">JPG, PNG ou WEBP, até 5 MB.</p>
                             </div>
 
                             <div className="flex flex-col sm:flex-row gap-4 justify-end pt-2">
                                 <Link href="/dashboard-universidade" className="text-center bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-bold hover:bg-gray-300 transition-all">
                                     Cancelar
                                 </Link>
-                                <button type="submit" disabled={salvando} className="bg-gradient-to-r from-yellow-400 to-red-500 text-white px-6 py-3 rounded-lg font-bold hover:from-yellow-500 hover:to-red-600 transition-all duration-300 shadow-md disabled:opacity-60 disabled:cursor-not-allowed">
+                                <button type="submit" disabled={salvando} className="bg-gradient-to-r from-orange-700 to-red-700 text-white px-6 py-3 rounded-lg font-bold hover:from-orange-800 hover:to-red-800 transition-all duration-300 shadow-md disabled:opacity-60 disabled:cursor-not-allowed">
                                     {salvando ? "Salvando..." : editando ? "Salvar alterações" : "Cadastrar evento"}
                                 </button>
                             </div>

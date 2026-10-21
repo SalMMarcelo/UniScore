@@ -264,8 +264,8 @@ export default function DashboardUniversidade() {
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
+                <div className="text-center" role="status">
+                    <div aria-hidden="true" className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
                     <div className="text-gray-700 text-lg">Carregando dashboard...</div>
                 </div>
             </div>
@@ -293,21 +293,21 @@ export default function DashboardUniversidade() {
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-                <div className="max-w-7xl mx-auto px-6 py-4">
-                    <div className="flex items-center justify-between">
+                <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
+                    <div className="flex items-center justify-between gap-3">
                         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                            <img src="/uniscore_star_logo.png" alt="UniScore Logo" className="h-16 w-auto max-w-[220px]" />
+                            <img src="/uniscore_star_logo.png" alt="UniScore - página inicial" className="h-10 sm:h-16 w-auto max-w-[140px] sm:max-w-[220px]" />
                         </Link>
                         <div className="flex items-center gap-4">
                             <div className="text-right hidden md:block">
                                 <p className="text-sm font-semibold text-gray-900">{universidadeData?.nomeUniversidade || "Universidade"}</p>
-                                <p className="text-xs text-gray-500">Conta Institucional</p>
+                                <p className="text-xs text-gray-600">Conta Institucional</p>
                             </div>
-                            <button onClick={handleLogout} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-all flex items-center gap-2">
+                            <button type="button" onClick={handleLogout} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-all flex items-center gap-2">
                                 <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                                 </svg>
-                                <span className="hidden sm:inline">Sair</span>
+                                <span className="sr-only sm:not-sr-only">Sair</span>
                             </button>
                         </div>
                     </div>
@@ -315,7 +315,7 @@ export default function DashboardUniversidade() {
             </header>
 
             {/* Main */}
-            <main className="max-w-7xl mx-auto px-6 py-8">
+            <main id="conteudo" className="max-w-7xl mx-auto px-4 md:px-6 py-8">
                 {/* Welcome */}
                 <div className="mb-8">
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -422,7 +422,7 @@ export default function DashboardUniversidade() {
                                     </svg>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 text-green-600">
+                            <div className="flex items-center gap-2 text-green-700">
                                 <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                                 </svg>
@@ -443,7 +443,7 @@ export default function DashboardUniversidade() {
                                     </svg>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 text-green-600">
+                            <div className="flex items-center gap-2 text-green-700">
                                 <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                                 </svg>
@@ -464,7 +464,7 @@ export default function DashboardUniversidade() {
                                     </svg>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 text-green-600">
+                            <div className="flex items-center gap-2 text-green-700">
                                 <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                                 </svg>
@@ -598,7 +598,7 @@ export default function DashboardUniversidade() {
                             <p className="text-gray-600">Eventos cadastrados pela sua universidade</p>
                         </div>
                         {aprovada && (
-                            <Link href="/dashboard-universidade/eventos/novo" className="text-center bg-gradient-to-r from-yellow-400 to-red-500 text-white px-6 py-3 rounded-lg font-bold hover:from-yellow-500 hover:to-red-600 transition-all duration-300 shadow-md">
+                            <Link href="/dashboard-universidade/eventos/novo" className="text-center bg-gradient-to-r from-orange-700 to-red-700 text-white px-6 py-3 rounded-lg font-bold hover:from-orange-800 hover:to-red-800 transition-all duration-300 shadow-md">
                                 + Cadastrar evento
                             </Link>
                         )}
@@ -609,7 +609,7 @@ export default function DashboardUniversidade() {
                             O cadastro de eventos fica disponível depois que a equipe UniScore aprovar a conta da sua universidade.
                         </div>
                     ) : meusEventos.length === 0 ? (
-                        <div className="text-gray-500 bg-gray-50 rounded-xl p-6 text-center">
+                        <div className="text-gray-600 bg-gray-50 rounded-xl p-6 text-center">
                             Nenhum evento cadastrado ainda. Clique em &quot;+ Cadastrar evento&quot; para criar o primeiro.
                         </div>
                     ) : (
@@ -617,9 +617,9 @@ export default function DashboardUniversidade() {
                             {meusEventos.map(ev => (
                                 <div key={ev.id} className="flex flex-col md:flex-row md:items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-red-300 transition-all">
                                     {ev.imagem ? (
-                                        <img src={ev.imagem} alt={ev.nome} className="w-20 h-20 rounded-xl object-cover border-2 border-gray-200 shrink-0" />
+                                        <img src={ev.imagem} alt="" className="w-20 h-20 rounded-xl object-cover border-2 border-gray-200 shrink-0" />
                                     ) : (
-                                        <div className="w-20 h-20 rounded-xl bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white text-2xl font-bold shrink-0">
+                                        <div aria-hidden="true" className="w-20 h-20 rounded-xl bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white text-2xl font-bold shrink-0">
                                             {ev.nome?.charAt(0)?.toUpperCase() || "E"}
                                         </div>
                                     )}
@@ -628,23 +628,25 @@ export default function DashboardUniversidade() {
                                             {ev.nome}
                                         </Link>
                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-gray-600 text-sm mt-1">
-                                            <span>📅 {typeof ev.data === "string" && ev.data ? ev.data.split("-").reverse().join("/") : "Sem data"}</span>
-                                            {ev.local && <span>📍 {ev.local}</span>}
-                                            {ev.tipo && <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-full text-xs font-semibold">{ev.tipo}</span>}
-                                            {ev.tema && <span className="bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full text-xs font-semibold">{ev.tema}</span>}
+                                            <span><span aria-hidden="true">📅</span> {typeof ev.data === "string" && ev.data ? ev.data.split("-").reverse().join("/") : "Sem data"}</span>
+                                            {ev.local && <span><span aria-hidden="true">📍</span> {ev.local}</span>}
+                                            {ev.tipo && <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded-full text-xs font-semibold">{ev.tipo}</span>}
+                                            {ev.tema && <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full text-xs font-semibold">{ev.tema}</span>}
                                             <span>{Number(ev.preco) > 0 ? `R$ ${Number(ev.preco).toFixed(2).replace(".", ",")}` : "Gratuito"}</span>
                                         </div>
                                     </div>
                                     <div className="flex gap-2 shrink-0">
-                                        <Link href={`/dashboard-universidade/eventos/${ev.id}/editar`} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 transition-all duration-300">
-                                            ✏️ Editar
+                                        <Link href={`/dashboard-universidade/eventos/${ev.id}/editar`} aria-label={`Editar o evento ${ev.nome}`} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 transition-all duration-300">
+                                            <span aria-hidden="true">✏️</span> Editar
                                         </Link>
                                         <button
+                                            type="button"
                                             onClick={() => excluirEvento(ev)}
+                                            aria-label={`Excluir o evento ${ev.nome}`}
                                             disabled={excluindoId === ev.id}
-                                            className="bg-red-50 text-red-600 px-4 py-2 rounded-lg font-bold hover:bg-red-100 transition-all duration-300 disabled:opacity-60"
+                                            className="bg-red-50 text-red-700 px-4 py-2 rounded-lg font-bold hover:bg-red-100 transition-all duration-300 disabled:opacity-60"
                                         >
-                                            {excluindoId === ev.id ? "Excluindo..." : "🗑️ Excluir"}
+                                            {excluindoId === ev.id ? "Excluindo..." : <><span aria-hidden="true">🗑️</span> Excluir</>}
                                         </button>
                                     </div>
                                 </div>
@@ -677,7 +679,7 @@ export default function DashboardUniversidade() {
                                         <p className="text-gray-600 text-sm">Configure detalhes, datas e descrições</p>
                                     </div>
                                     {aprovada ? (
-                                        <Link href="/dashboard-universidade/eventos/novo" className="bg-gradient-to-r from-yellow-400 to-red-500 text-white px-4 py-2 rounded-lg font-bold hover:from-yellow-500 hover:to-red-600 transition-all duration-300 shadow-md">
+                                        <Link href="/dashboard-universidade/eventos/novo" className="bg-gradient-to-r from-orange-700 to-red-700 text-white px-4 py-2 rounded-lg font-bold hover:from-orange-800 hover:to-red-800 transition-all duration-300 shadow-md">
                                             + Criar
                                         </Link>
                                     ) : (
@@ -712,7 +714,7 @@ export default function DashboardUniversidade() {
                                         <h4 className="font-bold text-gray-900 text-lg">Monitorar Performance</h4>
                                         <p className="text-gray-600 text-sm">Acompanhe métricas em tempo real</p>
                                     </div>
-                                    <button className="bg-gradient-to-r from-cyan-400 to-blue-500 text-white px-4 py-2 rounded-lg font-bold hover:from-cyan-500 hover:to-blue-600 transition-all duration-300 shadow-md">
+                                    <button className="bg-gradient-to-r from-cyan-700 to-blue-700 text-white px-4 py-2 rounded-lg font-bold hover:from-cyan-800 hover:to-blue-800 transition-all duration-300 shadow-md">
                                         📊 Monitor
                                     </button>
                                 </div>
@@ -765,7 +767,7 @@ export default function DashboardUniversidade() {
                                         <h4 className="font-bold text-gray-900 text-lg">Análise Preditiva</h4>
                                         <p className="text-gray-600 text-sm">IA para prever tendências</p>
                                     </div>
-                                    <button className="bg-gradient-to-r from-pink-500 to-rose-600 text-white px-4 py-2 rounded-lg font-bold hover:from-pink-600 hover:to-rose-700 transition-all duration-300 shadow-md">
+                                    <button className="bg-gradient-to-r from-pink-700 to-rose-700 text-white px-4 py-2 rounded-lg font-bold hover:from-pink-800 hover:to-rose-800 transition-all duration-300 shadow-md">
                                         🤖 Analisar
                                     </button>
                                 </div>
@@ -777,7 +779,7 @@ export default function DashboardUniversidade() {
                 {/* CTA Final */}
                 <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-8 text-center text-white shadow-lg">
                     <h3 className="text-3xl font-bold mb-4">Pronto para começar?</h3>
-                    <p className="text-lg text-red-100 mb-6 max-w-2xl mx-auto">
+                    <p className="text-lg text-white mb-6 max-w-2xl mx-auto">
                         Conecte sua universidade ao UniScore e comece a coletar feedback valioso dos seus eventos.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
