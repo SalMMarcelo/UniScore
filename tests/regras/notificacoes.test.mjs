@@ -1,7 +1,7 @@
 import { describe, it, before, beforeEach } from "node:test";
 import {
     doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, orderBy, getDocs,
-    writeBatch, arrayUnion, serverTimestamp
+    writeBatch, arrayUnion, serverTimestamp, runTransaction
 } from "firebase/firestore";
 import { criarAmbiente, assertSucceeds, assertFails } from "./ambiente.mjs";
 
@@ -46,6 +46,18 @@ describe("notificações de comentário", () => {
     it("resposta + avisos ao respondido e à autora do post", () =>
         assertSucceeds(comentarComNotificacoes(bia(), comentario({ respostaA: CHAVE_CAIO }),
             [notif("caio", "resposta"), notif("ana", "comentario")])));
+
+    it("transação com contadores, como em comentarENotificar()", () => {
+        const db = bia();
+        return assertSucceeds(runTransaction(db, async (tx) => {
+            const ref = doc(db, "forumPosts", "p1");
+            const atual = (await tx.get(ref)).data();
+            const comentarios = [...atual.comentarios, comentario({ respostaA: CHAVE_CAIO })];
+            tx.update(ref, { comentarios, totalCurtidas: atual.curtidas.length, totalComentarios: comentarios.length });
+            tx.set(doc(collection(db, "notificacoes")), notif("caio", "resposta"));
+            tx.set(doc(collection(db, "notificacoes")), notif("ana", "comentario"));
+        }));
+    });
 
     it("notificação sem comentário (forjada) negada", () =>
         assertFails(setDoc(doc(collection(bia(), "notificacoes")), notif("ana", "comentario"))));

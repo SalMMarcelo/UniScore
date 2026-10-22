@@ -10,12 +10,13 @@
 // As regras só aceitam notificações que correspondem a uma ação real:
 //  - curtida: id `curtida_${postId}_${uid}` e o post já contém a curtida
 //    (a mesma curtida não notifica de novo ao descurtir e curtir);
-//  - comentario/resposta: gravadas no MESMO batch que acrescenta o comentário
+//  - comentario/resposta: gravadas na MESMA transação que acrescenta o comentário
 //    (as regras comparam o post antes e depois com get/getAfter);
 //  - moderacao: só moderadores.
 // Ninguém notifica a si mesmo.
 
 import { db } from "../firebase";
+import { contadores } from "./forum";
 import {
     collection,
     doc,
@@ -28,7 +29,7 @@ import {
     updateDoc,
     deleteDoc,
     writeBatch,
-    arrayUnion,
+    runTransaction,
     serverTimestamp
 } from "firebase/firestore";
 
@@ -76,14 +77,20 @@ export function notificacoesDoComentario(user, post, comentario, pai = null) {
     return lista;
 }
 
-// Acrescenta o comentário ao post e cria as notificações no mesmo batch
+// Acrescenta o comentário ao post (com o contador) e cria as notificações na
+// mesma transação, que relê o post para não perder comentários simultâneos
 export async function comentarENotificar(user, post, comentario, pai = null) {
-    const batch = writeBatch(db);
-    batch.update(doc(db, "forumPosts", post.id), { comentarios: arrayUnion(comentario) });
-    notificacoesDoComentario(user, post, comentario, pai).forEach(dados => {
-        batch.set(doc(collection(db, "notificacoes")), dados);
+    const ref = doc(db, "forumPosts", post.id);
+    await runTransaction(db, async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists()) throw new Error("Post não encontrado");
+        const atual = { id: snap.id, ...snap.data() };
+        const comentarios = [...(atual.comentarios || []), comentario];
+        tx.update(ref, { comentarios, ...contadores({ ...atual, comentarios }) });
+        notificacoesDoComentario(user, atual, comentario, pai).forEach(dados => {
+            tx.set(doc(collection(db, "notificacoes")), dados);
+        });
     });
-    await batch.commit();
 }
 
 // Depois de curtir. Falhas não atrapalham a curtida (ex.: já notificado).

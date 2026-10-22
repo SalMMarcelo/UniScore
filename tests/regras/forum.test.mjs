@@ -1,5 +1,5 @@
 import { describe, it, beforeEach } from "node:test";
-import { doc, setDoc, getDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, serverTimestamp, runTransaction } from "firebase/firestore";
 import { criarAmbiente, assertSucceeds, assertFails } from "./ambiente.mjs";
 
 const { env, usuario, moderador, anonimo, semear } = await criarAmbiente();
@@ -111,4 +111,46 @@ describe("comentários", () => {
 
     it("anônimo não comenta", () =>
         assertFails(updateDoc(doc(anonimo().firestore(), "forumPosts", "p1"), { comentarios: arrayUnion(comentario()) })));
+});
+
+// Contadores usados na ordenação do feed (src/lib/forum.js, contadores())
+describe("contadores", () => {
+    // Como o fórum grava: transação que relê o post e grava lista + contadores
+    const interagir = (db, alterar) => runTransaction(db, async (tx) => {
+        const ref = doc(db, "forumPosts", "p1");
+        const atual = (await tx.get(ref)).data();
+        const novo = alterar(atual);
+        tx.update(ref, { ...novo, totalCurtidas: (novo.curtidas ?? atual.curtidas).length,
+            totalComentarios: (novo.comentarios ?? atual.comentarios).length });
+    });
+
+    it("post nasce com contadores zerados", async () => {
+        await assertSucceeds(setDoc(doc(bia(), "forumPosts", "n1"), post({ totalCurtidas: 0, totalComentarios: 0 })));
+        await assertFails(setDoc(doc(bia(), "forumPosts", "n2"), post({ totalCurtidas: 5 })));
+    });
+
+    it("curtir e descurtir gravando os contadores", async () => {
+        await assertSucceeds(interagir(bia(), (a) => ({ curtidas: [...a.curtidas, "bia"] })));
+        await assertSucceeds(interagir(bia(), (a) => ({ curtidas: a.curtidas.filter((u) => u !== "bia") })));
+    });
+
+    it("comentar gravando os contadores", () =>
+        assertSucceeds(interagir(bia(), (a) => ({ comentarios: [...a.comentarios, comentario()] }))));
+
+    it("contador inflado negado", async () => {
+        await assertFails(updateDoc(doc(bia(), "forumPosts", "p1"), { curtidas: arrayUnion("bia"), totalCurtidas: 50 }));
+        await assertFails(updateDoc(doc(bia(), "forumPosts", "p1"), { totalComentarios: 9 }));
+    });
+
+    it("autora não altera os contadores do próprio post", () =>
+        assertFails(updateDoc(doc(ana(), "forumPosts", "p1"), { conteudo: "x", totalCurtidas: 99 })));
+
+    it("acertar contador antigo para o valor real é permitido", () =>
+        assertSucceeds(updateDoc(doc(bia(), "forumPosts", "p1"), { totalCurtidas: 1, totalComentarios: 1 })));
+
+    it("contador errado deixado por outro corrige-se na interação seguinte", async () => {
+        await semear((db) => updateDoc(doc(db, "forumPosts", "p1"), { totalCurtidas: 7, totalComentarios: 3 }));
+        await assertFails(updateDoc(doc(bia(), "forumPosts", "p1"), { curtidas: arrayUnion("bia") }));
+        await assertSucceeds(interagir(bia(), (a) => ({ curtidas: [...a.curtidas, "bia"] })));
+    });
 });

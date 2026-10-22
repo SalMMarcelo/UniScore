@@ -269,6 +269,13 @@ service cloud.firestore {
             || (novo.respostaA is string && novo.respostaA.size() <= 160));
     }
 
+    // Contadores usados para ordenar o feed no servidor (src/lib/forum.js,
+    // contadores()): quando presentes, têm de bater com o tamanho das listas.
+    function isContadoresCoerentes(data) {
+      return (!('totalCurtidas' in data) || data.totalCurtidas == data.get('curtidas', []).size())
+        && (!('totalComentarios' in data) || data.totalComentarios == data.get('comentarios', []).size());
+    }
+
     // Tema do post (opcional): um dos TEMAS de src/lib/eventos.js, ou null
     function isValidTemaPost(data) {
       return data.get('tema', null) == null
@@ -284,19 +291,23 @@ service cloud.firestore {
         // Posts nascem sem curtidas/comentários (evita "curtidas" forjadas).
         && (!('curtidas' in request.resource.data) || request.resource.data.curtidas == [])
         && (!('comentarios' in request.resource.data) || request.resource.data.comentarios == [])
+        && isContadoresCoerentes(request.resource.data)
         && isValidTemaPost(request.resource.data);
 
       // Moderadores: qualquer campo (inclui moderado/moderadoPor/moderadoEm).
       // Autor: qualquer campo, exceto o autor, os campos de moderação e
-      // curtidas/comentarios (que seguem as mesmas regras dos demais usuários,
-      // para que ninguém forje curtidas ou comentários e ganhe pontos).
-      // Demais usuários logados: apenas curtidas/comentarios.
+      // curtidas/comentarios e seus contadores (que seguem as mesmas regras dos
+      // demais usuários, para que ninguém forje curtidas ou comentários e ganhe pontos).
+      // Demais usuários logados: apenas curtidas/comentarios e os contadores,
+      // que precisam continuar coerentes com as listas.
       allow update: if isModerator()
         || (isOwner(resource.data.autor.uid)
-            && !changedKeys().hasAny(['autor', 'moderado', 'moderadoPor', 'moderadoEm', 'curtidas', 'comentarios'])
+            && !changedKeys().hasAny(['autor', 'moderado', 'moderadoPor', 'moderadoEm', 'curtidas', 'comentarios',
+                                      'totalCurtidas', 'totalComentarios'])
             && isValidTemaPost(request.resource.data))
         || (isSignedIn()
-            && changedKeys().hasOnly(['curtidas', 'comentarios'])
+            && changedKeys().hasOnly(['curtidas', 'comentarios', 'totalCurtidas', 'totalComentarios'])
+            && isContadoresCoerentes(request.resource.data)
             && (!changedKeys().hasAny(['curtidas']) || isValidLikeChange())
             && (!changedKeys().hasAny(['comentarios']) || isValidCommentAppend()));
 

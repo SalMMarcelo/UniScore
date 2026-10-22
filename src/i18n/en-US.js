@@ -661,10 +661,12 @@ const enUS = {
     resultados: "{n} posts",
     limparFiltros: "Clear filters",
     nenhumResultado: "No posts match these filters.",
-    filtroParcial: "Search and filters only cover the posts loaded so far. Use “Load more posts” to widen them.",
+    filtroParcial: "Text search only covers the posts loaded so far. Use “Load more posts” to widen it.",
     carregarMais: "Load more posts",
     carregandoPosts: "Loading posts...",
-    erroCarregar: "Could not load the posts. Try reloading the page."
+    erroCarregar: "Could not load the posts. Try reloading the page.",
+    erroFiltros: "Could not load the posts with these filters. Try another combination.",
+    postRemovido: "This post has been removed."
   },
 
   perfil: {
@@ -962,7 +964,12 @@ const enUS = {
       mostrando: "Showing the {n} most recent posts.",
       carregando: "Loading posts...",
       nenhum: "No posts for this filter.",
-      contagens: "{curtidas} likes · {comentarios} comments"
+      contagens: "{curtidas} likes · {comentarios} comments",
+      contadoresBotao: "Recalculate counters",
+      contadoresRodando: "Recalculating...",
+      contadoresAjuda: "Stores the like and comment totals on posts that do not have them yet, so they show up under “most liked” and “most commented” in the forum.",
+      contadoresOk: "All posts already had the right counters.",
+      contadoresCorrigidos: "Counters updated on {n} post(s)."
     },
     universidades: {
       pendentes: "Pending",

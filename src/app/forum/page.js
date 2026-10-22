@@ -7,14 +7,13 @@ import {
     collection,
     addDoc,
     query,
+    where,
     orderBy,
     onSnapshot,
     limit,
     serverTimestamp,
-    updateDoc,
+    runTransaction,
     doc,
-    arrayUnion,
-    arrayRemove,
 } from "firebase/firestore";
 import Link from "next/link";
 import { isAdminEmail } from "../../lib/admin";
@@ -24,7 +23,9 @@ import {
     ORDENS,
     TAMANHO_PAGINA,
     filtrarPosts,
-    temasUsados,
+    consultaDoFeed,
+    chaveConsulta,
+    contadores,
     organizarComentarios,
     validarMidia
 } from "../../lib/forum";
@@ -525,10 +526,14 @@ function CreatePostForm({ user, onSubmit, loading, erro }) {
 // ─── Busca e filtros ──────────────────────────────────────────────────────
 const FILTROS_INICIAIS = { busca: "", tema: "", ordem: "recentes", comMidia: false, meus: false };
 
-function BarraFiltros({ filtros, onChange, temas, total, parcial }) {
+function filtrosAtivos(filtros) {
+    return !!(filtros.busca.trim() || filtros.tema || filtros.comMidia || filtros.meus || filtros.ordem !== "recentes");
+}
+
+function BarraFiltros({ filtros, onChange, total, parcial }) {
     const { t, rotulo, formatarNumero } = useI18n();
     const alterar = (campo, valor) => onChange({ ...filtros, [campo]: valor });
-    const ativos = filtros.busca.trim() || filtros.tema || filtros.comMidia || filtros.meus || filtros.ordem !== "recentes";
+    const ativos = filtrosAtivos(filtros);
     const campo = "bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200";
 
     return (
@@ -550,7 +555,7 @@ function BarraFiltros({ filtros, onChange, temas, total, parcial }) {
                     <label htmlFor="forum-filtro-tema" className="sr-only">{t("forum.filtrarTema")}</label>
                     <select id="forum-filtro-tema" value={filtros.tema} onChange={(e) => alterar("tema", e.target.value)} className={`w-full ${campo}`}>
                         <option value="">{t("forum.todosTemas")}</option>
-                        {temas.map((valor) => (
+                        {TEMAS.map((valor) => (
                             <option key={valor} value={valor}>{rotulo("valores.temas", valor)}</option>
                         ))}
                     </select>
@@ -582,7 +587,7 @@ function BarraFiltros({ filtros, onChange, temas, total, parcial }) {
                     </button>
                 )}
             </div>
-            {ativos && parcial && (
+            {filtros.busca.trim() && parcial && (
                 <p className="mt-2 text-xs text-gray-600">{t("forum.filtroParcial")}</p>
             )}
         </section>
@@ -590,16 +595,26 @@ function BarraFiltros({ filtros, onChange, temas, total, parcial }) {
 }
 
 // ─── Feed paginado ─────────────────────────────────────────────────────────
-// Os posts mais recentes em tempo real, TAMANHO_PAGINA por vez: "carregar
-// mais" amplia o limite da mesma consulta, então curtidas e comentários de
-// todos os posts já carregados continuam ao vivo.
-function useFeedForum() {
-    const [limite, setLimite] = useState(TAMANHO_PAGINA);
+// Posts em tempo real, TAMANHO_PAGINA por vez: "carregar mais" amplia o
+// limite da mesma consulta, então curtidas e comentários de todos os posts
+// já carregados continuam ao vivo. Tema, "só meus", "só com mídia" e a ordem
+// são aplicados no Firestore (consultaDoFeed); mudar um deles recomeça da
+// primeira página.
+function useFeedForum(consulta) {
+    const chave = chaveConsulta(consulta);
+    const [pagina, setPagina] = useState({ chave, limite: TAMANHO_PAGINA });
+    const limite = pagina.chave === chave ? pagina.limite : TAMANHO_PAGINA;
     const [feed, setFeed] = useState({ posts: [], temMais: false, carregando: true, erro: false });
 
     useEffect(() => {
-        setFeed((f) => ({ ...f, carregando: true }));
-        const q = query(collection(db, "forumPosts"), orderBy("criadoEm", "desc"), limit(limite));
+        setFeed((f) => ({ ...f, carregando: true, erro: false }));
+        const { onde, ordem } = JSON.parse(chave);
+        const q = query(
+            collection(db, "forumPosts"),
+            ...onde.map(([campo, op, valor]) => where(campo, op, valor)),
+            ...ordem.map(([campo, direcao]) => orderBy(campo, direcao)),
+            limit(limite)
+        );
         return onSnapshot(q, (snapshot) => {
             setFeed({
                 posts: snapshot.docs.map((d) => ({ id: d.id, ...d.data() })),
@@ -610,12 +625,16 @@ function useFeedForum() {
                 erro: false
             });
         }, (err) => {
+            // Sem o índice da combinação de filtros, o erro traz o link para criá-lo
             console.error("Erro ao carregar o fórum:", err);
-            setFeed((f) => ({ ...f, carregando: false, erro: true }));
+            setFeed({ posts: [], temMais: false, carregando: false, erro: true });
         });
-    }, [limite]);
+    }, [chave, limite]);
 
-    const carregarMais = useCallback(() => setLimite((l) => l + TAMANHO_PAGINA), []);
+    const carregarMais = useCallback(
+        () => setPagina({ chave, limite: limite + TAMANHO_PAGINA }),
+        [chave, limite]
+    );
     return { ...feed, carregarMais };
 }
 
@@ -658,12 +677,12 @@ function usePostDoEndereco(posts) {
 export default function Forum() {
     const { t } = useI18n();
     const [user, setUser] = useState(undefined);
-    const feed = useFeedForum();
+    const [filtros, setFiltros] = useState(FILTROS_INICIAIS);
+    const feed = useFeedForum(consultaDoFeed(filtros, user?.uid));
     const { alvoId, postAlvo } = usePostDoEndereco(feed.posts);
     const [loading, setLoading] = useState(false);
     // Erro ao publicar, exibido no formulário (substitui alert())
     const [erroPost, setErroPost] = useState("");
-    const [filtros, setFiltros] = useState(FILTROS_INICIAIS);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
@@ -682,6 +701,7 @@ export default function Forum() {
         (p) => !p.moderado || ehModerador || (user && p.autor?.uid === user.uid)
     );
     const postsFiltrados = filtrarPosts(postsVisiveis, filtros, user?.uid);
+    const comFiltros = filtrosAtivos(filtros);
 
     // Rola até o post do endereço quando ele aparece (uma vez por id)
     const [rolouPara, setRolouPara] = useState(null);
@@ -714,6 +734,8 @@ export default function Forum() {
                 mediaType: finalMediaType,
                 curtidas: [],
                 comentarios: [],
+                totalCurtidas: 0,
+                totalComentarios: 0,
                 criadoEm: serverTimestamp(),
                 moderado: false,
             });
@@ -729,12 +751,19 @@ export default function Forum() {
     const handleLike = useCallback(async (post) => {
         if (!user) return;
         const postRef = doc(db, "forumPosts", post.id);
-        const userLiked = (post.curtidas || []).includes(user.uid);
         try {
-            await updateDoc(postRef, {
-                curtidas: userLiked ? arrayRemove(user.uid) : arrayUnion(user.uid),
+            // Transação: relê o post para gravar a lista e o contador coerentes
+            const curtiu = await runTransaction(db, async (tx) => {
+                const snap = await tx.get(postRef);
+                if (!snap.exists()) throw new Error(t("forum.postRemovido"));
+                const atual = snap.data();
+                const antes = atual.curtidas || [];
+                const jaCurtiu = antes.includes(user.uid);
+                const curtidas = jaCurtiu ? antes.filter((uid) => uid !== user.uid) : [...antes, user.uid];
+                tx.update(postRef, { curtidas, ...contadores({ ...atual, curtidas }) });
+                return !jaCurtiu;
             });
-            if (!userLiked) notificarCurtida(user, post);
+            if (curtiu) notificarCurtida(user, post);
         } catch (error) {
             console.error("Erro ao curtir:", error);
             alert(t("forum.erroCurtir", { mensagem: error.message }));
@@ -830,8 +859,8 @@ export default function Forum() {
 
                         <CreatePostForm user={user} onSubmit={handleSubmitPost} loading={loading} erro={erroPost} />
 
-                        {postsVisiveis.length > 0 && (
-                            <BarraFiltros filtros={filtros} onChange={setFiltros} temas={temasUsados(postsVisiveis)} total={postsFiltrados.length} parcial={feed.temMais} />
+                        {(postsVisiveis.length > 0 || comFiltros) && (
+                            <BarraFiltros filtros={filtros} onChange={setFiltros} total={postsFiltrados.length} parcial={feed.temMais} />
                         )}
 
                         <div className="space-y-4">
@@ -846,7 +875,7 @@ export default function Forum() {
                                 />
                             ))}
 
-                            {postsVisiveis.length > 0 && postsFiltrados.length === 0 && (
+                            {!feed.carregando && !feed.erro && comFiltros && postsFiltrados.length === 0 && (
                                 <div className="text-center py-10 bg-white rounded-2xl shadow-md border border-gray-200">
                                     <p className="text-gray-600 text-lg mb-4">{t("forum.nenhumResultado")}</p>
                                     <button type="button" onClick={() => setFiltros(FILTROS_INICIAIS)} className="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700">
@@ -856,14 +885,21 @@ export default function Forum() {
                             )}
 
                             {feed.erro && (
-                                <p role="alert" className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4">{t("forum.erroCarregar")}</p>
+                                <div role="alert" className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4">
+                                    <p>{t(comFiltros ? "forum.erroFiltros" : "forum.erroCarregar")}</p>
+                                    {comFiltros && (
+                                        <button type="button" onClick={() => setFiltros(FILTROS_INICIAIS)} className="mt-2 font-semibold underline">
+                                            {t("forum.limparFiltros")}
+                                        </button>
+                                    )}
+                                </div>
                             )}
 
-                            {feed.carregando && postsVisiveis.length === 0 && !feed.erro && (
+                            {feed.carregando && postsFiltrados.length === 0 && !feed.erro && (
                                 <p role="status" className="text-center text-gray-600 py-8">{t("forum.carregandoPosts")}</p>
                             )}
 
-                            {!feed.carregando && !feed.erro && postsVisiveis.length === 0 && (
+                            {!feed.carregando && !feed.erro && !comFiltros && postsVisiveis.length === 0 && (
                                 <div className="text-center py-12 bg-white rounded-2xl shadow-md border border-gray-200">
                                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <svg aria-hidden="true" className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

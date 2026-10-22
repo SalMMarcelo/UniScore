@@ -214,13 +214,14 @@
 - ✅ **Fórum**: busca (texto, autor e comentários, sem diferenciar acentos), filtro por tema, "só com mídia", "só meus posts", ordenação (recentes, curtidos, comentados), tema opcional ao publicar e respostas a comentários (um nível, campo `respostaA`) — lógica em `src/lib/forum.js`
 - ✅ **Mídia no fórum**: imagens até 10 MB e vídeos até 50 MB, validados no cliente e em `storage.rules`
 - ✅ **Paginação do fórum**: 20 posts por vez em tempo real, botão "Carregar mais posts"; o post de um link `/forum#id` (notificações) é buscado à parte se ainda não foi carregado, e a página rola até ele com destaque
-- ✅ **Testes das regras**: `npm run test:rules` (141 casos no emulador)
+- ✅ **Testes das regras**: `npm run test:rules` (149 casos no emulador)
+- ✅ **Filtros do fórum no servidor**: tema, "só meus posts", "só com mídia" e a ordenação (recentes, curtidos, comentados) são consultas no Firestore com índices; os posts guardam `totalCurtidas`/`totalComentarios`, gravados em transação e validados pelas regras. Posts antigos ganham os contadores pelo botão "Recalcular contadores" no painel admin (aba Fórum). A busca por texto continua valendo só para os posts carregados
 - ✅ **Notificações**: curtidas, comentários, respostas e ações da moderação; sino com não lidas, página `/notificacoes`; regras aceitam só notificações ligadas a uma ação real (`src/lib/notificacoes.js`)
 
 ### 🚀 **Próximos Passos Sugeridos**
 
-1. **Filtros do fórum no servidor** — busca e filtros valem só para os posts já carregados; tema, "meus posts" e ordenação por curtidas podem virar consultas no Firestore (com índices), e a busca por texto exigiria um serviço de busca
-2. **Notificações push (PWA)** — avisar fora do site via Firebase Cloud Messaging
+1. **Notificações push (PWA)** — avisar fora do site via Firebase Cloud Messaging
+2. **Busca por texto no servidor** — hoje vale só para os posts carregados; exigiria um serviço de busca (ex.: Algolia ou Typesense via extensão do Firebase)
 3. **Usuários no relatório público** — exige um contador mantido no servidor (Cloud Function), pois as regras não permitem contar `users`
 
 ### 📝 **Notas Técnicas**
@@ -239,7 +240,7 @@
 
 **Testes das regras**
 
-- `npm run test:rules` sobe os emuladores do Firestore e do Storage e roda `tests/regras/*.test.mjs` (141 casos: usuários, avaliações, universidades, eventos, fórum, denúncias, notificações e uploads)
+- `npm run test:rules` sobe os emuladores do Firestore e do Storage e roda `tests/regras/*.test.mjs` (149 casos: usuários, avaliações, universidades, eventos, fórum, denúncias, notificações e uploads)
 - Precisa de Java 21+ no PATH (exigência do `firebase-tools`); não usa nenhum projeto real (`demo-uniscore`)
 - Toda mudança em `firestore.rules` ou `storage.rules` deve vir com casos novos aqui
 
@@ -255,4 +256,4 @@
 
 **Última atualização:** 22 de Outubro de 2026  
 **Status do Projeto:** ✅ Fase 3 concluída (moderação, gamificação, admin, acessibilidade e i18n)  
-**Próximo Milestone:** 🔎 Filtros do fórum no servidor
+**Próximo Milestone:** 🔔 Notificações push (PWA)

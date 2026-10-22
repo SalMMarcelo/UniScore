@@ -17,6 +17,100 @@
       ]
     },
     {
+      "collectionGroup": "forumPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tema", "order": "ASCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "forumPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "autor.uid", "order": "ASCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "forumPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "mediaType", "order": "ASCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "forumPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "totalCurtidas", "order": "DESCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "forumPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tema", "order": "ASCENDING" },
+        { "fieldPath": "totalCurtidas", "order": "DESCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "forumPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "autor.uid", "order": "ASCENDING" },
+        { "fieldPath": "totalCurtidas", "order": "DESCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "forumPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "mediaType", "order": "ASCENDING" },
+        { "fieldPath": "totalCurtidas", "order": "DESCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "forumPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "totalComentarios", "order": "DESCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "forumPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tema", "order": "ASCENDING" },
+        { "fieldPath": "totalComentarios", "order": "DESCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "forumPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "autor.uid", "order": "ASCENDING" },
+        { "fieldPath": "totalComentarios", "order": "DESCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "forumPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "mediaType", "order": "ASCENDING" },
+        { "fieldPath": "totalComentarios", "order": "DESCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "avaliacoes",
       "queryScope": "COLLECTION",
       "fields": [

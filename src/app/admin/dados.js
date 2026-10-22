@@ -11,10 +11,12 @@ import {
     limit,
     getDocs,
     getAggregateFromServer,
-    average
+    average,
+    writeBatch
 } from "firebase/firestore";
 import { listarEventos } from "../../lib/eventos";
 import { contar, avaliacoesPorTema } from "../../lib/estatisticas";
+import { contadores } from "../../lib/forum";
 import { rotuloMotivo, rotuloTipoDenuncia } from "../../lib/denuncias";
 import { tPadrao, criarFormatadores, IDIOMA_PADRAO } from "../../i18n/traduzir";
 
@@ -164,3 +166,23 @@ export function colunasDenuncias(t = tPadrao, idioma = IDIOMA_PADRAO) {
 // Versões em pt-BR (compatibilidade)
 export const COLUNAS_EVENTOS = colunasEventos();
 export const COLUNAS_DENUNCIAS = colunasDenuncias();
+
+// Grava totalCurtidas/totalComentarios nos posts sem contadores ou com
+// contadores errados (posts anteriores à ordenação no servidor, que ficam
+// de fora de "mais curtidos" e "mais comentados" até terem os campos).
+// Devolve quantos posts foram corrigidos.
+export async function recalcularContadoresForum() {
+    const snap = await getDocs(collection(db, "forumPosts"));
+    const pendentes = snap.docs.filter(d => {
+        const certo = contadores(d.data());
+        return d.data().totalCurtidas !== certo.totalCurtidas
+            || d.data().totalComentarios !== certo.totalComentarios;
+    });
+    // Lotes de até 500 escritas (limite do Firestore)
+    for (let i = 0; i < pendentes.length; i += 500) {
+        const batch = writeBatch(db);
+        pendentes.slice(i, i + 500).forEach(d => batch.update(d.ref, contadores(d.data())));
+        await batch.commit();
+    }
+    return pendentes.length;
+}

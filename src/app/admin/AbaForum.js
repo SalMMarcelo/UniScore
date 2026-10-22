@@ -6,6 +6,7 @@ import { db } from "../../firebase";
 import { collection, query, orderBy, limit, getDocs, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { useI18n } from "../../i18n/I18nProvider";
 import { notificarModeracao } from "../../lib/notificacoes";
+import { recalcularContadoresForum } from "./dados";
 import { Botao, Selo, Cartao, Carregando, Erro, Vazio, Filtros, mensagemErro } from "./ui";
 
 const LIMITE = 100;
@@ -26,6 +27,7 @@ export default function AbaForum({ user }) {
     const [filtro, setFiltro] = useState("todos");
     const [erro, setErro] = useState("");
     const [ocupado, setOcupado] = useState(null);
+    const [aviso, setAviso] = useState("");
 
     const carregar = useCallback(async () => {
         setErro("");
@@ -72,6 +74,19 @@ export default function AbaForum({ user }) {
         setOcupado(null);
     }
 
+    async function recalcular() {
+        setOcupado("contadores");
+        setErro("");
+        setAviso("");
+        try {
+            const n = await recalcularContadoresForum();
+            setAviso(t(n === 0 ? "admin.forum.contadoresOk" : "admin.forum.contadoresCorrigidos", { n }));
+        } catch (err) {
+            setErro(mensagemErro(err, t));
+        }
+        setOcupado(null);
+    }
+
     const visiveis = (posts || []).filter(p =>
         filtro === "todos" ? true : filtro === "ocultos" ? p.moderado === true : p.moderado !== true
     );
@@ -79,7 +94,13 @@ export default function AbaForum({ user }) {
     return (
         <div>
             <Filtros opcoes={FILTROS.map(f => ({ ...f, rotulo: t(f.chave) }))} valor={filtro} onChange={setFiltro} rotulo={t("admin.forum.filtrar")} />
-            <p className="text-sm text-gray-500 mb-4">{t("admin.forum.mostrando", { n: LIMITE })}</p>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <p className="text-sm text-gray-500">{t("admin.forum.mostrando", { n: LIMITE })}</p>
+                <Botao cor="cinza" disabled={ocupado === "contadores"} onClick={recalcular} title={t("admin.forum.contadoresAjuda")}>
+                    {ocupado === "contadores" ? t("admin.forum.contadoresRodando") : t("admin.forum.contadoresBotao")}
+                </Botao>
+            </div>
+            {aviso && <p role="status" className="mb-4 text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-4 py-2">{aviso}</p>}
             <Erro>{erro}</Erro>
 
             {posts === null ? (

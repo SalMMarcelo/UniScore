@@ -170,7 +170,7 @@ export default function AbaDenuncias({ user }) {
                     const comentarios = snap.data().comentarios || [];
                     const filtrados = comentarios.filter((c, i) => chaveComentario(c, i) !== grupo.alvoId);
                     if (filtrados.length !== comentarios.length) {
-                        await updateDoc(ref, { comentarios: filtrados });
+                        await updateDoc(ref, { comentarios: filtrados, totalComentarios: filtrados.length });
                     }
                 }
             }

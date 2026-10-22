@@ -5,7 +5,11 @@
 // { conteudo, autor: { uid, nome, email, foto }, tema (opcional, um de TEMAS),
 //   mediaUrl, mediaType: 'image' | 'video' | null, curtidas: [uid],
 //   comentarios: [{ autorUid, autorNome, texto, criadoEm (ISO), respostaA? }],
-//   criadoEm, moderado }
+//   totalCurtidas, totalComentarios (tamanho das listas, para ordenar no
+//   servidor; as regras exigem que batam), criadoEm, moderado }
+//
+// Tema, "só meus", "só com mídia" e a ordem são consultas no Firestore
+// (consultaDoFeed); a busca por texto vale só para os posts já carregados.
 //
 // `respostaA` é a chave (chaveComentario) do comentário respondido. Há um só
 // nível de respostas: responder a uma resposta continua no fio do comentário
@@ -39,6 +43,34 @@ export function validarMidia(arquivo, tipo) {
         return { chave: "forum.midiaGrande", vars: { mb: limite / (1024 * 1024) } };
     }
     return null;
+}
+
+// Contadores coerentes com as listas do post (gravados em toda curtida e
+// comentário, o que também corrige posts antigos sem contadores)
+export function contadores({ curtidas = [], comentarios = [] } = {}) {
+    return { totalCurtidas: curtidas.length, totalComentarios: comentarios.length };
+}
+
+// Campo de ordenação no servidor de cada ORDENS (desempate por criadoEm)
+const CAMPO_ORDEM = { curtidos: "totalCurtidas", comentados: "totalComentarios" };
+
+// Filtros e ordem do feed no Firestore, sem depender do SDK:
+// { onde: [[campo, op, valor]], ordem: [[campo, direção]] }.
+// Cada combinação precisa de índice (firestore.indexes.json): um por campo
+// filtrado + ordem; o Firestore junta os índices quando há vários filtros.
+export function consultaDoFeed(filtros = {}, uid = null) {
+    const onde = [];
+    if (filtros.tema) onde.push(["tema", "==", filtros.tema]);
+    if (filtros.meus && uid) onde.push(["autor.uid", "==", uid]);
+    if (filtros.comMidia) onde.push(["mediaType", "in", ["image", "video"]]);
+    const campo = CAMPO_ORDEM[filtros.ordem];
+    const ordem = campo ? [[campo, "desc"], ["criadoEm", "desc"]] : [["criadoEm", "desc"]];
+    return { onde, ordem };
+}
+
+// Chave estável da consulta (para recomeçar a paginação quando ela muda)
+export function chaveConsulta(consulta) {
+    return JSON.stringify(consulta);
 }
 
 // Minúsculas e sem acentos, para a busca ignorar "é"/"e"
@@ -85,11 +117,6 @@ export function filtrarPosts(posts, filtros = {}, uid = null) {
     }[filtros.ordem] || recente;
 
     return [...lista].sort(criterio);
-}
-
-// Temas que aparecem em algum post (para o filtro mostrar só opções úteis)
-export function temasUsados(posts) {
-    return [...new Set(posts.map(p => p.tema).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
 
 // Organiza os comentários em fios: [{ comentario, chave, indice, respostas: [...] }].

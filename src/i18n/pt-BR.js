@@ -668,10 +668,12 @@ const ptBR = {
     resultados: "{n} posts",
     limparFiltros: "Limpar filtros",
     nenhumResultado: "Nenhum post encontrado com esses filtros.",
-    filtroParcial: "A busca e os filtros consideram só os posts já carregados. Use “Carregar mais posts” para ampliar.",
+    filtroParcial: "A busca por texto considera só os posts já carregados. Use “Carregar mais posts” para ampliar.",
     carregarMais: "Carregar mais posts",
     carregandoPosts: "Carregando posts...",
-    erroCarregar: "Não foi possível carregar os posts. Tente recarregar a página."
+    erroCarregar: "Não foi possível carregar os posts. Tente recarregar a página.",
+    erroFiltros: "Não foi possível carregar os posts com esses filtros. Tente outra combinação.",
+    postRemovido: "Este post foi removido."
   },
 
   perfil: {
@@ -969,7 +971,12 @@ const ptBR = {
       mostrando: "Mostrando os {n} posts mais recentes.",
       carregando: "Carregando posts...",
       nenhum: "Nenhum post para este filtro.",
-      contagens: "{curtidas} curtidas · {comentarios} comentários"
+      contagens: "{curtidas} curtidas · {comentarios} comentários",
+      contadoresBotao: "Recalcular contadores",
+      contadoresRodando: "Recalculando...",
+      contadoresAjuda: "Grava o total de curtidas e comentários nos posts que ainda não têm, para que apareçam em “mais curtidos” e “mais comentados” no fórum.",
+      contadoresOk: "Todos os posts já estavam com os contadores certos.",
+      contadoresCorrigidos: "Contadores atualizados em {n} post(s)."
     },
     universidades: {
       pendentes: "Pendentes",
