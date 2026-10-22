@@ -11,10 +11,13 @@ import {
     LIMITE_DETALHE,
     enviarDenuncia,
     idDenuncia,
-    jaDenunciadoLocalmente
+    jaDenunciadoLocalmente,
+    rotuloMotivo
 } from "../lib/denuncias";
+import { useI18n } from "../i18n/I18nProvider";
 
 export default function BotaoDenunciar({ user, tipo, alvoId, alvoPostId, autorUid, className = "" }) {
+    const { t } = useI18n();
     const [aberto, setAberto] = useState(false);
     const [motivo, setMotivo] = useState("");
     const [detalhe, setDetalhe] = useState("");
@@ -86,7 +89,7 @@ export default function BotaoDenunciar({ user, tipo, alvoId, alvoPostId, autorUi
     async function enviar(e) {
         e.preventDefault();
         if (!motivo) {
-            setErro("Escolha um motivo.");
+            setErro(t("denuncia.escolhaMotivo"));
             return;
         }
         setEnviando(true);
@@ -97,7 +100,7 @@ export default function BotaoDenunciar({ user, tipo, alvoId, alvoPostId, autorUi
             setJaEnviada(true);
         } catch (err) {
             console.error("Erro ao enviar denúncia:", err);
-            setErro("Não foi possível enviar a denúncia. Tente novamente.");
+            setErro(err?.chaveI18n ? t(err.chaveI18n) : t("denuncia.erroEnviar"));
         }
         setEnviando(false);
     }
@@ -109,15 +112,15 @@ export default function BotaoDenunciar({ user, tipo, alvoId, alvoPostId, autorUi
                 type="button"
                 onClick={abrir}
                 aria-haspopup="dialog"
-                title={jaEnviada ? "Você já denunciou este conteúdo" : "Denunciar conteúdo"}
+                title={jaEnviada ? t("denuncia.jaDenunciouTitulo") : t("denuncia.denunciarConteudo")}
                 className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg transition-colors ${
-                    jaEnviada ? "text-gray-400" : "text-gray-500 hover:text-red-600 hover:bg-red-50"
+                    jaEnviada ? "text-gray-600" : "text-gray-600 hover:text-red-600 hover:bg-red-50"
                 } ${className}`}
             >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2z" />
                 </svg>
-                {jaEnviada ? "Denunciado" : "Denunciar"}
+                {jaEnviada ? t("denuncia.denunciado") : t("denuncia.denunciar")}
             </button>
 
             {aberto && (
@@ -134,12 +137,12 @@ export default function BotaoDenunciar({ user, tipo, alvoId, alvoPostId, autorUi
                         className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 text-left"
                     >
                         <div className="flex items-start justify-between gap-4 mb-2">
-                            <h2 id={tituloId} className="text-xl font-bold text-gray-900">Denunciar conteúdo</h2>
+                            <h2 id={tituloId} className="text-xl font-bold text-gray-900">{t("denuncia.denunciarConteudo")}</h2>
                             <button
                                 type="button"
                                 onClick={fechar}
-                                aria-label="Fechar"
-                                className="text-gray-400 hover:text-gray-700 rounded-lg p-1"
+                                aria-label={t("denuncia.fechar")}
+                                className="text-gray-600 hover:text-gray-900 rounded-lg p-1"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -149,33 +152,33 @@ export default function BotaoDenunciar({ user, tipo, alvoId, alvoPostId, autorUi
 
                         {!user ? (
                             <div id={descricaoId}>
-                                <p className="text-gray-600 mb-6">Faça login para denunciar conteúdos inadequados.</p>
+                                <p className="text-gray-600 mb-6">{t("denuncia.facaLogin")}</p>
                                 <Link href="/login" className="inline-block bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                                    Fazer login
+                                    {t("denuncia.fazerLogin")}
                                 </Link>
                             </div>
                         ) : resultado ? (
                             <div id={descricaoId} role="status">
                                 <p className={`mb-6 font-medium ${resultado === "enviada" ? "text-green-700" : "text-gray-700"}`}>
                                     {resultado === "enviada"
-                                        ? "Denúncia enviada. Obrigado! A equipe de moderação vai analisar o conteúdo."
-                                        : "Você já denunciou este conteúdo. A equipe de moderação vai analisá-lo."}
+                                        ? t("denuncia.enviada")
+                                        : t("denuncia.duplicada")}
                                 </p>
                                 <button
                                     type="button"
                                     onClick={fechar}
                                     className="bg-gray-800 text-white px-5 py-2 rounded-lg font-semibold hover:bg-gray-900 transition-colors"
                                 >
-                                    Fechar
+                                    {t("denuncia.fechar")}
                                 </button>
                             </div>
                         ) : (
                             <form onSubmit={enviar}>
                                 <p id={descricaoId} className="text-gray-600 text-sm mb-4">
-                                    Sua denúncia é anônima para o autor e só é vista pela moderação.
+                                    {t("denuncia.anonima")}
                                 </p>
                                 <fieldset className="mb-4">
-                                    <legend className="font-semibold text-gray-800 mb-2">Motivo</legend>
+                                    <legend className="font-semibold text-gray-800 mb-2">{t("denuncia.motivo")}</legend>
                                     <div className="space-y-2">
                                         {MOTIVOS.map(m => (
                                             <label key={m.valor} className="flex items-center gap-3 text-gray-700 cursor-pointer">
@@ -187,14 +190,14 @@ export default function BotaoDenunciar({ user, tipo, alvoId, alvoPostId, autorUi
                                                     onChange={() => setMotivo(m.valor)}
                                                     className="w-4 h-4 accent-red-600"
                                                 />
-                                                {m.rotulo}
+                                                {rotuloMotivo(m.valor, t)}
                                             </label>
                                         ))}
                                     </div>
                                 </fieldset>
 
                                 <label className="block font-semibold text-gray-800 mb-1" htmlFor={`${tituloId}-detalhe`}>
-                                    Detalhes <span className="font-normal text-gray-500">(opcional)</span>
+                                    {t("denuncia.detalhes")} <span className="font-normal text-gray-600">{t("denuncia.opcional")}</span>
                                 </label>
                                 <textarea
                                     id={`${tituloId}-detalhe`}
@@ -203,11 +206,11 @@ export default function BotaoDenunciar({ user, tipo, alvoId, alvoPostId, autorUi
                                     maxLength={LIMITE_DETALHE}
                                     rows={3}
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-200"
-                                    placeholder="Explique o problema, se quiser"
+                                    placeholder={t("denuncia.placeholderDetalhe")}
                                 />
-                                <div className="text-right text-xs text-gray-400 mb-3">{detalhe.length}/{LIMITE_DETALHE}</div>
+                                <div className="text-right text-xs text-gray-600 mb-3">{detalhe.length}/{LIMITE_DETALHE}</div>
 
-                                {erro && <p role="alert" className="text-red-600 text-sm mb-3">{erro}</p>}
+                                {erro && <p role="alert" className="text-red-700 text-sm mb-3">{erro}</p>}
 
                                 <div className="flex justify-end gap-3">
                                     <button
@@ -215,14 +218,14 @@ export default function BotaoDenunciar({ user, tipo, alvoId, alvoPostId, autorUi
                                         onClick={fechar}
                                         className="px-5 py-2 rounded-lg font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
                                     >
-                                        Cancelar
+                                        {t("denuncia.cancelar")}
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={enviando || !motivo}
                                         className="px-5 py-2 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
                                     >
-                                        {enviando ? "Enviando..." : "Enviar denúncia"}
+                                        {enviando ? t("denuncia.enviando") : t("denuncia.enviar")}
                                     </button>
                                 </div>
                             </form>

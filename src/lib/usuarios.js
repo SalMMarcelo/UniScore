@@ -12,8 +12,11 @@
 import { db } from "../firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { isAdminEmail } from "./admin";
+import { tPadrao } from "../i18n/traduzir";
 
 // Mantenha sincronizado com isValidTipoPerfil() em firestore.rules.
+// `valor` é o que fica gravado; `rotulo` é o texto pt-BR (na interface use
+// rotuloTipoPerfil(valor, t), que traduz pela chave valores.tiposPerfil.<valor>).
 export const TIPOS_PERFIL = [
   { valor: "universitario", rotulo: "Universitário" },
   { valor: "familiar", rotulo: "Familiar" },
@@ -28,9 +31,9 @@ export function isTipoPerfilValido(valor) {
   return TIPOS_PERFIL.some(t => t.valor === valor);
 }
 
-export function rotuloTipoPerfil(valor) {
-  const tipo = TIPOS_PERFIL.find(t => t.valor === valor);
-  return tipo ? tipo.rotulo : "";
+export function rotuloTipoPerfil(valor, t = tPadrao) {
+  const tipo = TIPOS_PERFIL.find(tp => tp.valor === valor);
+  return tipo ? t(`valores.tiposPerfil.${tipo.valor}`) : "";
 }
 
 // Nome sempre string não vazia com no máximo NOME_MAX caracteres
@@ -125,38 +128,36 @@ export function destinoAposLogin(user, dadosUsuario, { exigirTipoPerfil = false 
   return destino;
 }
 
-// Mensagens de erro do Firebase Auth em português
-export function mensagemErroAuth(err, provedor = "") {
+// Mensagens de erro do Firebase Auth, no idioma de `t` (padrão: pt-BR)
+export function mensagemErroAuth(err, provedor = "", t = tPadrao) {
   const code = (err && err.code) || "";
-  const com = provedor ? ` com ${provedor}` : "";
   switch (code) {
     case "auth/account-exists-with-different-credential": {
       const email = err.customData && err.customData.email;
-      return `Já existe uma conta${email ? ` com o e-mail ${email}` : " com este e-mail"} criada por outro método de login. ` +
-        "Entre usando o método que você usou originalmente (por exemplo, e-mail e senha ou Google).";
+      return email ? t("erros.auth.contaExistenteComEmail", { email }) : t("erros.auth.contaExistente");
     }
     case "auth/popup-closed-by-user":
     case "auth/cancelled-popup-request":
-      return "A janela de login foi fechada antes de concluir. Tente novamente.";
+      return t("erros.auth.popupFechado");
     case "auth/popup-blocked":
-      return "O navegador bloqueou a janela de login. Permita pop-ups para este site e tente novamente.";
+      return t("erros.auth.popupBloqueado");
     case "auth/operation-not-allowed":
-      return `O login${com} ainda não está habilitado na plataforma. Use outro método de acesso.`;
+      return provedor ? t("erros.auth.naoHabilitadoCom", { provedor }) : t("erros.auth.naoHabilitado");
     case "auth/unauthorized-domain":
-      return "Este domínio não está autorizado para login. Avise o administrador da plataforma.";
+      return t("erros.auth.dominioNaoAutorizado");
     case "auth/network-request-failed":
-      return "Falha de conexão. Verifique sua internet e tente novamente.";
+      return t("erros.auth.falhaConexao");
     case "auth/email-already-in-use":
-      return "Este e-mail já está cadastrado. Faça login ou use outro e-mail.";
+      return t("erros.auth.emailEmUso");
     case "auth/invalid-email":
-      return "E-mail inválido.";
+      return t("erros.auth.emailInvalido");
     case "auth/weak-password":
-      return "A senha deve ter pelo menos 6 caracteres.";
+      return t("erros.auth.senhaFraca");
     case "auth/user-disabled":
-      return "Esta conta foi desativada.";
+      return t("erros.auth.contaDesativada");
     case "auth/too-many-requests":
-      return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
+      return t("erros.auth.muitasTentativas");
     default:
-      return provedor ? `Falha ao autenticar${com}.` : "Não foi possível concluir a operação. Tente novamente.";
+      return provedor ? t("erros.auth.falhaAutenticarCom", { provedor }) : t("erros.auth.generico");
   }
 }

@@ -52,6 +52,8 @@ const CRITERIOS = ["acessibilidade", "conforto", "interculturalidade", "politiza
 // ---------------------------------------------------------------------------
 // Níveis (estrelas 1–5) a partir dos pontos
 // ---------------------------------------------------------------------------
+// `nome` é o texto pt-BR; na interface traduza por gamificacao.niveis.<estrelas>.
+// Selos e detalhamento: gamificacao.selos.<id>.nome/descricao e gamificacao.detalhamento.<id>.
 export const NIVEIS = [
   { estrelas: 1, pontos: 0, nome: "Iniciante" },
   { estrelas: 2, pontos: 50, nome: "Participante" },
@@ -312,8 +314,15 @@ export function agruparAtividadePorUsuario(avaliacoes = [], posts = []) {
   return usuarios;
 }
 
+// Indica se o nome não pode ser exibido (vazio ou e-mail)
+export function nomeOculto(nome) {
+  const texto = textoDe(nome);
+  return !texto || texto.includes("@");
+}
+
 // Nome exibível em público: nunca mostra e-mails (alguns registros antigos
 // gravaram o e-mail no lugar do nome quando não havia displayName).
+// Na interface, quando nomeOculto(...) for verdadeiro, mostre t("comum.participante").
 export function nomePublico(nome) {
   const texto = textoDe(nome);
   if (!texto || texto.includes("@")) return "Participante";
@@ -405,6 +414,7 @@ export async function carregarRanking() {
       return {
         uid: u.uid,
         nome: nomePublico(u.nome),
+        nomeOculto: nomeOculto(u.nome),
         foto: u.foto,
         pontos: c.pontos,
         estrelas: c.estrelas,

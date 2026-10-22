@@ -11,7 +11,10 @@
 
 import { db } from "../firebase";
 import { doc, setDoc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { tPadrao } from "../i18n/traduzir";
 
+// `valor` é gravado; `rotulo` é o texto pt-BR. Na interface use
+// rotuloMotivo(valor, t) / rotuloTipoDenuncia(tipo, t) (chaves valores.*).
 export const MOTIVOS = [
     { valor: "ofensivo", rotulo: "Conteúdo ofensivo" },
     { valor: "spam", rotulo: "Spam ou propaganda" },
@@ -28,8 +31,20 @@ export const TIPOS_DENUNCIA = {
     avaliacao: "Avaliação"
 };
 
-export function rotuloMotivo(valor) {
-    return MOTIVOS.find(m => m.valor === valor)?.rotulo || valor || "";
+export function rotuloMotivo(valor, t = tPadrao) {
+    const motivo = MOTIVOS.find(m => m.valor === valor);
+    return motivo ? t(`valores.motivosDenuncia.${motivo.valor}`) : valor || "";
+}
+
+export function rotuloTipoDenuncia(tipo, t = tPadrao) {
+    return TIPOS_DENUNCIA[tipo] ? t(`valores.tiposDenuncia.${tipo}`) : tipo || "";
+}
+
+// Erro com chave de tradução (err.chaveI18n) para a interface traduzir
+function erroTraduzivel(chave) {
+    const err = new Error(tPadrao(chave));
+    err.chaveI18n = chave;
+    return err;
 }
 
 // Mantém só caracteres aceitos pelas regras em alvoId/alvoPostId: [A-Za-z0-9_-]
@@ -86,12 +101,12 @@ export function jaDenunciadoLocalmente(id) {
 // Envia uma denúncia. Retorna "enviada" ou "duplicada".
 // Lança erro em outras falhas (rede, dados inválidos...).
 export async function enviarDenuncia({ uid, tipo, alvoId, alvoPostId, motivo, detalhe }) {
-    if (!uid) throw new Error("É preciso estar logado para denunciar.");
-    if (!TIPOS_DENUNCIA[tipo]) throw new Error("Tipo de denúncia inválido.");
-    if (!MOTIVOS.some(m => m.valor === motivo)) throw new Error("Escolha um motivo.");
+    if (!uid) throw erroTraduzivel("erros.denuncia.precisaLogin");
+    if (!TIPOS_DENUNCIA[tipo]) throw erroTraduzivel("erros.denuncia.tipoInvalido");
+    if (!MOTIVOS.some(m => m.valor === motivo)) throw erroTraduzivel("erros.denuncia.escolhaMotivo");
 
     const alvo = limparId(alvoId);
-    if (!alvo) throw new Error("Conteúdo inválido.");
+    if (!alvo) throw erroTraduzivel("erros.denuncia.conteudoInvalido");
 
     const dados = {
         tipo,

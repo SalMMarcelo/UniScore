@@ -28,3 +28,46 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Acessibilidade: foco visível consistente (WCAG 2.4.7).
+   Fica em @layer base para que utilitários como focus:outline-none +
+   focus:ring-* dos campos continuem valendo (o anel substitui o contorno). */
+@layer base {
+  :focus-visible {
+    outline: 3px solid #005DAA;
+    outline-offset: 2px;
+  }
+}
+
+/* Link "Pular para o conteúdo" (WCAG 2.4.1) */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 1000;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: #002247;
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 1rem;
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* Respeita a preferência por movimento reduzido (WCAG 2.3.3 / 2.2.2) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -3,21 +3,20 @@
 // Aberto pela aba "Exportar" do /admin com ?imprimir=1, que chama window.print()
 // assim que os dados terminam de carregar. Sem dependências: o PDF é gerado
 // pelo próprio navegador, com os estilos de @media print abaixo.
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { auth } from "../../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { isAdminEmail } from "../../../lib/admin";
 import { listarEventos } from "../../../lib/eventos";
-import { rotuloMotivo, TIPOS_DENUNCIA } from "../../../lib/denuncias";
+import { rotuloMotivo, rotuloTipoDenuncia } from "../../../lib/denuncias";
+import { useI18n } from "../../../i18n/I18nProvider";
 import Estatisticas from "../Estatisticas";
 import {
     carregarEstatisticas,
     carregarAvaliacoes,
     carregarDenuncias,
-    nomesDosEventos,
-    formatarDataHora,
-    formatarDataEvento
+    nomesDosEventos
 } from "../dados";
 import { Carregando, Erro, mensagemErro } from "../ui";
 
@@ -62,6 +61,10 @@ function Tabela({ colunas, linhas }) {
 }
 
 export default function RelatorioAdmin() {
+    const { t, rotulo, formatarData, formatarDataHora } = useI18n();
+    // Ref para usar t no efeito de carga sem recarregar ao trocar de idioma
+    const tRef = useRef(t);
+    tRef.current = t;
     const [user, setUser] = useState(undefined);
     const [dados, setDados] = useState(null);
     const [erro, setErro] = useState("");
@@ -85,7 +88,7 @@ export default function RelatorioAdmin() {
                 if (!cancelado) setDados({ estatisticas, eventos, avaliacoes, denuncias });
             } catch (err) {
                 console.error("Erro ao montar relatório:", err);
-                if (!cancelado) setErro(mensagemErro(err));
+                if (!cancelado) setErro(mensagemErro(err, tRef.current));
             }
         })();
         return () => { cancelado = true; };
@@ -95,8 +98,8 @@ export default function RelatorioAdmin() {
     useEffect(() => {
         if (!dados) return;
         if (new URLSearchParams(window.location.search).get("imprimir") !== "1") return;
-        const t = setTimeout(() => window.print(), 400);
-        return () => clearTimeout(t);
+        const timer = setTimeout(() => window.print(), 400);
+        return () => clearTimeout(timer);
     }, [dados]);
 
     if (user === undefined) {
@@ -107,9 +110,9 @@ export default function RelatorioAdmin() {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center p-4">
                 <div className="text-center max-w-md">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-3">Acesso restrito</h1>
-                    <p className="text-gray-600 mb-6">Este relatório é exclusivo para moderadores da plataforma.</p>
-                    <Link href="/admin" className="text-blue-600 hover:underline">Voltar ao painel</Link>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-3">{t("admin.relatorio.acessoRestrito")}</h1>
+                    <p className="text-gray-600 mb-6">{t("admin.relatorio.exclusivo")}</p>
+                    <Link href="/admin" className="text-blue-600 hover:underline">{t("admin.relatorio.voltarPainel")}</Link>
                 </div>
             </div>
         );
@@ -124,7 +127,7 @@ export default function RelatorioAdmin() {
             <div className="relatorio-sem-impressao bg-gray-50 border-b border-gray-200">
                 <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
                     <Link href="/admin?aba=exportar" className="text-sm font-semibold text-gray-700 hover:text-gray-900">
-                        ← Voltar ao painel
+                        {t("admin.relatorio.voltarPainelSeta")}
                     </Link>
                     <button
                         type="button"
@@ -132,17 +135,17 @@ export default function RelatorioAdmin() {
                         disabled={!dados}
                         className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
                     >
-                        Imprimir / salvar PDF
+                        {t("admin.relatorio.imprimir")}
                     </button>
                 </div>
             </div>
 
-            <main className="max-w-5xl mx-auto px-6 py-8">
+            <main id="conteudo" className="max-w-5xl mx-auto px-4 md:px-6 py-8">
                 <header className="flex items-center justify-between gap-4 border-b border-gray-200 pb-4 mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold">Relatório UniScore</h1>
+                        <h1 className="text-2xl font-bold">{t("admin.relatorio.titulo")}</h1>
                         <p className="text-sm text-gray-500">
-                            Gerado em {new Date().toLocaleString("pt-BR")} por {user.email}
+                            {t("admin.relatorio.geradoEm", { data: formatarDataHora(new Date()), email: user.email })}
                         </p>
                     </div>
                     <img src="/uniscore_star_logo.png" alt="UniScore" className="h-14 w-auto" />
@@ -151,25 +154,25 @@ export default function RelatorioAdmin() {
                 <Erro>{erro}</Erro>
 
                 {!dados && !erro ? (
-                    <Carregando texto="Montando relatório..." />
+                    <Carregando texto={t("admin.relatorio.montando")} />
                 ) : dados && (
                     <div className="space-y-10">
                         <section className="relatorio-secao">
-                            <h2 className="text-xl font-bold mb-4">Indicadores gerais</h2>
+                            <h2 className="text-xl font-bold mb-4">{t("admin.relatorio.indicadores")}</h2>
                             <Estatisticas dados={dados.estatisticas} />
                         </section>
 
                         <section className="relatorio-secao">
-                            <h2 className="text-xl font-bold mb-4">Denúncias abertas ({dados.denuncias.length})</h2>
+                            <h2 className="text-xl font-bold mb-4">{t("admin.relatorio.denunciasAbertas", { n: dados.denuncias.length })}</h2>
                             {dados.denuncias.length === 0 ? (
-                                <p className="text-sm text-gray-500">Nenhuma denúncia aberta.</p>
+                                <p className="text-sm text-gray-500">{t("admin.relatorio.nenhumaDenuncia")}</p>
                             ) : (
                                 <Tabela
-                                    colunas={["Data", "Tipo", "Motivo", "Detalhe", "Conteúdo (id)"]}
+                                    colunas={[t("admin.relatorio.colData"), t("admin.relatorio.colTipo"), t("admin.relatorio.colMotivo"), t("admin.relatorio.colDetalhe"), t("admin.relatorio.colConteudo")]}
                                     linhas={dados.denuncias.map(d => [
                                         formatarDataHora(d.criadoEm),
-                                        TIPOS_DENUNCIA[d.tipo] || d.tipo,
-                                        rotuloMotivo(d.motivo),
+                                        rotuloTipoDenuncia(d.tipo, t),
+                                        rotuloMotivo(d.motivo, t),
                                         d.detalhe || "—",
                                         d.tipo === "comentario" ? `${d.alvoPostId} / ${d.alvoId}` : d.alvoId
                                     ])}
@@ -178,32 +181,35 @@ export default function RelatorioAdmin() {
                         </section>
 
                         <section className="relatorio-secao">
-                            <h2 className="text-xl font-bold mb-4">Eventos ({dados.eventos.length})</h2>
+                            <h2 className="text-xl font-bold mb-4">{t("admin.relatorio.eventos", { n: dados.eventos.length })}</h2>
                             <Tabela
-                                colunas={["Evento", "Data", "Universidade", "Tema", "Tipo"]}
+                                colunas={[t("admin.relatorio.colEvento"), t("admin.relatorio.colData"), t("admin.relatorio.colUniversidade"), t("admin.relatorio.colTema"), t("admin.relatorio.colTipo")]}
                                 linhas={dados.eventos.map(ev => [
-                                    ev.nome + (ev.legado ? " (legado)" : ""),
-                                    formatarDataEvento(ev.data) || "—",
+                                    ev.nome + (ev.legado ? t("admin.relatorio.legadoSufixo") : ""),
+                                    formatarData(ev.data) || ev.data || "—",
                                     ev.universidadeNome || "—",
-                                    ev.tema || "—",
-                                    ev.tipo || "—"
+                                    rotulo("valores.temas", ev.tema) || "—",
+                                    rotulo("valores.tipos", ev.tipo) || "—"
                                 ])}
                             />
                         </section>
 
                         <section className="relatorio-secao">
                             <h2 className="text-xl font-bold mb-4">
-                                Avaliações recentes ({dados.avaliacoes.length}{dados.avaliacoes.length >= LIMITE_AVALIACOES ? `, últimas ${LIMITE_AVALIACOES}` : ""})
+                                {t("admin.relatorio.avaliacoesRecentes", {
+                                    n: dados.avaliacoes.length,
+                                    ultimas: dados.avaliacoes.length >= LIMITE_AVALIACOES ? t("admin.relatorio.ultimas", { n: LIMITE_AVALIACOES }) : ""
+                                })}
                             </h2>
                             <Tabela
-                                colunas={["Data", "Evento", "Usuário", "Nota", "Título", "Situação"]}
+                                colunas={[t("admin.relatorio.colData"), t("admin.relatorio.colEvento"), t("admin.relatorio.colUsuario"), t("admin.relatorio.colNota"), t("admin.relatorio.colTitulo"), t("admin.relatorio.colSituacao")]}
                                 linhas={dados.avaliacoes.map(av => [
                                     formatarDataHora(av.criadoEm),
                                     nomes[av.eventoId] || (av.eventoId ? `#${av.eventoId}` : "—"),
                                     av.usuario || "—",
                                     av.nota ?? "—",
                                     av.titulo || "—",
-                                    av.moderado ? "Oculta" : "Visível"
+                                    av.moderado ? t("admin.relatorio.oculta") : t("admin.relatorio.visivel")
                                 ])}
                             />
                         </section>

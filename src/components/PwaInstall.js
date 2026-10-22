@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useI18n } from "../i18n/I18nProvider";
 
 function isStandalone() {
   if (typeof window === "undefined") return false;
@@ -16,10 +17,13 @@ function isIos() {
 }
 
 export default function PwaInstall() {
+  const { t } = useI18n();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [installed, setInstalled] = useState(false);
   const [showIosHint, setShowIosHint] = useState(false);
   const [showButton, setShowButton] = useState(false);
+  const installButtonRef = useRef(null);
+  const closeButtonRef = useRef(null);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
@@ -56,6 +60,33 @@ export default function PwaInstall() {
     };
   }, []);
 
+  // Gerencia foco e tecla Esc enquanto o aviso do iOS estiver aberto
+  useEffect(() => {
+    if (!showIosHint) return;
+    const previouslyFocused = document.activeElement;
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setShowIosHint(false);
+      } else if (event.key === "Tab") {
+        // Único elemento focável no diálogo: mantém o foco nele
+        event.preventDefault();
+        closeButtonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+        previouslyFocused.focus();
+      } else {
+        installButtonRef.current?.focus();
+      }
+    };
+  }, [showIosHint]);
+
   if (installed || !showButton) return null;
 
   const handleClick = async () => {
@@ -78,9 +109,10 @@ export default function PwaInstall() {
   return (
     <>
       <button
+        ref={installButtonRef}
         onClick={handleClick}
         className="fixed bottom-6 left-6 z-50 flex items-center gap-2 rounded-full border-2 border-white bg-[#002247] px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
-        aria-label="Instalar aplicativo UniScore"
+        aria-label={t("pwa.instalarRotulo")}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -91,12 +123,14 @@ export default function PwaInstall() {
           strokeLinecap="round"
           strokeLinejoin="round"
           className="h-5 w-5"
+          aria-hidden="true"
+          focusable="false"
         >
           <path d="M12 3v12" />
           <path d="m7 10 5 5 5-5" />
           <path d="M5 21h14" />
         </svg>
-        <span className="hidden sm:inline">Instalar app</span>
+        <span className="hidden sm:inline">{t("pwa.instalarApp")}</span>
       </button>
 
       {showIosHint && (
@@ -105,23 +139,29 @@ export default function PwaInstall() {
           onClick={() => setShowIosHint(false)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pwa-ios-titulo"
+            aria-describedby="pwa-ios-descricao"
             className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="mb-2 text-base font-semibold text-[#002247]">
-              Instalar o UniScore
-            </p>
-            <p className="text-sm text-gray-600">
-              Toque no ícone de compartilhar
+            <h2 id="pwa-ios-titulo" className="mb-2 text-base font-semibold text-[#002247]">
+              {t("pwa.tituloIos")}
+            </h2>
+            <p id="pwa-ios-descricao" className="text-sm text-gray-600">
+              {t("pwa.toqueCompartilhar")}
               <span aria-hidden="true"> (⬆️) </span>
-              na barra do Safari e depois em{" "}
-              <strong>&quot;Adicionar à Tela de Início&quot;</strong>.
+              {t("pwa.naBarraSafari")}{" "}
+              <strong>{t("pwa.adicionarTela")}</strong>.
             </p>
             <button
+              ref={closeButtonRef}
+              type="button"
               onClick={() => setShowIosHint(false)}
               className="mt-4 rounded-full bg-[#002247] px-4 py-2 text-sm font-semibold text-white"
             >
-              Entendi
+              {t("pwa.entendi")}
             </button>
           </div>
         </div>
