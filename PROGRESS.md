@@ -210,13 +210,17 @@
 - ✅ **Regras do Firestore**: validação de `tipoPerfil`, `nome` e `universidadeId`; regras anti-fraude no fórum e moderação nas avaliações
 - ✅ **Internacionalização (RNF07)**: pt-BR e en-US em todas as páginas, com `I18nProvider`, `SeletorIdioma` e dicionários em `src/i18n/` (pt-BR é a fonte da verdade; manter as mesmas chaves em en-US)
 
+- ✅ **Relatório público (`/relatorio`) com dados reais**: avaliações (total e do mês), nota média, eventos, posts, avaliações por mês, impacto intercultural (médias dos critérios), avaliações por tema, eventos por tipo e avaliações recentes, via agregações do Firestore (`src/lib/estatisticas.js`)
+- ✅ **Fórum**: busca (texto, autor e comentários, sem diferenciar acentos), filtro por tema, "só com mídia", "só meus posts", ordenação (recentes, curtidos, comentados), tema opcional ao publicar e respostas a comentários (um nível, campo `respostaA`) — lógica em `src/lib/forum.js`
+- ✅ **Mídia no fórum**: imagens até 10 MB e vídeos até 50 MB, validados no cliente e em `storage.rules`
+- ✅ **Notificações**: curtidas, comentários, respostas e ações da moderação; sino com não lidas, página `/notificacoes`; regras aceitam só notificações ligadas a uma ação real (`src/lib/notificacoes.js`)
+
 ### 🚀 **Próximos Passos Sugeridos**
 
-1. **Notificações** — curtidas, comentários e ações de moderação
-2. **Upload de mídia no fórum** — imagens via Firebase Storage com preview e validação
-3. **Busca avançada no fórum** — filtros por categoria cultural e ordenação
-4. **Comentários aninhados** — respostas a comentários no fórum
-5. **Relatório público com dados reais** — `/relatorio` ainda usa números fixos de exemplo
+1. **Testes automatizados das regras** — os casos de fórum e notificações foram validados no emulador do Firestore, mas o projeto ainda não tem uma suíte versionada
+2. **Notificações push (PWA)** — avisar fora do site via Firebase Cloud Messaging
+3. **Paginação do fórum** — hoje o feed carrega todos os posts em tempo real
+4. **Usuários no relatório público** — exige um contador mantido no servidor (Cloud Function), pois as regras não permitem contar `users`
 
 ### 📝 **Notas Técnicas**
 
@@ -244,4 +248,4 @@
 
 **Última atualização:** 22 de Outubro de 2026  
 **Status do Projeto:** ✅ Fase 3 concluída (moderação, gamificação, admin, acessibilidade e i18n)  
-**Próximo Milestone:** 🔔 Notificações e mídia no fórum
+**Próximo Milestone:** 🧪 Testes das regras e paginação do fórum
