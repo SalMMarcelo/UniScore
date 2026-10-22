@@ -217,10 +217,9 @@
 
 ### 🚀 **Próximos Passos Sugeridos**
 
-1. **Testes automatizados das regras** — os casos de fórum e notificações foram validados no emulador do Firestore, mas o projeto ainda não tem uma suíte versionada
+1. **Paginação do fórum** — hoje o feed carrega todos os posts em tempo real
 2. **Notificações push (PWA)** — avisar fora do site via Firebase Cloud Messaging
-3. **Paginação do fórum** — hoje o feed carrega todos os posts em tempo real
-4. **Usuários no relatório público** — exige um contador mantido no servidor (Cloud Function), pois as regras não permitem contar `users`
+3. **Usuários no relatório público** — exige um contador mantido no servidor (Cloud Function), pois as regras não permitem contar `users`
 
 ### 📝 **Notas Técnicas**
 
@@ -236,6 +235,12 @@
 
 - O build precisa das variáveis `NEXT_PUBLIC_FIREBASE_*` (em `.env.local`); sem elas o prerender falha com `auth/invalid-api-key`
 
+**Testes das regras**
+
+- `npm run test:rules` sobe os emuladores do Firestore e do Storage e roda `tests/regras/*.test.mjs` (141 casos: usuários, avaliações, universidades, eventos, fórum, denúncias, notificações e uploads)
+- Precisa de Java 21+ no PATH (exigência do `firebase-tools`); não usa nenhum projeto real (`demo-uniscore`)
+- Toda mudança em `firestore.rules` ou `storage.rules` deve vir com casos novos aqui
+
 **Padrões de Código**
 
 - "use client" para componentes interativos
@@ -248,4 +253,4 @@
 
 **Última atualização:** 22 de Outubro de 2026  
 **Status do Projeto:** ✅ Fase 3 concluída (moderação, gamificação, admin, acessibilidade e i18n)  
-**Próximo Milestone:** 🧪 Testes das regras e paginação do fórum
+**Próximo Milestone:** 📄 Paginação do fórum

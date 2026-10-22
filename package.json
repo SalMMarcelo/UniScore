@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
-    "start": "next start"
+    "start": "next start",
+    "test:rules": "firebase emulators:exec --only firestore,storage --project demo-uniscore \"node --test --test-concurrency=1 --test-reporter=spec tests/regras/*.test.mjs\""
   },
   "dependencies": {
     "firebase": "^12.4.0",
@@ -14,7 +15,9 @@
     "react-dom": "19.1.0"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@tailwindcss/postcss": "^4",
+    "firebase-tools": "^15.34.1",
     "tailwindcss": "^4"
   }
 }
