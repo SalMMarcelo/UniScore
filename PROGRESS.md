@@ -188,57 +188,49 @@
 - `admin@uniscore.com`
 - `moderador@uniscore.com`
 
-### 📱 **Responsividade**
+### 📱 **Responsividade e Acessibilidade**
 
-- ✅ Design mobile-first
-- ✅ Breakpoints: sm, md, lg, xl
-- ✅ Grid responsivo em todas as páginas
-- ✅ Navegação adaptativa
+- ✅ Design mobile-first (breakpoints sm, md, lg, xl)
+- ✅ Componente `MenuMobile` em todas as páginas
+- ✅ Foco visível global, skip link (`LinkPularConteudo`) e landmark `main`
+- ✅ Rótulos associados, erros com `role=alert` e nomes acessíveis em botões
+- ✅ Contraste revisado, SVGs decorativos com `aria-hidden`
+- ✅ Carrossel pausável e respeito a `prefers-reduced-motion`
+- ✅ Diálogo acessível no aviso de instalação do PWA
+
+## 📅 Outubro 2026 — Fase 3
+
+### ✨ **Funcionalidades Implementadas**
+
+- ✅ **Cadastro completo**: tipo de perfil, universidade, login social e modo `/perfil?completar=1`
+- ✅ **Denúncias**: botão Denunciar em posts, comentários e avaliações; conteúdo moderado fica oculto
+- ✅ **Gamificação**: painel de conquistas no perfil, pontos, estrelas, selos e página `/ranking`
+- ✅ **Busca**: busca da home leva a `/eventos`, com sugestões acessíveis por teclado (RF06)
+- ✅ **Painel administrativo (`/admin`)**: denúncias, universidades, avaliações, fórum, eventos, estatísticas e exportação CSV/PDF; `/forum/moderacao` redireciona para o painel
+- ✅ **Regras do Firestore**: validação de `tipoPerfil`, `nome` e `universidadeId`; regras anti-fraude no fórum e moderação nas avaliações
+- ✅ **Internacionalização (RNF07)**: pt-BR e en-US em todas as páginas, com `I18nProvider`, `SeletorIdioma` e dicionários em `src/i18n/` (pt-BR é a fonte da verdade; manter as mesmas chaves em en-US)
 
 ### 🚀 **Próximos Passos Sugeridos**
 
-1. **Sistema de Comentários**
-   - Implementar comentários nos posts do fórum
-   - Sistema de respostas aninhadas
-
-2. **Sistema de Reportar**
-   - Permitir usuários reportarem conteúdo inadequado
-   - Integrar com painel de moderação
-
-3. **Notificações**
-   - Notificações de curtidas
-   - Notificações de comentários
-   - Notificações de moderação
-
-4. **Upload de Mídia**
-   - Upload direto de imagens via Firebase Storage
-   - Preview de imagens antes do upload
-   - Validação de tamanho e formato
-
-5. **Busca e Filtros**
-   - Busca avançada no fórum
-   - Filtros por categoria cultural
-   - Ordenação de posts
-
-6. **Gamificação**
-   - Sistema de selos e badges
-   - Pontuação por participação
-   - Rankings de usuários
-
-7. **Análises e Relatórios**
-   - Dashboard para universidades
-   - Estatísticas detalhadas de eventos
-   - Exportação de relatórios
+1. **Notificações** — curtidas, comentários e ações de moderação
+2. **Upload de mídia no fórum** — imagens via Firebase Storage com preview e validação
+3. **Busca avançada no fórum** — filtros por categoria cultural e ordenação
+4. **Comentários aninhados** — respostas a comentários no fórum
+5. **Relatório público com dados reais** — `/relatorio` ainda usa números fixos de exemplo
 
 ### 📝 **Notas Técnicas**
 
 **Stack Tecnológica**
 
-- Next.js 15.5.5
+- Next.js 16.2 (Turbopack)
 - React 19
 - Tailwind CSS 4
-- Firebase (Auth + Firestore)
+- Firebase (Auth + Firestore + Storage)
 - JavaScript (ES6+)
+
+**Build**
+
+- O build precisa das variáveis `NEXT_PUBLIC_FIREBASE_*` (em `.env.local`); sem elas o prerender falha com `auth/invalid-api-key`
 
 **Padrões de Código**
 
@@ -246,42 +238,10 @@
 - Hooks: useState, useEffect, useParams, useRouter
 - Real-time updates com onSnapshot
 - Server timestamps do Firebase
-
-**Boas Práticas Implementadas**
-
-- Componentes reutilizáveis
-- Separação de concerns
-- Validação de dados
-- Estados de loading
-- Error handling
-- Segurança via Firebase Rules
+- Textos de interface sempre via `t("chave")` do `useI18n()`
 
 ---
 
-## 🔜 **Próxima Sessão de Trabalho**
-
-### 📱 **Prioridade: Responsividade Mobile**
-
-- [ ] Verificar e ajustar responsividade da página inicial
-- [ ] Testar navegação em telas pequenas
-- [ ] Ajustar banners e cards para mobile
-- [ ] Verificar carrossel em dispositivos móveis
-- [ ] Testar formulário de avaliação em mobile
-- [ ] Ajustar página da universidade para telas pequenas
-- [ ] Verificar fórum em dispositivos móveis
-- [ ] Testar menu hamburguer (se necessário implementar)
-- [ ] Ajustar espaçamentos e tamanhos de fonte
-- [ ] Garantir botões e links clicáveis em touch screens
-
-### 🎯 **Objetivos**
-
-- Garantir experiência perfeita em smartphones (320px - 768px)
-- Testar em diferentes resoluções mobile
-- Ajustar breakpoints quando necessário
-- Manter design moderno e funcional
-
----
-
-**Última atualização:** 02 de Novembro de 2025  
-**Status do Projeto:** ✅ Em Produção (MVP Completo)  
-**Próximo Milestone:** 📱 Otimização Mobile
+**Última atualização:** 22 de Outubro de 2026  
+**Status do Projeto:** ✅ Fase 3 concluída (moderação, gamificação, admin, acessibilidade e i18n)  
+**Próximo Milestone:** 🔔 Notificações e mídia no fórum
