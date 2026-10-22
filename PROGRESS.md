@@ -185,8 +185,7 @@
 
 ### 🔐 **Moderadores Configurados**
 
-- `admin@uniscore.com`
-- `moderador@uniscore.com`
+- `salmeron.marcelo@gmail.com` (e-mail verificado; lista em `src/lib/admin.js` e `isModerator()` em `firestore.rules`)
 
 ### 📱 **Responsividade e Acessibilidade**
 

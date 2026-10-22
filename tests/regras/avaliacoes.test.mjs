@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from "node:test";
 import { doc, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
-import { criarAmbiente, assertSucceeds, assertFails } from "./ambiente.mjs";
+import { criarAmbiente, assertSucceeds, assertFails, EMAIL_MODERADOR } from "./ambiente.mjs";
 
 const { env, usuario, moderador, anonimo, semear } = await criarAmbiente();
 
@@ -69,8 +69,15 @@ describe("avaliacoes", () => {
         assertSucceeds(updateDoc(doc(moderador().firestore(), "avaliacoes", "a1"), { moderado: true, moderadoPor: "mod" })));
 
     it("e-mail de moderador sem verificação não modera", () => {
-        const falso = usuario("falso", { email: "moderador@uniscore.com", email_verified: false }).firestore();
+        const falso = usuario("falso", { email: EMAIL_MODERADOR, email_verified: false }).firestore();
         return assertFails(updateDoc(doc(falso, "avaliacoes", "a1"), { moderado: true }));
+    });
+
+    it("e-mails antigos da lista de moderadores não moderam mais", async () => {
+        for (const email of ["admin@uniscore.com", "moderador@uniscore.com"]) {
+            const antigo = usuario(email, { email, email_verified: true }).firestore();
+            await assertFails(updateDoc(doc(antigo, "avaliacoes", "a1"), { moderado: true }));
+        }
     });
 
     it("outro usuário não apaga; autor e moderador apagam", async () => {

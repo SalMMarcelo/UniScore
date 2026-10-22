@@ -22,8 +22,7 @@ service cloud.firestore {
       return isSignedIn()
         && request.auth.token.email_verified == true
         && request.auth.token.email in [
-          'admin@uniscore.com',
-          'moderador@uniscore.com'
+          'salmeron.marcelo@gmail.com'
         ];
     }
 

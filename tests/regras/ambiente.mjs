@@ -12,7 +12,7 @@ export { assertSucceeds, assertFails } from "@firebase/rules-unit-testing";
 const raiz = new URL("../../", import.meta.url);
 
 // Mantenha sincronizado com isModerator() em firestore.rules
-export const EMAIL_MODERADOR = "moderador@uniscore.com";
+export const EMAIL_MODERADOR = "salmeron.marcelo@gmail.com";
 
 // As negações esperadas viram avisos do SDK; sem isso a saída fica ilegível
 setLogLevel("silent");
