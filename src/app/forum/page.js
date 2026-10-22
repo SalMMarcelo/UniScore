@@ -28,8 +28,10 @@ import {
 } from "../../lib/forum";
 import BotaoDenunciar from "../../components/BotaoDenunciar";
 import MenuMobile from "../../components/MenuMobile";
+import SinoNotificacoes from "../../components/SinoNotificacoes";
 import SeletorIdioma from "../../components/SeletorIdioma";
 import { useI18n } from "../../i18n/I18nProvider";
+import { comentarENotificar, notificarCurtida } from "../../lib/notificacoes";
 
 // ─── Utilitário de timestamp ───────────────────────────────────────────────
 function formatTimestamp(timestamp, t) {
@@ -131,7 +133,7 @@ function Comentario({ item, post, user, resposta, onResponder }) {
 function PostCard({ post, user, onLike, onComment }) {
     const { t, rotulo } = useI18n();
     const [showComments, setShowComments] = useState(false);
-    // Resposta em andamento: { fio: chave do comentário de 1º nível, nome: autor respondido }
+    // Resposta em andamento: { fio: item de 1º nível (organizarComentarios), nome: autor respondido }
     const [respondendo, setRespondendo] = useState(null);
     const fios = organizarComentarios(post.comentarios);
 
@@ -163,11 +165,11 @@ function PostCard({ post, user, onLike, onComment }) {
 
     // Responder a uma resposta continua no fio do comentário original
     const iniciarResposta = (fio, item) => {
-        setRespondendo({ fio: fio.chave, nome: item.comentario.autorNome || "" });
+        setRespondendo({ fio, nome: item.comentario.autorNome || "" });
     };
 
     const enviarResposta = async (texto) => {
-        const ok = await onComment(post.id, texto, respondendo.fio);
+        const ok = await onComment(post, texto, respondendo.fio);
         if (ok) setRespondendo(null);
         return ok;
     };
@@ -222,7 +224,7 @@ function PostCard({ post, user, onLike, onComment }) {
                         {/* Curtir */}
                         <button
                             type="button"
-                            onClick={() => onLike(post.id, post.curtidas || [])}
+                            onClick={() => onLike(post)}
                             aria-pressed={!!(user && post.curtidas?.includes(user.uid))}
                             className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
                                 user && post.curtidas?.includes(user.uid)
@@ -281,7 +283,7 @@ function PostCard({ post, user, onLike, onComment }) {
                                     {fios.map((fio) => (
                                         <li key={`${fio.chave}-${fio.indice}`}>
                                             <Comentario item={fio} post={post} user={user} onResponder={(item) => iniciarResposta(fio, item)} />
-                                            {(fio.respostas.length > 0 || respondendo?.fio === fio.chave) && (
+                                            {(fio.respostas.length > 0 || respondendo?.fio.chave === fio.chave) && (
                                                 <div className="ml-11 mt-2 pl-3 border-l-2 border-gray-200 space-y-2">
                                                     {fio.respostas.length > 0 && (
                                                         <ul className="space-y-2" aria-label={t("forum.respostasA", { nome: fio.comentario.autorNome })}>
@@ -292,7 +294,7 @@ function PostCard({ post, user, onLike, onComment }) {
                                                             ))}
                                                         </ul>
                                                     )}
-                                                    {user && respondendo?.fio === fio.chave && (
+                                                    {user && respondendo?.fio.chave === fio.chave && (
                                                         <FormComentario
                                                             key={respondendo.nome}
                                                             id={`resposta-${post.id}-${fio.indice}`}
@@ -318,7 +320,7 @@ function PostCard({ post, user, onLike, onComment }) {
                                     id={`comentario-${post.id}`}
                                     rotulo={t("forum.escrevaComentario")}
                                     placeholder={t("forum.placeholderComentario")}
-                                    onEnviar={(texto) => onComment(post.id, texto)}
+                                    onEnviar={(texto) => onComment(post, texto)}
                                 />
                             )}
                         </div>
@@ -647,33 +649,33 @@ export default function Forum() {
         }
     }, [user, t]);
 
-    const handleLike = useCallback(async (postId, curtidas) => {
+    const handleLike = useCallback(async (post) => {
         if (!user) return;
-        const postRef = doc(db, "forumPosts", postId);
-        const userLiked = curtidas.includes(user.uid);
+        const postRef = doc(db, "forumPosts", post.id);
+        const userLiked = (post.curtidas || []).includes(user.uid);
         try {
             await updateDoc(postRef, {
                 curtidas: userLiked ? arrayRemove(user.uid) : arrayUnion(user.uid),
             });
+            if (!userLiked) notificarCurtida(user, post);
         } catch (error) {
             console.error("Erro ao curtir:", error);
             alert(t("forum.erroCurtir", { mensagem: error.message }));
         }
     }, [user, t]);
 
-    // respostaA: chave do comentário de primeiro nível respondido (opcional)
-    const handleComment = useCallback(async (postId, texto, respostaA = null) => {
+    // fio: comentário de primeiro nível respondido (item de organizarComentarios), opcional
+    const handleComment = useCallback(async (post, texto, fio = null) => {
         if (!user) return false;
-        const postRef = doc(db, "forumPosts", postId);
         const comentario = {
             autorUid: user.uid,
             autorNome: user.displayName || user.email,
             texto,
             criadoEm: new Date().toISOString(),
         };
-        if (respostaA) comentario.respostaA = respostaA;
+        if (fio) comentario.respostaA = fio.chave;
         try {
-            await updateDoc(postRef, { comentarios: arrayUnion(comentario) });
+            await comentarENotificar(user, post, comentario, fio?.comentario || null);
             return true;
         } catch (error) {
             console.error("Erro ao comentar:", error);
@@ -709,6 +711,7 @@ export default function Forum() {
                                 </svg>
                             </Link>
                         )}
+                        <SinoNotificacoes />
                         <MenuMobile />
                     </div>
                 </div>

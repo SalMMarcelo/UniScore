@@ -34,7 +34,8 @@ const enUS = {
     ranking: "Ranking",
     paraUniversidades: "For universities",
     perfil: "Profile",
-    entrar: "Sign in"
+    entrar: "Sign in",
+    notificacoes: "Notifications"
   },
 
   valores: {
@@ -1169,6 +1170,43 @@ const enUS = {
     eventoRemovido: "Event unavailable"
   },
 
+
+  notificacoes: {
+    titulo: "Notifications",
+    voltar: "Back",
+    sinoUma: "Notifications: {n} unread",
+    sinoVarias: "Notifications: {n} unread",
+    naoLidasUma: "{n} unread",
+    naoLidas: "{n} unread",
+    todasLidas: "All caught up: no new notifications.",
+    marcarTodas: "Mark all as read",
+    marcarLida: "Mark as read",
+    excluir: "Delete",
+    verPost: "View post",
+    novaSr: "New:",
+    carregando: "Loading notifications...",
+    vazio: "You have no notifications yet. They show up when someone likes or comments on your posts.",
+    erro: "Could not load your notifications.",
+    erroAcao: "Could not update the notification. Please try again.",
+    facaLogin: "Sign in to see your notifications.",
+    entrar: "Sign in",
+    alguem: "Someone",
+    mensagens: {
+      curtida: "{nome} liked your post",
+      comentario: "{nome} commented on your post",
+      resposta: "{nome} replied to your comment"
+    },
+    moderacao: {
+      ocultado: "Moderators hid {alvo}",
+      restaurado: "Moderators restored {alvo}",
+      removido: "Moderators removed {alvo}"
+    },
+    alvos: {
+      post: "your post",
+      comentario: "your comment",
+      avaliacao: "your review"
+    }
+  },
 
   // @@novas-secoes
 };

@@ -35,7 +35,8 @@ const ptBR = {
     ranking: "Ranking",
     paraUniversidades: "Para universidades",
     perfil: "Perfil",
-    entrar: "Entrar"
+    entrar: "Entrar",
+    notificacoes: "Notificações"
   },
 
   // Rótulos de valores gravados no Firestore (o valor gravado não muda)
@@ -1177,6 +1178,43 @@ const ptBR = {
     eventoRemovido: "Evento indisponível"
   },
 
+
+  notificacoes: {
+    titulo: "Notificações",
+    voltar: "Voltar",
+    sinoUma: "Notificações: {n} não lida",
+    sinoVarias: "Notificações: {n} não lidas",
+    naoLidasUma: "{n} não lida",
+    naoLidas: "{n} não lidas",
+    todasLidas: "Tudo em dia: nenhuma notificação nova.",
+    marcarTodas: "Marcar todas como lidas",
+    marcarLida: "Marcar como lida",
+    excluir: "Excluir",
+    verPost: "Ver post",
+    novaSr: "Nova:",
+    carregando: "Carregando notificações...",
+    vazio: "Você ainda não tem notificações. Elas aparecem quando alguém curte ou comenta seus posts.",
+    erro: "Não foi possível carregar suas notificações.",
+    erroAcao: "Não foi possível atualizar a notificação. Tente novamente.",
+    facaLogin: "Entre na sua conta para ver suas notificações.",
+    entrar: "Fazer login",
+    alguem: "Alguém",
+    mensagens: {
+      curtida: "{nome} curtiu seu post",
+      comentario: "{nome} comentou no seu post",
+      resposta: "{nome} respondeu ao seu comentário"
+    },
+    moderacao: {
+      ocultado: "A moderação ocultou {alvo}",
+      restaurado: "A moderação restaurou {alvo}",
+      removido: "A moderação removeu {alvo}"
+    },
+    alvos: {
+      post: "seu post",
+      comentario: "seu comentário",
+      avaliacao: "sua avaliação"
+    }
+  },
 
   // @@novas-secoes
 };

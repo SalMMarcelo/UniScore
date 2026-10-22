@@ -8,6 +8,7 @@ import { doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { listarEventos } from "../../lib/eventos";
 import { carregarAvaliacoes, nomesDosEventos } from "./dados";
 import { useI18n } from "../../i18n/I18nProvider";
+import { notificarModeracao } from "../../lib/notificacoes";
 import { Botao, Selo, Cartao, Carregando, Erro, Vazio, Filtros, mensagemErro } from "./ui";
 
 const LIMITE = 100;
@@ -17,6 +18,10 @@ const FILTROS = [
     { valor: "visiveis", chave: "admin.filtrosVisiveis" },
     { valor: "ocultas", chave: "admin.filtrosOcultas" }
 ];
+
+function alvoDaAvaliacao(av) {
+    return { tipo: "avaliacao", autorUid: av.usuarioId, avaliacaoId: av.id, texto: av.titulo || av.comentario };
+}
 
 export default function AbaAvaliacoes({ user }) {
     const { t, formatarDataHora } = useI18n();
@@ -51,6 +56,7 @@ export default function AbaAvaliacoes({ user }) {
                 moderadoEm: serverTimestamp()
             });
             setAvaliacoes(lista => lista.map(a => (a.id === av.id ? { ...a, moderado: !av.moderado } : a)));
+            notificarModeracao(user, alvoDaAvaliacao(av), av.moderado ? "restaurado" : "ocultado");
         } catch (err) {
             setErro(mensagemErro(err, t));
         }
@@ -64,6 +70,7 @@ export default function AbaAvaliacoes({ user }) {
         try {
             await deleteDoc(doc(db, "avaliacoes", av.id));
             setAvaliacoes(lista => lista.filter(a => a.id !== av.id));
+            notificarModeracao(user, alvoDaAvaliacao(av), "removido");
         } catch (err) {
             setErro(mensagemErro(err, t));
         }

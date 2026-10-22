@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { db } from "../../firebase";
 import { collection, query, orderBy, limit, getDocs, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { useI18n } from "../../i18n/I18nProvider";
+import { notificarModeracao } from "../../lib/notificacoes";
 import { Botao, Selo, Cartao, Carregando, Erro, Vazio, Filtros, mensagemErro } from "./ui";
 
 const LIMITE = 100;
@@ -14,6 +15,10 @@ const FILTROS = [
     { valor: "visiveis", chave: "admin.filtrosVisiveis" },
     { valor: "ocultos", chave: "admin.filtrosOcultos" }
 ];
+
+function alvoDoPost(post) {
+    return { tipo: "post", autorUid: post.autor?.uid, postId: post.id, texto: post.conteudo };
+}
 
 export default function AbaForum({ user }) {
     const { t, formatarDataHora } = useI18n();
@@ -46,6 +51,7 @@ export default function AbaForum({ user }) {
                 moderadoEm: serverTimestamp()
             });
             setPosts(lista => lista.map(p => (p.id === post.id ? { ...p, moderado: !post.moderado } : p)));
+            notificarModeracao(user, alvoDoPost(post), post.moderado ? "restaurado" : "ocultado");
         } catch (err) {
             setErro(mensagemErro(err, t));
         }
@@ -59,6 +65,7 @@ export default function AbaForum({ user }) {
         try {
             await deleteDoc(doc(db, "forumPosts", post.id));
             setPosts(lista => lista.filter(p => p.id !== post.id));
+            notificarModeracao(user, alvoDoPost(post), "removido");
         } catch (err) {
             setErro(mensagemErro(err, t));
         }

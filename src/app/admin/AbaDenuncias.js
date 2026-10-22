@@ -12,6 +12,7 @@ import {
     chaveComentario
 } from "../../lib/denuncias";
 import { carregarDenuncias } from "./dados";
+import { notificarModeracao } from "../../lib/notificacoes";
 import { useI18n } from "../../i18n/I18nProvider";
 import { Botao, Selo, Cartao, Carregando, Erro, Vazio, Filtros, mensagemErro } from "./ui";
 
@@ -23,6 +24,19 @@ const FILTROS = [
 
 function chaveGrupo(d) {
     return d.tipo === "comentario" ? `${d.tipo}_${d.alvoPostId}_${d.alvoId}` : `${d.tipo}_${d.alvoId}`;
+}
+
+// Dados do conteúdo denunciado para avisar o autor (notificarModeracao)
+function alvoParaNotificar(grupo) {
+    const { alvo } = grupo;
+    if (!alvo) return null;
+    if (grupo.tipo === "post") {
+        return { tipo: "post", autorUid: alvo.autor?.uid, postId: grupo.alvoId, texto: alvo.conteudo };
+    }
+    if (grupo.tipo === "avaliacao") {
+        return { tipo: "avaliacao", autorUid: alvo.usuarioId, avaliacaoId: grupo.alvoId, texto: alvo.titulo || alvo.comentario };
+    }
+    return { tipo: "comentario", autorUid: alvo.autorUid, postId: grupo.alvoPostId, texto: alvo.texto };
 }
 
 // Busca o conteúdo denunciado para pré-visualização (null = não existe mais)
@@ -161,6 +175,9 @@ export default function AbaDenuncias({ user }) {
                 }
             }
             await fecharDenuncias(ids, acao === "descartar" ? "descartada" : "resolvida", user.email);
+            if (["ocultar", "excluir", "remover"].includes(acao)) {
+                notificarModeracao(user, alvoParaNotificar(grupo), acao === "ocultar" ? "ocultado" : "removido");
+            }
             await carregar();
         } catch (err) {
             console.error("Erro na ação de moderação:", err);

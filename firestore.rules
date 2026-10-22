@@ -351,5 +351,80 @@ service cloud.firestore {
         && denunciaId == request.resource.data.tipo + '_' + request.resource.data.alvoId + '_' + request.auth.uid
         && isValidDenunciaAlvo(request.resource.data);
     }
+
+    // ------------------------------------------------------------------
+    // Notificações - cada usuário lê, marca como lida e apaga as suas
+    // ------------------------------------------------------------------
+    // Só são aceitas notificações ligadas a uma ação real (ver o cabeçalho de
+    // src/lib/notificacoes.js). Ninguém notifica a si mesmo.
+    function notificacaoFields() {
+      return ['destinatarioUid', 'tipo', 'autorUid', 'autorNome', 'postId', 'avaliacaoId',
+              'alvoTipo', 'acao', 'trecho', 'lida', 'criadoEm'];
+    }
+
+    function isValidNotificacaoBase(d) {
+      return d.keys().hasOnly(notificacaoFields())
+        && d.keys().hasAll(['destinatarioUid', 'tipo', 'autorUid', 'lida', 'criadoEm'])
+        && d.destinatarioUid is string
+        && d.destinatarioUid != request.auth.uid
+        && d.autorUid == request.auth.uid
+        && d.lida == false
+        && d.criadoEm == request.time
+        && (!('autorNome' in d) || (d.autorNome is string && d.autorNome.size() <= 100))
+        && (!('trecho' in d) || (d.trecho is string && d.trecho.size() <= 140));
+    }
+
+    function forumPost(postId) {
+      return /databases/$(database)/documents/forumPosts/$(postId);
+    }
+
+    // Curtida: id determinístico e o post já tem a curtida de quem notifica
+    function isValidNotificacaoCurtida(id, d) {
+      return d.tipo == 'curtida'
+        && d.postId is string
+        && id == 'curtida_' + d.postId + '_' + request.auth.uid
+        && get(forumPost(d.postId)).data.autor.uid == d.destinatarioUid
+        && request.auth.uid in get(forumPost(d.postId)).data.get('curtidas', []);
+    }
+
+    // Comentário/resposta: no mesmo batch que acrescenta o comentário.
+    // 'comentario' avisa o autor do post; 'resposta' avisa o autor do
+    // comentário respondido (a chave `respostaA` começa pelo uid dele).
+    function isValidNotificacaoComentario(d) {
+      let antes = get(forumPost(d.postId)).data.get('comentarios', []);
+      let depois = getAfter(forumPost(d.postId)).data.get('comentarios', []);
+      let novo = depois[depois.size() - 1];
+      return d.tipo in ['comentario', 'resposta']
+        && d.postId is string
+        && depois.size() == antes.size() + 1
+        && novo.autorUid == request.auth.uid
+        && ((d.tipo == 'comentario'
+              && getAfter(forumPost(d.postId)).data.autor.uid == d.destinatarioUid)
+            || (d.tipo == 'resposta'
+              && novo.get('respostaA', '') is string
+              && novo.get('respostaA', '').split('-')[0] == d.destinatarioUid));
+    }
+
+    function isValidNotificacaoModeracao(d) {
+      return d.tipo == 'moderacao'
+        && isModerator()
+        && d.alvoTipo in ['post', 'comentario', 'avaliacao']
+        && d.acao in ['ocultado', 'restaurado', 'removido'];
+    }
+
+    match /notificacoes/{notificacaoId} {
+      allow read, delete: if isSignedIn() && resource.data.destinatarioUid == request.auth.uid;
+
+      allow update: if isSignedIn()
+        && resource.data.destinatarioUid == request.auth.uid
+        && changedKeys().hasOnly(['lida'])
+        && request.resource.data.lida is bool;
+
+      allow create: if isSignedIn()
+        && isValidNotificacaoBase(request.resource.data)
+        && (isValidNotificacaoCurtida(notificacaoId, request.resource.data)
+            || isValidNotificacaoComentario(request.resource.data)
+            || isValidNotificacaoModeracao(request.resource.data));
+    }
   }
 }

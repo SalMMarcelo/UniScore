@@ -13,6 +13,7 @@ import { isAdminEmail } from "../lib/admin";
 import { notaSegura } from "../lib/notas";
 import { listarEventos } from "../lib/eventos";
 import MenuMobile from "../components/MenuMobile";
+import SinoNotificacoes from "../components/SinoNotificacoes";
 import SeletorIdioma from "../components/SeletorIdioma";
 import { useI18n } from "../i18n/I18nProvider";
 
@@ -256,6 +257,7 @@ export default function Home() {
                   {t("geral.painelAdmin")}
                 </Link>
               )}
+              <SinoNotificacoes />
               <a href="/perfil" className="rounded-full bg-gray-100 w-9 h-9 flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer border border-gray-300" title={t("geral.perfil")} aria-label={t("geral.perfil")}>
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full object-cover" />

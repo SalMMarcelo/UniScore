@@ -116,6 +116,13 @@ export default function MenuMobile({ className = "" }) {
               {t("menu.paraUniversidades")}
             </Link>
           </li>
+          {user && (
+            <li>
+              <Link href="/notificacoes" onClick={fechar} className={classeLink} aria-current={pathname === "/notificacoes" ? "page" : undefined}>
+                {t("menu.notificacoes")}
+              </Link>
+            </li>
+          )}
           <li>
             {user ? (
               <Link href="/perfil" onClick={fechar} className={classeLink} aria-current={pathname === "/perfil" ? "page" : undefined}>
