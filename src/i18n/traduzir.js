@@ -118,6 +118,18 @@ export function criarFormatadores(idioma = IDIOMA_PADRAO) {
       const data = paraData(valor);
       return data ? data.toLocaleString(locale, opcoes) : "";
     },
+    // Tempo decorrido até `agora` ("há 5 minutos" / "5 minutes ago")
+    formatarRelativo(valor, agora = new Date()) {
+      const data = paraData(valor);
+      if (!data) return "";
+      const segundos = Math.round((data.getTime() - agora.getTime()) / 1000);
+      const unidades = [["year", 31536000], ["month", 2592000], ["day", 86400], ["hour", 3600], ["minute", 60]];
+      const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+      for (const [unidade, duracao] of unidades) {
+        if (Math.abs(segundos) >= duracao) return rtf.format(Math.trunc(segundos / duracao), unidade);
+      }
+      return rtf.format(0, "minute");
+    },
     formatarNumero(valor, opcoes) {
       const n = Number(valor);
       return Number.isFinite(n) ? new Intl.NumberFormat(locale, opcoes).format(n) : "";

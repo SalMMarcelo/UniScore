@@ -1112,57 +1112,42 @@ const ptBR = {
 
   relatorio: {
     oQueFazemos: "O que fazemos",
-    aoVivo: "Ao vivo",
+    dadosReais: "Dados reais",
     titulo: "Dashboard de Relatórios",
     subtitulo: "Transparência e impacto intercultural no ensino superior brasileiro",
+    carregando: "Carregando dados do relatório...",
+    erro: "Não foi possível carregar os dados do relatório. Tente novamente mais tarde.",
+    semDados: "Ainda não há dados.",
     avaliacoes: "AVALIAÇÕES",
-    esteMes: "{valor} este mês",
-    universidades: "UNIVERSIDADES",
-    esteTrimestre: "{valor} este trimestre",
-    novasAtivas: "+12 novas ativas",
-    usuarios: "USUÁRIOS",
-    estaSemana: "{valor} esta semana",
-    registrados: "+1.2k registrados",
+    noMes: "+{n} este mês",
+    notaMedia: "NOTA MÉDIA",
+    deCinco: "de 5 estrelas",
     eventos: "EVENTOS",
-    hoje: "{valor} hoje",
-    avaliados: "+89 avaliados",
-    crescimento: "Crescimento de Usuários",
-    mes: "Mês",
-    ano: "Ano",
-    meses: {
-      jan: "Jan", fev: "Fev", mar: "Mar", abr: "Abr", mai: "Mai",
-      jun: "Jun", jul: "Jul", ago: "Ago", set: "Set", out: "Out"
-    },
-    usuariosAtivos: "Usuários ativos",
+    eventosDetalhe: "{futuros} por vir • {universidades} universidades",
+    posts: "POSTS NO FÓRUM",
+    postsDetalhe: "discussões da comunidade",
+    crescimento: "Avaliações por Mês",
+    ultimos12: "Últimos 12 meses",
+    avaliacoesNoMesRotulo: "{mes}: {n} avaliações",
     impacto: "Impacto Intercultural",
+    impactoDescricao: "Média das respostas de 1 a 5 estrelas nas avaliações",
+    semRespostas: "Sem respostas",
     aspectos: {
       cosmovisao: "Ampliação da cosmovisão",
       conexao: "Conexão intercultural",
-      valorizacao: "Valorização da interculturalidade",
-      preconceitos: "Quebra de preconceitos",
-      consciencia: "Consciência global"
+      diversidade: "Diversidade promovida",
+      interculturalidade: "Critério: interculturalidade",
+      impacto: "Critério: impacto"
     },
-    categoriasTitulo: "Categorias Culturais Mais Avaliadas",
-    categorias: {
-      intercambio: "Intercâmbio Internacional",
-      diversidade: "Diversidade Cultural",
-      linguas: "Línguas Estrangeiras",
-      arte: "Arte e Música Internacional",
-      culinaria: "Culinária Mundial",
-      tradicoes: "Tradições Regionais"
-    },
-    regionalTitulo: "Distribuição Regional",
-    regioes: {
-      sudeste: "Sudeste",
-      sul: "Sul",
-      nordeste: "Nordeste",
-      centroOeste: "Centro-Oeste",
-      norte: "Norte"
-    },
+    temasTitulo: "Avaliações por Tema",
+    mediaNota: "média {media}",
+    tiposTitulo: "Eventos por Tipo",
     recentes: "Avaliações Recentes",
-    minAtras: "{n} min atrás",
-    horaAtras: "{n} hora atrás"
+    semAvaliacoes: "Nenhuma avaliação ainda.",
+    anonimo: "Usuário",
+    eventoRemovido: "Evento indisponível"
   },
+
 
   // @@novas-secoes
 };

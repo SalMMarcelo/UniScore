@@ -10,12 +10,11 @@ import {
     orderBy,
     limit,
     getDocs,
-    getCountFromServer,
     getAggregateFromServer,
-    average,
-    count
+    average
 } from "firebase/firestore";
 import { listarEventos } from "../../lib/eventos";
+import { contar, avaliacoesPorTema } from "../../lib/estatisticas";
 import { rotuloMotivo, rotuloTipoDenuncia } from "../../lib/denuncias";
 import { tPadrao, criarFormatadores, IDIOMA_PADRAO } from "../../i18n/traduzir";
 
@@ -28,23 +27,6 @@ export function formatarDataHora(valor, idioma = IDIOMA_PADRAO) {
 export function formatarDataEvento(data, idioma = IDIOMA_PADRAO) {
     if (!data || typeof data !== "string") return "";
     return criarFormatadores(idioma).formatarData(data) || data;
-}
-
-async function contar(q) {
-    try {
-        const snap = await getCountFromServer(q);
-        return snap.data().count;
-    } catch (err) {
-        console.error("Erro ao contar documentos:", err);
-        return null;
-    }
-}
-
-// Divide uma lista em pedaços (o operador "in" aceita até 30 valores)
-function emPedacos(lista, tamanho) {
-    const pedacos = [];
-    for (let i = 0; i < lista.length; i += tamanho) pedacos.push(lista.slice(i, i + tamanho));
-    return pedacos;
 }
 
 // Contagens reais via agregações no servidor (não baixa os documentos).
@@ -80,35 +62,7 @@ export async function carregarEstatisticas() {
         listarEventos()
     ]);
 
-    // Avaliações por tema: o tema está no evento; agrupa os ids dos eventos por
-    // tema e agrega as avaliações com eventoId "in" (até 30 ids por consulta).
-    const idsPorTema = {};
-    eventos.forEach(ev => {
-        const tema = ev.tema || "Sem tema";
-        (idsPorTema[tema] = idsPorTema[tema] || []).push(ev.id);
-    });
-
-    const porTema = await Promise.all(Object.entries(idsPorTema).map(async ([tema, ids]) => {
-        let total = 0;
-        let soma = 0;
-        try {
-            const partes = await Promise.all(emPedacos(ids, 30).map(pedaco =>
-                getAggregateFromServer(
-                    query(avaliacoesRef, where("eventoId", "in", pedaco)),
-                    { total: count(), media: average("nota") }
-                ).then(s => s.data())
-            ));
-            partes.forEach(p => {
-                total += p.total;
-                if (p.media !== null && p.media !== undefined) soma += p.media * p.total;
-            });
-        } catch (err) {
-            console.error(`Erro ao agregar avaliações do tema ${tema}:`, err);
-            return { tema, eventos: ids.length, avaliacoes: null, media: null };
-        }
-        return { tema, eventos: ids.length, avaliacoes: total, media: total ? soma / total : null };
-    }));
-    porTema.sort((a, b) => (b.avaliacoes || 0) - (a.avaliacoes || 0) || a.tema.localeCompare(b.tema));
+    const porTema = await avaliacoesPorTema(eventos);
 
     return {
         avaliacoes: totalAvaliacoes,

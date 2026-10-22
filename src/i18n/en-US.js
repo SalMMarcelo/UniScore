@@ -1104,57 +1104,42 @@ const enUS = {
 
   relatorio: {
     oQueFazemos: "What we do",
-    aoVivo: "Live",
+    dadosReais: "Real data",
     titulo: "Reports Dashboard",
     subtitulo: "Transparency and intercultural impact in Brazilian higher education",
+    carregando: "Loading report data...",
+    erro: "Could not load the report data. Please try again later.",
+    semDados: "No data yet.",
     avaliacoes: "REVIEWS",
-    esteMes: "{valor} this month",
-    universidades: "UNIVERSITIES",
-    esteTrimestre: "{valor} this quarter",
-    novasAtivas: "+12 newly active",
-    usuarios: "USERS",
-    estaSemana: "{valor} this week",
-    registrados: "+1.2k registered",
+    noMes: "+{n} this month",
+    notaMedia: "AVERAGE RATING",
+    deCinco: "out of 5 stars",
     eventos: "EVENTS",
-    hoje: "{valor} today",
-    avaliados: "+89 reviewed",
-    crescimento: "User Growth",
-    mes: "Month",
-    ano: "Year",
-    meses: {
-      jan: "Jan", fev: "Feb", mar: "Mar", abr: "Apr", mai: "May",
-      jun: "Jun", jul: "Jul", ago: "Aug", set: "Sep", out: "Oct"
-    },
-    usuariosAtivos: "Active users",
+    eventosDetalhe: "{futuros} upcoming • {universidades} universities",
+    posts: "FORUM POSTS",
+    postsDetalhe: "community discussions",
+    crescimento: "Reviews per Month",
+    ultimos12: "Last 12 months",
+    avaliacoesNoMesRotulo: "{mes}: {n} reviews",
     impacto: "Intercultural Impact",
+    impactoDescricao: "Average of the 1 to 5 star answers in reviews",
+    semRespostas: "No answers",
     aspectos: {
       cosmovisao: "Broadened worldview",
       conexao: "Intercultural connection",
-      valorizacao: "Appreciation of interculturality",
-      preconceitos: "Breaking down prejudice",
-      consciencia: "Global awareness"
+      diversidade: "Diversity promoted",
+      interculturalidade: "Criterion: interculturality",
+      impacto: "Criterion: impact"
     },
-    categoriasTitulo: "Most Reviewed Cultural Categories",
-    categorias: {
-      intercambio: "International Exchange",
-      diversidade: "Cultural Diversity",
-      linguas: "Foreign Languages",
-      arte: "International Art and Music",
-      culinaria: "World Cuisine",
-      tradicoes: "Regional Traditions"
-    },
-    regionalTitulo: "Regional Distribution",
-    regioes: {
-      sudeste: "Southeast",
-      sul: "South",
-      nordeste: "Northeast",
-      centroOeste: "Center-West",
-      norte: "North"
-    },
+    temasTitulo: "Reviews by Theme",
+    mediaNota: "avg {media}",
+    tiposTitulo: "Events by Type",
     recentes: "Recent Reviews",
-    minAtras: "{n} min ago",
-    horaAtras: "{n} hour ago"
+    semAvaliacoes: "No reviews yet.",
+    anonimo: "User",
+    eventoRemovido: "Event unavailable"
   },
+
 
   // @@novas-secoes
 };
