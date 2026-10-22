@@ -16,18 +16,18 @@ import {
     count
 } from "firebase/firestore";
 import { listarEventos } from "../../lib/eventos";
-import { rotuloMotivo, TIPOS_DENUNCIA } from "../../lib/denuncias";
+import { rotuloMotivo, rotuloTipoDenuncia } from "../../lib/denuncias";
+import { tPadrao, criarFormatadores, IDIOMA_PADRAO } from "../../i18n/traduzir";
 
-export function formatarDataHora(valor) {
+// `idioma`: locale do Intl (padrão pt-BR). Na interface, passe o idioma ativo.
+export function formatarDataHora(valor, idioma = IDIOMA_PADRAO) {
     if (!valor) return "";
-    const data = typeof valor.toDate === "function" ? valor.toDate() : new Date(valor);
-    return isNaN(data?.getTime?.()) ? "" : data.toLocaleString("pt-BR");
+    return criarFormatadores(idioma).formatarDataHora(valor);
 }
 
-export function formatarDataEvento(data) {
+export function formatarDataEvento(data, idioma = IDIOMA_PADRAO) {
     if (!data || typeof data !== "string") return "";
-    const [ano, mes, dia] = data.split("-");
-    return ano && mes && dia ? `${dia}/${mes}/${ano}` : data;
+    return criarFormatadores(idioma).formatarData(data) || data;
 }
 
 async function contar(q) {
@@ -153,50 +153,60 @@ export function nomesDosEventos(eventos) {
 // ─── Colunas dos CSVs ─────────────────────────────────────────────────────
 const CRITERIOS = ["acessibilidade", "conforto", "interculturalidade", "politizacao", "impacto"];
 
-export function colunasAvaliacoes(nomesEventos = {}) {
+// Cabeçalhos/valores traduzidos por `t`; datas no `idioma` (padrão pt-BR).
+// Os valores gravados (tema, tipo, público, status) saem como estão no banco.
+export function colunasAvaliacoes(nomesEventos = {}, t = tPadrao, idioma = IDIOMA_PADRAO) {
     return [
-        { chave: "id", rotulo: "ID" },
-        { chave: "eventoId", rotulo: "ID do evento" },
-        { rotulo: "Evento", valor: av => nomesEventos[av.eventoId] || "" },
-        { chave: "universidadeId", rotulo: "ID da universidade" },
-        { chave: "usuario", rotulo: "Usuário" },
-        { chave: "usuarioId", rotulo: "UID do usuário" },
-        { chave: "nota", rotulo: "Nota" },
-        { chave: "titulo", rotulo: "Título" },
-        { chave: "comentario", rotulo: "Comentário" },
+        { chave: "id", rotulo: t("admin.csv.id") },
+        { chave: "eventoId", rotulo: t("admin.csv.idEvento") },
+        { rotulo: t("admin.csv.evento"), valor: av => nomesEventos[av.eventoId] || "" },
+        { chave: "universidadeId", rotulo: t("admin.csv.idUniversidade") },
+        { chave: "usuario", rotulo: t("admin.csv.usuario") },
+        { chave: "usuarioId", rotulo: t("admin.csv.uidUsuario") },
+        { chave: "nota", rotulo: t("admin.csv.nota") },
+        { chave: "titulo", rotulo: t("admin.csv.titulo") },
+        { chave: "comentario", rotulo: t("admin.csv.comentario") },
         ...CRITERIOS.map(c => ({
-            rotulo: `Critério: ${c}`,
+            rotulo: t("admin.csv.criterio", { criterio: c }),
             valor: av => (av.criterios && av.criterios[c] != null ? av.criterios[c] : "")
         })),
-        { rotulo: "Oculta pela moderação", valor: av => (av.moderado ? "sim" : "não") },
-        { rotulo: "Criada em", valor: av => formatarDataHora(av.criadoEm) }
+        { rotulo: t("admin.csv.ocultaModeracao"), valor: av => (av.moderado ? t("comum.sim") : t("comum.nao")) },
+        { rotulo: t("admin.csv.criadaEm"), valor: av => formatarDataHora(av.criadoEm, idioma) }
     ];
 }
 
-export const COLUNAS_EVENTOS = [
-    { chave: "id", rotulo: "ID" },
-    { chave: "nome", rotulo: "Nome" },
-    { rotulo: "Data", valor: ev => formatarDataEvento(ev.data) },
-    { chave: "local", rotulo: "Local" },
-    { chave: "tema", rotulo: "Tema" },
-    { chave: "tipo", rotulo: "Tipo" },
-    { chave: "publicoAlvo", rotulo: "Público-alvo" },
-    { rotulo: "Preço (R$)", valor: ev => (Number(ev.preco) || 0).toFixed(2).replace(".", ",") },
-    { chave: "universidadeNome", rotulo: "Universidade" },
-    { chave: "universidadeId", rotulo: "ID da universidade" },
-    { rotulo: "Origem", valor: ev => (ev.legado ? "legado (events.json)" : "Firestore") }
-];
+export function colunasEventos(t = tPadrao, idioma = IDIOMA_PADRAO) {
+    return [
+        { chave: "id", rotulo: t("admin.csv.id") },
+        { chave: "nome", rotulo: t("admin.csv.nome") },
+        { rotulo: t("admin.csv.data"), valor: ev => formatarDataEvento(ev.data, idioma) },
+        { chave: "local", rotulo: t("admin.csv.local") },
+        { chave: "tema", rotulo: t("admin.csv.tema") },
+        { chave: "tipo", rotulo: t("admin.csv.tipo") },
+        { chave: "publicoAlvo", rotulo: t("admin.csv.publicoAlvo") },
+        { rotulo: t("admin.csv.preco"), valor: ev => criarFormatadores(idioma).formatarNumero(Number(ev.preco) || 0, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }) },
+        { chave: "universidadeNome", rotulo: t("admin.csv.universidade") },
+        { chave: "universidadeId", rotulo: t("admin.csv.idUniversidade") },
+        { rotulo: t("admin.csv.origem"), valor: ev => (ev.legado ? t("admin.csv.origemLegado") : t("admin.csv.origemFirestore")) }
+    ];
+}
 
-export const COLUNAS_DENUNCIAS = [
-    { chave: "id", rotulo: "ID" },
-    { rotulo: "Tipo", valor: d => TIPOS_DENUNCIA[d.tipo] || d.tipo },
-    { chave: "alvoId", rotulo: "ID do conteúdo" },
-    { chave: "alvoPostId", rotulo: "ID do post (comentário)" },
-    { rotulo: "Motivo", valor: d => rotuloMotivo(d.motivo) },
-    { chave: "detalhe", rotulo: "Detalhe" },
-    { chave: "denuncianteUid", rotulo: "UID do denunciante" },
-    { chave: "status", rotulo: "Status" },
-    { rotulo: "Criada em", valor: d => formatarDataHora(d.criadoEm) },
-    { chave: "resolvidoPor", rotulo: "Resolvida por" },
-    { rotulo: "Resolvida em", valor: d => formatarDataHora(d.resolvidoEm) }
-];
+export function colunasDenuncias(t = tPadrao, idioma = IDIOMA_PADRAO) {
+    return [
+        { chave: "id", rotulo: t("admin.csv.id") },
+        { rotulo: t("admin.csv.tipo"), valor: d => rotuloTipoDenuncia(d.tipo, t) },
+        { chave: "alvoId", rotulo: t("admin.csv.idConteudo") },
+        { chave: "alvoPostId", rotulo: t("admin.csv.idPost") },
+        { rotulo: t("admin.csv.motivo"), valor: d => rotuloMotivo(d.motivo, t) },
+        { chave: "detalhe", rotulo: t("admin.csv.detalhe") },
+        { chave: "denuncianteUid", rotulo: t("admin.csv.uidDenunciante") },
+        { chave: "status", rotulo: t("admin.csv.status") },
+        { rotulo: t("admin.csv.criadaEm"), valor: d => formatarDataHora(d.criadoEm, idioma) },
+        { chave: "resolvidoPor", rotulo: t("admin.csv.resolvidaPor") },
+        { rotulo: t("admin.csv.resolvidaEm"), valor: d => formatarDataHora(d.resolvidoEm, idioma) }
+    ];
+}
+
+// Versões em pt-BR (compatibilidade)
+export const COLUNAS_EVENTOS = colunasEventos();
+export const COLUNAS_DENUNCIAS = colunasDenuncias();

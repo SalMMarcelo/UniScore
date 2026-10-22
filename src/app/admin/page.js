@@ -17,18 +17,22 @@ import AbaExportar from "./AbaExportar";
 import Estatisticas from "./Estatisticas";
 import { carregarEstatisticas } from "./dados";
 import { Botao, Carregando, Erro, mensagemErro } from "./ui";
+import SeletorIdioma from "../../components/SeletorIdioma";
+import { useI18n } from "../../i18n/I18nProvider";
 
+// Rótulos em admin.abas.<id>
 const ABAS = [
-    { id: "denuncias", rotulo: "Denúncias" },
-    { id: "universidades", rotulo: "Universidades" },
-    { id: "avaliacoes", rotulo: "Avaliações" },
-    { id: "forum", rotulo: "Fórum" },
-    { id: "eventos", rotulo: "Eventos" },
-    { id: "estatisticas", rotulo: "Estatísticas" },
-    { id: "exportar", rotulo: "Exportar" }
+    { id: "denuncias" },
+    { id: "universidades" },
+    { id: "avaliacoes" },
+    { id: "forum" },
+    { id: "eventos" },
+    { id: "estatisticas" },
+    { id: "exportar" }
 ];
 
 function AbaEstatisticas() {
+    const { t } = useI18n();
     const [dados, setDados] = useState(null);
     const [erro, setErro] = useState("");
 
@@ -39,24 +43,25 @@ function AbaEstatisticas() {
             setDados(await carregarEstatisticas());
         } catch (err) {
             console.error("Erro ao carregar estatísticas:", err);
-            setErro(mensagemErro(err));
+            setErro(mensagemErro(err, t));
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => { carregar(); }, [carregar]);
 
     return (
         <div>
             <div className="flex justify-end mb-4">
-                <Botao cor="cinza" onClick={carregar} disabled={!dados && !erro}>Atualizar</Botao>
+                <Botao cor="cinza" onClick={carregar} disabled={!dados && !erro}>{t("admin.atualizar")}</Botao>
             </div>
             <Erro>{erro}</Erro>
-            {!dados && !erro ? <Carregando texto="Calculando estatísticas..." /> : <Estatisticas dados={dados} />}
+            {!dados && !erro ? <Carregando texto={t("admin.calculandoEstatisticas")} /> : <Estatisticas dados={dados} />}
         </div>
     );
 }
 
 export default function PainelAdmin() {
+    const { t } = useI18n();
     const [user, setUser] = useState(undefined);
     const [aba, setAba] = useState("denuncias");
 
@@ -102,10 +107,10 @@ export default function PainelAdmin() {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 text-center max-w-md">
                     <div className="text-5xl mb-4">🔒</div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-3">Acesso restrito</h1>
-                    <p className="text-gray-600 mb-6">Esta área é exclusiva para moderadores da plataforma.</p>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-3">{t("admin.acessoRestrito")}</h1>
+                    <p className="text-gray-600 mb-6">{t("admin.exclusivoModeradores")}</p>
                     <Link href={user ? "/" : "/login"} className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-all">
-                        {user ? "Ir para Home" : "Fazer login"}
+                        {user ? t("admin.irHome") : t("admin.fazerLogin")}
                     </Link>
                 </div>
             </div>
@@ -120,27 +125,29 @@ export default function PainelAdmin() {
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
-                        <span className="font-bold text-lg sr-only sm:not-sr-only">Voltar</span>
+                        <span className="font-bold text-lg sr-only sm:not-sr-only">{t("admin.voltar")}</span>
                     </Link>
                     <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-3">
                         <svg className="w-7 h-7 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                         </svg>
-                        Painel administrativo
+                        {t("admin.titulo")}
                     </h1>
-                    <div className="hidden md:block text-sm text-gray-500 truncate max-w-[200px]">{user.email}</div>
+                    <div className="flex items-center gap-3">
+                        <SeletorIdioma />
+                        <div className="hidden md:block text-sm text-gray-500 truncate max-w-[200px]">{user.email}</div>
+                    </div>
                 </div>
             </header>
 
             <main id="conteudo" className="max-w-6xl mx-auto px-4 md:px-6 py-6">
                 {!user.emailVerified && (
                     <div role="alert" className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl px-4 py-3 mb-4 text-sm">
-                        Seu e-mail ainda não foi verificado. As regras do Firestore exigem e-mail verificado para moderadores,
-                        então as ações deste painel serão negadas até a verificação.
+                        {t("admin.emailNaoVerificado")}
                     </div>
                 )}
 
-                <div role="tablist" aria-label="Seções do painel" className="flex gap-1 overflow-x-auto bg-white border border-gray-200 rounded-xl p-1 mb-6">
+                <div role="tablist" aria-label={t("admin.secoes")} className="flex gap-1 overflow-x-auto bg-white border border-gray-200 rounded-xl p-1 mb-6">
                     {ABAS.map((a, i) => (
                         <button
                             key={a.id}
@@ -156,7 +163,7 @@ export default function PainelAdmin() {
                                 aba === a.id ? "bg-gray-800 text-white" : "text-gray-600 hover:bg-gray-100"
                             }`}
                         >
-                            {a.rotulo}
+                            {t(`admin.abas.${a.id}`)}
                         </button>
                     ))}
                 </div>

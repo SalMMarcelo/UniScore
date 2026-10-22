@@ -1,5 +1,7 @@
 "use client";
 // Pequenos componentes visuais do painel administrativo.
+import { useI18n } from "../../i18n/I18nProvider";
+import { tPadrao } from "../../i18n/traduzir";
 
 const CORES_BOTAO = {
     azul: "bg-blue-600 hover:bg-blue-700 text-white",
@@ -44,11 +46,12 @@ export function Cartao({ className = "", children }) {
     );
 }
 
-export function Carregando({ texto = "Carregando..." }) {
+export function Carregando({ texto }) {
+    const { t } = useI18n();
     return (
         <div className="text-center py-10 text-gray-500" role="status">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
-            <div>{texto}</div>
+            <div>{texto || t("admin.carregando")}</div>
         </div>
     );
 }
@@ -91,12 +94,13 @@ export function Filtros({ opcoes, valor, onChange, rotulo }) {
     );
 }
 
-export function mensagemErro(err) {
+// Mensagem de erro do Firestore no idioma de `t` (padrão: pt-BR)
+export function mensagemErro(err, t = tPadrao) {
     if (err?.code === "permission-denied") {
-        return "Permissão negada pelas regras do Firestore. Confirme que você entrou com uma conta de moderador com e-mail verificado.";
+        return t("admin.erroPermissao");
     }
     if (err?.code === "failed-precondition") {
-        return "Esta consulta precisa de um índice do Firestore. Publique firestore.indexes.json (firebase deploy --only firestore:indexes).";
+        return t("admin.erroIndice");
     }
-    return err?.message || "Erro inesperado.";
+    return err?.message || t("admin.erroInesperado");
 }

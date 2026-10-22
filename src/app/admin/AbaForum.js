@@ -4,18 +4,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { db } from "../../firebase";
 import { collection, query, orderBy, limit, getDocs, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { formatarDataHora } from "./dados";
+import { useI18n } from "../../i18n/I18nProvider";
 import { Botao, Selo, Cartao, Carregando, Erro, Vazio, Filtros, mensagemErro } from "./ui";
 
 const LIMITE = 100;
 
 const FILTROS = [
-    { valor: "todos", rotulo: "Todos" },
-    { valor: "visiveis", rotulo: "Visíveis" },
-    { valor: "ocultos", rotulo: "Ocultos" }
+    { valor: "todos", chave: "admin.filtrosTodos" },
+    { valor: "visiveis", chave: "admin.filtrosVisiveis" },
+    { valor: "ocultos", chave: "admin.filtrosOcultos" }
 ];
 
 export default function AbaForum({ user }) {
+    const { t, formatarDataHora } = useI18n();
     const [posts, setPosts] = useState(null);
     const [filtro, setFiltro] = useState("todos");
     const [erro, setErro] = useState("");
@@ -28,10 +29,10 @@ export default function AbaForum({ user }) {
             setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         } catch (err) {
             console.error("Erro ao carregar posts:", err);
-            setErro(mensagemErro(err));
+            setErro(mensagemErro(err, t));
             setPosts([]);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => { carregar(); }, [carregar]);
 
@@ -46,20 +47,20 @@ export default function AbaForum({ user }) {
             });
             setPosts(lista => lista.map(p => (p.id === post.id ? { ...p, moderado: !post.moderado } : p)));
         } catch (err) {
-            setErro(mensagemErro(err));
+            setErro(mensagemErro(err, t));
         }
         setOcupado(null);
     }
 
     async function excluir(post) {
-        if (!confirm("Excluir este post definitivamente?")) return;
+        if (!confirm(t("admin.forum.confirmarExcluir"))) return;
         setOcupado(post.id);
         setErro("");
         try {
             await deleteDoc(doc(db, "forumPosts", post.id));
             setPosts(lista => lista.filter(p => p.id !== post.id));
         } catch (err) {
-            setErro(mensagemErro(err));
+            setErro(mensagemErro(err, t));
         }
         setOcupado(null);
     }
@@ -70,14 +71,14 @@ export default function AbaForum({ user }) {
 
     return (
         <div>
-            <Filtros opcoes={FILTROS} valor={filtro} onChange={setFiltro} rotulo="Filtrar posts" />
-            <p className="text-sm text-gray-500 mb-4">Mostrando os {LIMITE} posts mais recentes.</p>
+            <Filtros opcoes={FILTROS.map(f => ({ ...f, rotulo: t(f.chave) }))} valor={filtro} onChange={setFiltro} rotulo={t("admin.forum.filtrar")} />
+            <p className="text-sm text-gray-500 mb-4">{t("admin.forum.mostrando", { n: LIMITE })}</p>
             <Erro>{erro}</Erro>
 
             {posts === null ? (
-                <Carregando texto="Carregando posts..." />
+                <Carregando texto={t("admin.forum.carregando")} />
             ) : visiveis.length === 0 ? (
-                <Vazio>Nenhum post para este filtro.</Vazio>
+                <Vazio>{t("admin.forum.nenhum")}</Vazio>
             ) : (
                 <div className="space-y-3">
                     {visiveis.map(post => (
@@ -88,22 +89,22 @@ export default function AbaForum({ user }) {
                                         <span className="font-semibold text-gray-900">{post.autor?.nome}</span>
                                         <span>({post.autor?.email})</span>
                                         <span>· {formatarDataHora(post.criadoEm)}</span>
-                                        {post.moderado && <Selo cor="amarelo">OCULTO</Selo>}
+                                        {post.moderado && <Selo cor="amarelo">{t("admin.ocultoSelo")}</Selo>}
                                     </div>
                                     <p className="text-gray-800 whitespace-pre-wrap break-words">{post.conteudo}</p>
                                     {post.mediaUrl && post.mediaType === "image" && (
-                                        <img src={post.mediaUrl} alt={`Imagem do post de ${post.autor?.nome || "usuário"}`} className="mt-2 max-h-40 rounded-lg border border-gray-200" />
+                                        <img src={post.mediaUrl} alt={t("admin.imagemPostDe", { nome: post.autor?.nome || t("admin.usuarioMinusculo") })} className="mt-2 max-h-40 rounded-lg border border-gray-200" />
                                     )}
                                     <div className="text-xs text-gray-600 mt-2">
-                                        {post.curtidas?.length || 0} curtidas · {post.comentarios?.length || 0} comentários
+                                        {t("admin.forum.contagens", { curtidas: post.curtidas?.length || 0, comentarios: post.comentarios?.length || 0 })}
                                     </div>
                                 </div>
                                 <div className="flex md:flex-col gap-2">
                                     <Botao cor={post.moderado ? "verde" : "amarelo"} disabled={ocupado === post.id} onClick={() => alternarOculto(post)}>
-                                        {post.moderado ? "Reexibir" : "Ocultar"}
+                                        {post.moderado ? t("admin.reexibir") : t("admin.ocultar")}
                                     </Botao>
                                     <Botao cor="vermelho" disabled={ocupado === post.id} onClick={() => excluir(post)}>
-                                        Excluir
+                                        {t("admin.excluir")}
                                     </Botao>
                                 </div>
                             </div>
