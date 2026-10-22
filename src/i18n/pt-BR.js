@@ -907,6 +907,14 @@ const ptBR = {
     voltar: "Voltar",
     titulo: "Painel administrativo",
     emailNaoVerificado: "Seu e-mail ainda não foi verificado. As regras do Firestore exigem e-mail verificado para moderadores, então as ações deste painel serão negadas até a verificação.",
+    verificacao: {
+      enviar: "Enviar e-mail de verificação",
+      jaVerifiquei: "Já cliquei no link",
+      enviado: "Enviamos um link para {email}. Abra o e-mail (veja também o spam), clique no link e depois em “Já cliquei no link”.",
+      pendente: "O e-mail ainda aparece como não verificado. Clique no link recebido e tente de novo.",
+      muitas: "Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.",
+      erro: "Não foi possível concluir. Tente de novo em instantes."
+    },
     secoes: "Seções do painel",
     carregando: "Carregando...",
     erroPermissao: "Permissão negada pelas regras do Firestore. Confirme que você entrou com uma conta de moderador com e-mail verificado.",

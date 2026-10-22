@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { auth } from "../../firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, sendEmailVerification } from "firebase/auth";
 import { isAdminEmail } from "../../lib/admin";
 import AbaDenuncias from "./AbaDenuncias";
 import AbaForum from "./AbaForum";
@@ -19,6 +19,54 @@ import { carregarEstatisticas } from "./dados";
 import { Botao, Carregando, Erro, mensagemErro } from "./ui";
 import SeletorIdioma from "../../components/SeletorIdioma";
 import { useI18n } from "../../i18n/I18nProvider";
+
+// Aviso de e-mail não verificado: envia o link de verificação e, depois de
+// clicado, renova o token (a verificação só chega às regras num token novo).
+function AvisoVerificacao({ user }) {
+    const { t } = useI18n();
+    const [estado, setEstado] = useState("");
+    const [ocupado, setOcupado] = useState(false);
+
+    const enviar = async () => {
+        setOcupado(true);
+        try {
+            await sendEmailVerification(user);
+            setEstado("enviado");
+        } catch (err) {
+            console.error("Erro ao enviar verificação:", err);
+            setEstado(err?.code === "auth/too-many-requests" ? "muitas" : "erro");
+        }
+        setOcupado(false);
+    };
+
+    const conferir = async () => {
+        setOcupado(true);
+        try {
+            await user.reload();
+            if (auth.currentUser?.emailVerified) {
+                await auth.currentUser.getIdToken(true);
+                window.location.reload();
+                return;
+            }
+            setEstado("pendente");
+        } catch (err) {
+            console.error("Erro ao conferir verificação:", err);
+            setEstado("erro");
+        }
+        setOcupado(false);
+    };
+
+    return (
+        <div role="alert" className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl px-4 py-3 mb-4 text-sm">
+            <p>{t("admin.emailNaoVerificado")}</p>
+            <div className="flex flex-wrap gap-2 mt-3">
+                <Botao cor="amarelo" disabled={ocupado} onClick={enviar}>{t("admin.verificacao.enviar", { email: user.email })}</Botao>
+                <Botao cor="cinza" disabled={ocupado} onClick={conferir}>{t("admin.verificacao.jaVerifiquei")}</Botao>
+            </div>
+            {estado && <p className="mt-2 font-semibold">{t(`admin.verificacao.${estado}`, { email: user.email })}</p>}
+        </div>
+    );
+}
 
 // Rótulos em admin.abas.<id>
 const ABAS = [
@@ -141,11 +189,7 @@ export default function PainelAdmin() {
             </header>
 
             <main id="conteudo" className="max-w-6xl mx-auto px-4 md:px-6 py-6">
-                {!user.emailVerified && (
-                    <div role="alert" className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl px-4 py-3 mb-4 text-sm">
-                        {t("admin.emailNaoVerificado")}
-                    </div>
-                )}
+                {!user.emailVerified && <AvisoVerificacao user={user} />}
 
                 <div role="tablist" aria-label={t("admin.secoes")} className="flex gap-1 overflow-x-auto bg-white border border-gray-200 rounded-xl p-1 mb-6">
                     {ABAS.map((a, i) => (

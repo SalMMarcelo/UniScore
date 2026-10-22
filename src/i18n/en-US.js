@@ -900,6 +900,14 @@ const enUS = {
     voltar: "Back",
     titulo: "Admin panel",
     emailNaoVerificado: "Your email has not been verified yet. Firestore rules require a verified email for moderators, so the actions in this panel will be denied until it is verified.",
+    verificacao: {
+      enviar: "Send verification email",
+      jaVerifiquei: "I clicked the link",
+      enviado: "We sent a link to {email}. Open the email (check spam too), click the link and then “I clicked the link”.",
+      pendente: "The email still shows as unverified. Click the link you received and try again.",
+      muitas: "Too many attempts in a row. Wait a few minutes and try again.",
+      erro: "Could not finish. Try again in a moment."
+    },
     secoes: "Panel sections",
     carregando: "Loading...",
     erroPermissao: "Permission denied by the Firestore rules. Make sure you signed in with a moderator account with a verified email.",
