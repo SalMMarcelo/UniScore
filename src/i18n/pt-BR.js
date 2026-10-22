@@ -637,7 +637,36 @@ const ptBR = {
     conecteAntes: "Conecte-se com",
     conecteDestaque: "a comunidade acadêmica",
     compartilheTexto: "Compartilhe experiências, fotos e vídeos de eventos universitários",
-    nenhumaDiscussao: "Nenhuma discussão ainda. Seja o primeiro a compartilhar!"
+    nenhumaDiscussao: "Nenhuma discussão ainda. Seja o primeiro a compartilhar!",
+    cancelar: "Cancelar",
+    responder: "Responder",
+    responderA: "Responder a {nome}",
+    respostasA: "Respostas ao comentário de {nome}",
+    placeholderResposta: "Escreva uma resposta...",
+    temaOpcional: "Tema (opcional)",
+    semTema: "Sem tema",
+    midiaNaoImagem: "Escolha um arquivo de imagem (JPG, PNG, GIF ou WebP).",
+    midiaNaoVideo: "Escolha um arquivo de vídeo (MP4, WebM ou MOV).",
+    midiaGrande: "O arquivo passa do limite de {mb} MB.",
+    limiteImagem: "Imagens de até 10 MB.",
+    limiteVideo: "Vídeos de até 50 MB.",
+    filtrosTitulo: "Buscar e filtrar posts",
+    buscar: "Buscar no fórum",
+    placeholderBusca: "Buscar por texto, autor ou comentário...",
+    filtrarTema: "Filtrar por tema",
+    todosTemas: "Todos os temas",
+    ordenar: "Ordenar posts",
+    ordens: {
+      recentes: "Mais recentes",
+      curtidos: "Mais curtidos",
+      comentados: "Mais comentados"
+    },
+    comMidia: "Só com foto ou vídeo",
+    meusPosts: "Só meus posts",
+    resultadoUm: "{n} post",
+    resultados: "{n} posts",
+    limparFiltros: "Limpar filtros",
+    nenhumResultado: "Nenhum post encontrado com esses filtros."
   },
 
   perfil: {

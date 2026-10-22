@@ -17,7 +17,15 @@ import {
 } from "firebase/firestore";
 import Link from "next/link";
 import { isAdminEmail } from "../../lib/admin";
-import { chaveComentario } from "../../lib/denuncias";
+import { TEMAS } from "../../lib/eventos";
+import {
+    LIMITE_TEXTO,
+    ORDENS,
+    filtrarPosts,
+    temasUsados,
+    organizarComentarios,
+    validarMidia
+} from "../../lib/forum";
 import BotaoDenunciar from "../../components/BotaoDenunciar";
 import MenuMobile from "../../components/MenuMobile";
 import SeletorIdioma from "../../components/SeletorIdioma";
@@ -35,12 +43,97 @@ function formatTimestamp(timestamp, t) {
     return t("forum.dias", { n: Math.floor(diffInMinutes / 1440) });
 }
 
+// ─── Formulário de comentário (ou de resposta) ────────────────────────────
+function FormComentario({ id, rotulo, placeholder, textoInicial = "", onEnviar, onCancelar, autoFocus }) {
+    const { t } = useI18n();
+    const [texto, setTexto] = useState(textoInicial);
+    const [enviando, setEnviando] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!texto.trim()) return;
+        setEnviando(true);
+        const ok = await onEnviar(texto.trim());
+        setEnviando(false);
+        // Só limpa o campo se o comentário foi salvo, para não perder o texto digitado
+        if (ok) setTexto("");
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="flex gap-2 mt-2">
+            <label htmlFor={id} className="sr-only">{rotulo}</label>
+            <input
+                id={id}
+                type="text"
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Escape" && onCancelar) onCancelar(); }}
+                placeholder={placeholder}
+                autoFocus={autoFocus}
+                className="flex-1 min-w-0 bg-gray-50 border border-gray-300 rounded-full px-4 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
+                maxLength={LIMITE_TEXTO}
+            />
+            {onCancelar && (
+                <button type="button" onClick={onCancelar} className="px-3 py-2 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-100">
+                    {t("forum.cancelar")}
+                </button>
+            )}
+            <button
+                type="submit"
+                disabled={!texto.trim() || enviando}
+                className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold disabled:opacity-50 hover:bg-blue-700 transition-colors"
+            >
+                {enviando ? "..." : t("forum.enviar")}
+            </button>
+        </form>
+    );
+}
+
+// ─── Comentário (com botão Responder) ─────────────────────────────────────
+function Comentario({ item, post, user, resposta, onResponder }) {
+    const { t } = useI18n();
+    const c = item.comentario;
+    return (
+        <div className="flex gap-3">
+            <div aria-hidden="true" className={`${resposta ? "w-7 h-7" : "w-8 h-8"} bg-gradient-to-br from-gray-500 to-gray-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                {c.autorNome?.charAt(0)?.toUpperCase() || "?"}
+            </div>
+            <div className="flex-1 min-w-0">
+                <div className="bg-gray-50 rounded-xl px-4 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-gray-800 text-sm truncate">{c.autorNome}</span>
+                        <BotaoDenunciar
+                            user={user}
+                            tipo="comentario"
+                            alvoId={item.chave}
+                            alvoPostId={post.id}
+                            autorUid={c.autorUid}
+                        />
+                    </div>
+                    <p className="text-gray-700 text-sm mt-0.5 break-words">{c.texto}</p>
+                </div>
+                {user && (
+                    <button
+                        type="button"
+                        onClick={() => onResponder(item)}
+                        aria-label={t("forum.responderA", { nome: c.autorNome })}
+                        className="mt-1 ml-3 text-xs font-semibold text-gray-600 hover:text-blue-700 rounded px-1"
+                    >
+                        {t("forum.responder")}
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+}
+
 // ─── Card de post ─────────────────────────────────────────────────────────
 function PostCard({ post, user, onLike, onComment }) {
-    const { t } = useI18n();
+    const { t, rotulo } = useI18n();
     const [showComments, setShowComments] = useState(false);
-    const [commentText, setCommentText] = useState("");
-    const [submitting, setSubmitting] = useState(false);
+    // Resposta em andamento: { fio: chave do comentário de 1º nível, nome: autor respondido }
+    const [respondendo, setRespondendo] = useState(null);
+    const fios = organizarComentarios(post.comentarios);
 
     const handleShare = async () => {
         const url = `${window.location.origin}/forum#${post.id}`;
@@ -68,14 +161,15 @@ function PostCard({ post, user, onLike, onComment }) {
         }
     };
 
-    const handleSubmitComment = async (e) => {
-        e.preventDefault();
-        if (!commentText.trim() || !user) return;
-        setSubmitting(true);
-        const ok = await onComment(post.id, commentText.trim());
-        // Só limpa o campo se o comentário foi salvo, para não perder o texto digitado
-        if (ok) setCommentText("");
-        setSubmitting(false);
+    // Responder a uma resposta continua no fio do comentário original
+    const iniciarResposta = (fio, item) => {
+        setRespondendo({ fio: fio.chave, nome: item.comentario.autorNome || "" });
+    };
+
+    const enviarResposta = async (texto) => {
+        const ok = await onComment(post.id, texto, respondendo.fio);
+        if (ok) setRespondendo(null);
+        return ok;
     };
 
     return (
@@ -96,6 +190,12 @@ function PostCard({ post, user, onLike, onComment }) {
                         <span className="text-gray-600 text-sm" aria-hidden="true">·</span>
                         <span className="text-gray-600 text-sm">{formatTimestamp(post.criadoEm, t)}</span>
                     </div>
+
+                    {post.tema && (
+                        <span className="inline-block mb-2 bg-green-50 text-green-800 border border-green-200 text-xs font-semibold rounded-full px-3 py-1">
+                            {rotulo("valores.temas", post.tema)}
+                        </span>
+                    )}
 
                     {post.moderado && (
                         <div className="mb-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm rounded-lg px-3 py-2">
@@ -176,51 +276,50 @@ function PostCard({ post, user, onLike, onComment }) {
                     {/* Seção de comentários expandível */}
                     {showComments && (
                         <div id={`comentarios-${post.id}`} className="mt-4 pt-4 border-t border-gray-100 space-y-3">
-                            {post.comentarios?.length > 0 ? (
-                                post.comentarios.map((c, i) => (
-                                    <div key={i} className="flex gap-3">
-                                        <div aria-hidden="true" className="w-8 h-8 bg-gradient-to-br from-gray-500 to-gray-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                            {c.autorNome?.charAt(0)?.toUpperCase() || "?"}
-                                        </div>
-                                        <div className="bg-gray-50 rounded-xl px-4 py-2 flex-1">
-                                            <div className="flex items-center justify-between gap-2">
-                                                <span className="font-semibold text-gray-800 text-sm">{c.autorNome}</span>
-                                                <BotaoDenunciar
-                                                    user={user}
-                                                    tipo="comentario"
-                                                    alvoId={chaveComentario(c, i)}
-                                                    alvoPostId={post.id}
-                                                    autorUid={c.autorUid}
-                                                />
-                                            </div>
-                                            <p className="text-gray-700 text-sm mt-0.5">{c.texto}</p>
-                                        </div>
-                                    </div>
-                                ))
+                            {fios.length > 0 ? (
+                                <ul className="space-y-3">
+                                    {fios.map((fio) => (
+                                        <li key={`${fio.chave}-${fio.indice}`}>
+                                            <Comentario item={fio} post={post} user={user} onResponder={(item) => iniciarResposta(fio, item)} />
+                                            {(fio.respostas.length > 0 || respondendo?.fio === fio.chave) && (
+                                                <div className="ml-11 mt-2 pl-3 border-l-2 border-gray-200 space-y-2">
+                                                    {fio.respostas.length > 0 && (
+                                                        <ul className="space-y-2" aria-label={t("forum.respostasA", { nome: fio.comentario.autorNome })}>
+                                                            {fio.respostas.map((r) => (
+                                                                <li key={`${r.chave}-${r.indice}`}>
+                                                                    <Comentario item={r} post={post} user={user} resposta onResponder={(item) => iniciarResposta(fio, item)} />
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+                                                    {user && respondendo?.fio === fio.chave && (
+                                                        <FormComentario
+                                                            key={respondendo.nome}
+                                                            id={`resposta-${post.id}-${fio.indice}`}
+                                                            rotulo={t("forum.responderA", { nome: respondendo.nome })}
+                                                            placeholder={t("forum.placeholderResposta")}
+                                                            textoInicial={respondendo.nome ? `@${respondendo.nome} ` : ""}
+                                                            onEnviar={enviarResposta}
+                                                            onCancelar={() => setRespondendo(null)}
+                                                            autoFocus
+                                                        />
+                                                    )}
+                                                </div>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
                             ) : (
                                 <p className="text-gray-600 text-sm text-center">{t("forum.nenhumComentario")}</p>
                             )}
 
                             {user && (
-                                <form onSubmit={handleSubmitComment} className="flex gap-2 mt-2">
-                                    <label htmlFor={`comentario-${post.id}`} className="sr-only">{t("forum.escrevaComentario")}</label>
-                                    <input
-                                        id={`comentario-${post.id}`}
-                                        type="text"
-                                        value={commentText}
-                                        onChange={(e) => setCommentText(e.target.value)}
-                                        placeholder={t("forum.placeholderComentario")}
-                                        className="flex-1 min-w-0 bg-gray-50 border border-gray-300 rounded-full px-4 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
-                                        maxLength={280}
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={!commentText.trim() || submitting}
-                                        className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold disabled:opacity-50 hover:bg-blue-700 transition-colors"
-                                    >
-                                        {submitting ? "..." : t("forum.enviar")}
-                                    </button>
-                                </form>
+                                <FormComentario
+                                    id={`comentario-${post.id}`}
+                                    rotulo={t("forum.escrevaComentario")}
+                                    placeholder={t("forum.placeholderComentario")}
+                                    onEnviar={(texto) => onComment(post.id, texto)}
+                                />
                             )}
                         </div>
                     )}
@@ -232,20 +331,34 @@ function PostCard({ post, user, onLike, onComment }) {
 
 // ─── Formulário de novo post ───────────────────────────────────────────────
 function CreatePostForm({ user, onSubmit, loading, erro }) {
-    const { t } = useI18n();
+    const { t, rotulo } = useI18n();
     const [newPost, setNewPost] = useState("");
+    const [tema, setTema] = useState("");
     const [mediaFile, setMediaFile] = useState(null);
     const [mediaPreview, setMediaPreview] = useState(null);
     const [mediaType, setMediaType] = useState("none");
+    const [erroMidia, setErroMidia] = useState("");
+
+    // Libera a URL temporária da prévia quando ela é trocada ou removida
+    useEffect(() => {
+        if (!mediaPreview) return;
+        return () => URL.revokeObjectURL(mediaPreview);
+    }, [mediaPreview]);
+
+    const limparMidia = () => {
+        setMediaFile(null);
+        setMediaPreview(null);
+        setErroMidia("");
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!newPost.trim()) return;
-        const ok = await onSubmit(newPost, mediaFile, mediaType);
+        const ok = await onSubmit(newPost, mediaFile, mediaType, tema);
         if (ok) {
             setNewPost("");
-            setMediaFile(null);
-            setMediaPreview(null);
+            setTema("");
+            limparMidia();
             setMediaType("none");
         }
     };
@@ -253,7 +366,20 @@ function CreatePostForm({ user, onSubmit, loading, erro }) {
     const toggleMedia = (type) => {
         const next = mediaType === type ? "none" : type;
         setMediaType(next);
-        if (next === "none") { setMediaFile(null); setMediaPreview(null); }
+        limparMidia();
+    };
+
+    const escolherArquivo = (file) => {
+        if (!file) return;
+        const problema = validarMidia(file, mediaType);
+        if (problema) {
+            limparMidia();
+            setErroMidia(t(problema.chave, problema.vars));
+            return;
+        }
+        setErroMidia("");
+        setMediaFile(file);
+        setMediaPreview(URL.createObjectURL(file));
     };
 
     return (
@@ -279,8 +405,25 @@ function CreatePostForm({ user, onSubmit, loading, erro }) {
                             onChange={(e) => setNewPost(e.target.value)}
                             placeholder={t("forum.placeholderPost")}
                             className="w-full bg-transparent border-none outline-none text-gray-900 text-lg placeholder-gray-500 resize-none min-h-[120px] p-1 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            maxLength={280}
+                            maxLength={LIMITE_TEXTO}
                         />
+
+                        <div className="mt-3">
+                            <label htmlFor="forum-novo-tema" className="block text-sm font-medium text-gray-700 mb-1">
+                                {t("forum.temaOpcional")}
+                            </label>
+                            <select
+                                id="forum-novo-tema"
+                                value={tema}
+                                onChange={(e) => setTema(e.target.value)}
+                                className="w-full sm:w-auto bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
+                            >
+                                <option value="">{t("forum.semTema")}</option>
+                                {TEMAS.map((valor) => (
+                                    <option key={valor} value={valor}>{rotulo("valores.temas", valor)}</option>
+                                ))}
+                            </select>
+                        </div>
 
                         {mediaType !== "none" && (
                             <div className="mt-4">
@@ -296,15 +439,19 @@ function CreatePostForm({ user, onSubmit, loading, erro }) {
                                         type="file"
                                         accept={mediaType === "image" ? "image/*" : "video/*"}
                                         className="sr-only"
+                                        aria-describedby="forum-midia-limite"
                                         onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) {
-                                                setMediaFile(file);
-                                                setMediaPreview(URL.createObjectURL(file));
-                                            }
+                                            escolherArquivo(e.target.files?.[0]);
+                                            e.target.value = "";
                                         }}
                                     />
                                 </label>
+                                <p id="forum-midia-limite" className="mt-1 text-xs text-gray-600">
+                                    {t(mediaType === "image" ? "forum.limiteImagem" : "forum.limiteVideo")}
+                                </p>
+                                {erroMidia && (
+                                    <p role="alert" className="mt-2 text-sm text-red-700">{erroMidia}</p>
+                                )}
                                 {mediaPreview && (
                                     <div className="mt-3 relative">
                                         {mediaType === "image" ? (
@@ -314,7 +461,7 @@ function CreatePostForm({ user, onSubmit, loading, erro }) {
                                         )}
                                         <button
                                             type="button"
-                                            onClick={() => { setMediaFile(null); setMediaPreview(null); }}
+                                            onClick={limparMidia}
                                             aria-label={t("forum.removerArquivo")}
                                             className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm hover:bg-red-700"
                                         >
@@ -353,12 +500,12 @@ function CreatePostForm({ user, onSubmit, loading, erro }) {
                                     </svg>
                                 </button>
 
-                                <span id="forum-novo-post-contador" className="text-gray-600 text-sm ml-2 sm:ml-4">{newPost.length}/280</span>
+                                <span id="forum-novo-post-contador" className="text-gray-600 text-sm ml-2 sm:ml-4">{newPost.length}/{LIMITE_TEXTO}</span>
                             </div>
 
                             <button
                                 type="submit"
-                                disabled={!newPost.trim() || loading || newPost.length > 280 || (mediaType !== "none" && !mediaFile)}
+                                disabled={!newPost.trim() || loading || newPost.length > LIMITE_TEXTO || (mediaType !== "none" && !mediaFile)}
                                 className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-md hover:shadow-lg"
                             >
                                 {loading ? t("forum.publicando") : t("forum.publicar")}
@@ -371,6 +518,70 @@ function CreatePostForm({ user, onSubmit, loading, erro }) {
     );
 }
 
+// ─── Busca e filtros ──────────────────────────────────────────────────────
+const FILTROS_INICIAIS = { busca: "", tema: "", ordem: "recentes", comMidia: false, meus: false };
+
+function BarraFiltros({ filtros, onChange, temas, total }) {
+    const { t, rotulo, formatarNumero } = useI18n();
+    const alterar = (campo, valor) => onChange({ ...filtros, [campo]: valor });
+    const ativos = filtros.busca.trim() || filtros.tema || filtros.comMidia || filtros.meus || filtros.ordem !== "recentes";
+    const campo = "bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200";
+
+    return (
+        <section aria-labelledby="forum-filtros-titulo" className="bg-white rounded-2xl p-4 sm:p-5 shadow-md border border-gray-200">
+            <h2 id="forum-filtros-titulo" className="sr-only">{t("forum.filtrosTitulo")}</h2>
+            <form role="search" onSubmit={(e) => e.preventDefault()} className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-3">
+                <div>
+                    <label htmlFor="forum-busca" className="sr-only">{t("forum.buscar")}</label>
+                    <input
+                        id="forum-busca"
+                        type="search"
+                        value={filtros.busca}
+                        onChange={(e) => alterar("busca", e.target.value)}
+                        placeholder={t("forum.placeholderBusca")}
+                        className={`w-full ${campo}`}
+                    />
+                </div>
+                <div>
+                    <label htmlFor="forum-filtro-tema" className="sr-only">{t("forum.filtrarTema")}</label>
+                    <select id="forum-filtro-tema" value={filtros.tema} onChange={(e) => alterar("tema", e.target.value)} className={`w-full ${campo}`}>
+                        <option value="">{t("forum.todosTemas")}</option>
+                        {temas.map((valor) => (
+                            <option key={valor} value={valor}>{rotulo("valores.temas", valor)}</option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label htmlFor="forum-ordem" className="sr-only">{t("forum.ordenar")}</label>
+                    <select id="forum-ordem" value={filtros.ordem} onChange={(e) => alterar("ordem", e.target.value)} className={`w-full ${campo}`}>
+                        {ORDENS.map((ordem) => (
+                            <option key={ordem} value={ordem}>{t(`forum.ordens.${ordem}`)}</option>
+                        ))}
+                    </select>
+                </div>
+            </form>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3 text-sm text-gray-700">
+                <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={filtros.comMidia} onChange={(e) => alterar("comMidia", e.target.checked)} className="w-4 h-4 accent-blue-600" />
+                    {t("forum.comMidia")}
+                </label>
+                <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={filtros.meus} onChange={(e) => alterar("meus", e.target.checked)} className="w-4 h-4 accent-blue-600" />
+                    {t("forum.meusPosts")}
+                </label>
+                <span role="status" className="text-gray-600 sm:ml-auto">
+                    {t(total === 1 ? "forum.resultadoUm" : "forum.resultados", { n: formatarNumero(total) })}
+                </span>
+                {ativos && (
+                    <button type="button" onClick={() => onChange(FILTROS_INICIAIS)} className="font-semibold text-blue-700 hover:underline rounded px-1">
+                        {t("forum.limparFiltros")}
+                    </button>
+                )}
+            </div>
+        </section>
+    );
+}
+
 // ─── Componente principal ──────────────────────────────────────────────────
 export default function Forum() {
     const { t } = useI18n();
@@ -379,6 +590,7 @@ export default function Forum() {
     const [loading, setLoading] = useState(false);
     // Erro ao publicar, exibido no formulário (substitui alert())
     const [erroPost, setErroPost] = useState("");
+    const [filtros, setFiltros] = useState(FILTROS_INICIAIS);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
@@ -399,8 +611,9 @@ export default function Forum() {
     const postsVisiveis = posts.filter(
         (p) => !p.moderado || ehModerador || (user && p.autor?.uid === user.uid)
     );
+    const postsFiltrados = filtrarPosts(postsVisiveis, filtros, user?.uid);
 
-    const handleSubmitPost = useCallback(async (text, mediaFile, mediaType) => {
+    const handleSubmitPost = useCallback(async (text, mediaFile, mediaType, tema) => {
         if (!user) return false;
         setErroPost("");
         setLoading(true);
@@ -416,6 +629,7 @@ export default function Forum() {
             }
             await addDoc(collection(db, "forumPosts"), {
                 conteudo: text,
+                tema: tema || null,
                 autor: { uid: user.uid, nome: user.displayName || user.email, email: user.email, foto: user.photoURL || null },
                 mediaUrl: uploadedUrl,
                 mediaType: finalMediaType,
@@ -447,18 +661,19 @@ export default function Forum() {
         }
     }, [user, t]);
 
-    const handleComment = useCallback(async (postId, texto) => {
+    // respostaA: chave do comentário de primeiro nível respondido (opcional)
+    const handleComment = useCallback(async (postId, texto, respostaA = null) => {
         if (!user) return false;
         const postRef = doc(db, "forumPosts", postId);
+        const comentario = {
+            autorUid: user.uid,
+            autorNome: user.displayName || user.email,
+            texto,
+            criadoEm: new Date().toISOString(),
+        };
+        if (respostaA) comentario.respostaA = respostaA;
         try {
-            await updateDoc(postRef, {
-                comentarios: arrayUnion({
-                    autorUid: user.uid,
-                    autorNome: user.displayName || user.email,
-                    texto,
-                    criadoEm: new Date().toISOString(),
-                }),
-            });
+            await updateDoc(postRef, { comentarios: arrayUnion(comentario) });
             return true;
         } catch (error) {
             console.error("Erro ao comentar:", error);
@@ -535,8 +750,12 @@ export default function Forum() {
 
                         <CreatePostForm user={user} onSubmit={handleSubmitPost} loading={loading} erro={erroPost} />
 
+                        {postsVisiveis.length > 0 && (
+                            <BarraFiltros filtros={filtros} onChange={setFiltros} temas={temasUsados(postsVisiveis)} total={postsFiltrados.length} />
+                        )}
+
                         <div className="space-y-4">
-                            {postsVisiveis.map((post) => (
+                            {postsFiltrados.map((post) => (
                                 <PostCard
                                     key={post.id}
                                     post={post}
@@ -545,6 +764,15 @@ export default function Forum() {
                                     onComment={handleComment}
                                 />
                             ))}
+
+                            {postsVisiveis.length > 0 && postsFiltrados.length === 0 && (
+                                <div className="text-center py-10 bg-white rounded-2xl shadow-md border border-gray-200">
+                                    <p className="text-gray-600 text-lg mb-4">{t("forum.nenhumResultado")}</p>
+                                    <button type="button" onClick={() => setFiltros(FILTROS_INICIAIS)} className="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700">
+                                        {t("forum.limparFiltros")}
+                                    </button>
+                                </div>
+                            )}
 
                             {postsVisiveis.length === 0 && (
                                 <div className="text-center py-12 bg-white rounded-2xl shadow-md border border-gray-200">

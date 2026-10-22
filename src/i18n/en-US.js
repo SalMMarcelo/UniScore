@@ -630,7 +630,36 @@ const enUS = {
     conecteAntes: "Connect with",
     conecteDestaque: "the academic community",
     compartilheTexto: "Share experiences, photos and videos from university events",
-    nenhumaDiscussao: "No discussions yet. Be the first to share!"
+    nenhumaDiscussao: "No discussions yet. Be the first to share!",
+    cancelar: "Cancel",
+    responder: "Reply",
+    responderA: "Reply to {nome}",
+    respostasA: "Replies to {nome}'s comment",
+    placeholderResposta: "Write a reply...",
+    temaOpcional: "Theme (optional)",
+    semTema: "No theme",
+    midiaNaoImagem: "Choose an image file (JPG, PNG, GIF or WebP).",
+    midiaNaoVideo: "Choose a video file (MP4, WebM or MOV).",
+    midiaGrande: "The file exceeds the {mb} MB limit.",
+    limiteImagem: "Images up to 10 MB.",
+    limiteVideo: "Videos up to 50 MB.",
+    filtrosTitulo: "Search and filter posts",
+    buscar: "Search the forum",
+    placeholderBusca: "Search by text, author or comment...",
+    filtrarTema: "Filter by theme",
+    todosTemas: "All themes",
+    ordenar: "Sort posts",
+    ordens: {
+      recentes: "Most recent",
+      curtidos: "Most liked",
+      comentados: "Most commented"
+    },
+    comMidia: "Only with photo or video",
+    meusPosts: "Only my posts",
+    resultadoUm: "{n} post",
+    resultados: "{n} posts",
+    limparFiltros: "Clear filters",
+    nenhumResultado: "No posts match these filters."
   },
 
   perfil: {

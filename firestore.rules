@@ -253,13 +253,26 @@ service cloud.firestore {
 
     // Comentar: só é permitido acrescentar UM comentário no final da lista,
     // com `autorUid` igual ao próprio uid, sem apagar os existentes.
+    // `texto` tem até 280 caracteres; `respostaA` (opcional) é a chave do
+    // comentário respondido (ver src/lib/forum.js).
     function isValidCommentAppend() {
       let antes = resource.data.get('comentarios', []);
       let depois = request.resource.data.comentarios;
+      let novo = depois[depois.size() - 1];
       return depois is list
         && depois.size() == antes.size() + 1
         && depois.hasAll(antes)
-        && depois[depois.size() - 1].autorUid == request.auth.uid;
+        && novo.autorUid == request.auth.uid
+        && novo.texto is string
+        && novo.texto.size() <= 280
+        && (novo.get('respostaA', null) == null
+            || (novo.respostaA is string && novo.respostaA.size() <= 160));
+    }
+
+    // Tema do post (opcional): um dos TEMAS de src/lib/eventos.js, ou null
+    function isValidTemaPost(data) {
+      return data.get('tema', null) == null
+        || (data.tema is string && data.tema.size() <= 60);
     }
 
     match /forumPosts/{postId} {
@@ -270,7 +283,8 @@ service cloud.firestore {
         && (!('moderado' in request.resource.data) || request.resource.data.moderado == false)
         // Posts nascem sem curtidas/comentários (evita "curtidas" forjadas).
         && (!('curtidas' in request.resource.data) || request.resource.data.curtidas == [])
-        && (!('comentarios' in request.resource.data) || request.resource.data.comentarios == []);
+        && (!('comentarios' in request.resource.data) || request.resource.data.comentarios == [])
+        && isValidTemaPost(request.resource.data);
 
       // Moderadores: qualquer campo (inclui moderado/moderadoPor/moderadoEm).
       // Autor: qualquer campo, exceto o autor, os campos de moderação e
@@ -279,7 +293,8 @@ service cloud.firestore {
       // Demais usuários logados: apenas curtidas/comentarios.
       allow update: if isModerator()
         || (isOwner(resource.data.autor.uid)
-            && !changedKeys().hasAny(['autor', 'moderado', 'moderadoPor', 'moderadoEm', 'curtidas', 'comentarios']))
+            && !changedKeys().hasAny(['autor', 'moderado', 'moderadoPor', 'moderadoEm', 'curtidas', 'comentarios'])
+            && isValidTemaPost(request.resource.data))
         || (isSignedIn()
             && changedKeys().hasOnly(['curtidas', 'comentarios'])
             && (!changedKeys().hasAny(['curtidas']) || isValidLikeChange())
