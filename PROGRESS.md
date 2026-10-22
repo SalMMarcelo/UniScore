@@ -213,11 +213,13 @@
 - ✅ **Relatório público (`/relatorio`) com dados reais**: avaliações (total e do mês), nota média, eventos, posts, avaliações por mês, impacto intercultural (médias dos critérios), avaliações por tema, eventos por tipo e avaliações recentes, via agregações do Firestore (`src/lib/estatisticas.js`)
 - ✅ **Fórum**: busca (texto, autor e comentários, sem diferenciar acentos), filtro por tema, "só com mídia", "só meus posts", ordenação (recentes, curtidos, comentados), tema opcional ao publicar e respostas a comentários (um nível, campo `respostaA`) — lógica em `src/lib/forum.js`
 - ✅ **Mídia no fórum**: imagens até 10 MB e vídeos até 50 MB, validados no cliente e em `storage.rules`
+- ✅ **Paginação do fórum**: 20 posts por vez em tempo real, botão "Carregar mais posts"; o post de um link `/forum#id` (notificações) é buscado à parte se ainda não foi carregado, e a página rola até ele com destaque
+- ✅ **Testes das regras**: `npm run test:rules` (141 casos no emulador)
 - ✅ **Notificações**: curtidas, comentários, respostas e ações da moderação; sino com não lidas, página `/notificacoes`; regras aceitam só notificações ligadas a uma ação real (`src/lib/notificacoes.js`)
 
 ### 🚀 **Próximos Passos Sugeridos**
 
-1. **Paginação do fórum** — hoje o feed carrega todos os posts em tempo real
+1. **Filtros do fórum no servidor** — busca e filtros valem só para os posts já carregados; tema, "meus posts" e ordenação por curtidas podem virar consultas no Firestore (com índices), e a busca por texto exigiria um serviço de busca
 2. **Notificações push (PWA)** — avisar fora do site via Firebase Cloud Messaging
 3. **Usuários no relatório público** — exige um contador mantido no servidor (Cloud Function), pois as regras não permitem contar `users`
 
@@ -253,4 +255,4 @@
 
 **Última atualização:** 22 de Outubro de 2026  
 **Status do Projeto:** ✅ Fase 3 concluída (moderação, gamificação, admin, acessibilidade e i18n)  
-**Próximo Milestone:** 📄 Paginação do fórum
+**Próximo Milestone:** 🔎 Filtros do fórum no servidor

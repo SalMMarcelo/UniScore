@@ -667,7 +667,11 @@ const ptBR = {
     resultadoUm: "{n} post",
     resultados: "{n} posts",
     limparFiltros: "Limpar filtros",
-    nenhumResultado: "Nenhum post encontrado com esses filtros."
+    nenhumResultado: "Nenhum post encontrado com esses filtros.",
+    filtroParcial: "A busca e os filtros consideram só os posts já carregados. Use “Carregar mais posts” para ampliar.",
+    carregarMais: "Carregar mais posts",
+    carregandoPosts: "Carregando posts...",
+    erroCarregar: "Não foi possível carregar os posts. Tente recarregar a página."
   },
 
   perfil: {

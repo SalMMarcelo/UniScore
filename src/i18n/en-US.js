@@ -660,7 +660,11 @@ const enUS = {
     resultadoUm: "{n} post",
     resultados: "{n} posts",
     limparFiltros: "Clear filters",
-    nenhumResultado: "No posts match these filters."
+    nenhumResultado: "No posts match these filters.",
+    filtroParcial: "Search and filters only cover the posts loaded so far. Use “Load more posts” to widen them.",
+    carregarMais: "Load more posts",
+    carregandoPosts: "Loading posts...",
+    erroCarregar: "Could not load the posts. Try reloading the page."
   },
 
   perfil: {

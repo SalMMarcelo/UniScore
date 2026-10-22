@@ -9,6 +9,7 @@ import {
     query,
     orderBy,
     onSnapshot,
+    limit,
     serverTimestamp,
     updateDoc,
     doc,
@@ -21,6 +22,7 @@ import { TEMAS } from "../../lib/eventos";
 import {
     LIMITE_TEXTO,
     ORDENS,
+    TAMANHO_PAGINA,
     filtrarPosts,
     temasUsados,
     organizarComentarios,
@@ -130,7 +132,7 @@ function Comentario({ item, post, user, resposta, onResponder }) {
 }
 
 // ─── Card de post ─────────────────────────────────────────────────────────
-function PostCard({ post, user, onLike, onComment }) {
+function PostCard({ post, user, destacado = false, onLike, onComment }) {
     const { t, rotulo } = useI18n();
     const [showComments, setShowComments] = useState(false);
     // Resposta em andamento: { fio: item de 1º nível (organizarComentarios), nome: autor respondido }
@@ -175,7 +177,7 @@ function PostCard({ post, user, onLike, onComment }) {
     };
 
     return (
-        <div id={post.id} className="bg-white rounded-2xl p-4 sm:p-6 shadow-md border border-gray-200 hover:shadow-lg transition-all duration-300">
+        <div id={post.id} className={`scroll-mt-24 bg-white rounded-2xl p-4 sm:p-6 shadow-md border hover:shadow-lg transition-all duration-300 ${destacado ? "border-blue-500 ring-2 ring-blue-300" : "border-gray-200"}`}>
             <div className="flex items-start gap-3 sm:gap-4">
                 <div aria-hidden="true" className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                     {post.autor.foto ? (
@@ -523,7 +525,7 @@ function CreatePostForm({ user, onSubmit, loading, erro }) {
 // ─── Busca e filtros ──────────────────────────────────────────────────────
 const FILTROS_INICIAIS = { busca: "", tema: "", ordem: "recentes", comMidia: false, meus: false };
 
-function BarraFiltros({ filtros, onChange, temas, total }) {
+function BarraFiltros({ filtros, onChange, temas, total, parcial }) {
     const { t, rotulo, formatarNumero } = useI18n();
     const alterar = (campo, valor) => onChange({ ...filtros, [campo]: valor });
     const ativos = filtros.busca.trim() || filtros.tema || filtros.comMidia || filtros.meus || filtros.ordem !== "recentes";
@@ -580,15 +582,84 @@ function BarraFiltros({ filtros, onChange, temas, total }) {
                     </button>
                 )}
             </div>
+            {ativos && parcial && (
+                <p className="mt-2 text-xs text-gray-600">{t("forum.filtroParcial")}</p>
+            )}
         </section>
     );
+}
+
+// ─── Feed paginado ─────────────────────────────────────────────────────────
+// Os posts mais recentes em tempo real, TAMANHO_PAGINA por vez: "carregar
+// mais" amplia o limite da mesma consulta, então curtidas e comentários de
+// todos os posts já carregados continuam ao vivo.
+function useFeedForum() {
+    const [limite, setLimite] = useState(TAMANHO_PAGINA);
+    const [feed, setFeed] = useState({ posts: [], temMais: false, carregando: true, erro: false });
+
+    useEffect(() => {
+        setFeed((f) => ({ ...f, carregando: true }));
+        const q = query(collection(db, "forumPosts"), orderBy("criadoEm", "desc"), limit(limite));
+        return onSnapshot(q, (snapshot) => {
+            setFeed({
+                posts: snapshot.docs.map((d) => ({ id: d.id, ...d.data() })),
+                // Ao ampliar o limite, o primeiro resultado vem do cache local só
+                // com os posts que já estavam na tela: ainda não diz se há mais.
+                temMais: snapshot.size >= limite || snapshot.metadata.fromCache,
+                carregando: snapshot.metadata.fromCache && snapshot.size < limite,
+                erro: false
+            });
+        }, (err) => {
+            console.error("Erro ao carregar o fórum:", err);
+            setFeed((f) => ({ ...f, carregando: false, erro: true }));
+        });
+    }, [limite]);
+
+    const carregarMais = useCallback(() => setLimite((l) => l + TAMANHO_PAGINA), []);
+    return { ...feed, carregarMais };
+}
+
+// Post indicado no endereço (/forum#id, usado pelas notificações). Se ele
+// não estiver entre os carregados, é buscado à parte para aparecer no feed.
+function usePostDoEndereco(posts) {
+    const [alvoId, setAlvoId] = useState(null);
+    const [postAlvo, setPostAlvo] = useState(null);
+
+    useEffect(() => {
+        const ler = () => {
+            try {
+                setAlvoId(decodeURIComponent(window.location.hash.slice(1)) || null);
+            } catch {
+                setAlvoId(null); // hash malformado
+            }
+        };
+        ler();
+        window.addEventListener("hashchange", ler);
+        return () => window.removeEventListener("hashchange", ler);
+    }, []);
+
+    const carregado = !!alvoId && posts.some((p) => p.id === alvoId);
+    useEffect(() => {
+        if (!alvoId || carregado) {
+            setPostAlvo(null);
+            return;
+        }
+        return onSnapshot(
+            doc(db, "forumPosts", alvoId),
+            (s) => setPostAlvo(s.exists() ? { id: s.id, ...s.data() } : null),
+            () => setPostAlvo(null)
+        );
+    }, [alvoId, carregado]);
+
+    return { alvoId, postAlvo };
 }
 
 // ─── Componente principal ──────────────────────────────────────────────────
 export default function Forum() {
     const { t } = useI18n();
     const [user, setUser] = useState(undefined);
-    const [posts, setPosts] = useState([]);
+    const feed = useFeedForum();
+    const { alvoId, postAlvo } = usePostDoEndereco(feed.posts);
     const [loading, setLoading] = useState(false);
     // Erro ao publicar, exibido no formulário (substitui alert())
     const [erroPost, setErroPost] = useState("");
@@ -599,13 +670,10 @@ export default function Forum() {
         return () => unsubscribe();
     }, []);
 
-    useEffect(() => {
-        const q = query(collection(db, "forumPosts"), orderBy("criadoEm", "desc"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setPosts(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
-        });
-        return () => unsubscribe();
-    }, []);
+    // (o post do endereço pode chegar no feed um render antes de postAlvo ser limpo)
+    const posts = postAlvo && !feed.posts.some((p) => p.id === postAlvo.id)
+        ? [...feed.posts, postAlvo]
+        : feed.posts;
 
     // Posts ocultados pela moderação (moderado == true) saem do feed público;
     // o autor (e os moderadores) continuam vendo, com um aviso no card.
@@ -614,6 +682,15 @@ export default function Forum() {
         (p) => !p.moderado || ehModerador || (user && p.autor?.uid === user.uid)
     );
     const postsFiltrados = filtrarPosts(postsVisiveis, filtros, user?.uid);
+
+    // Rola até o post do endereço quando ele aparece (uma vez por id)
+    const [rolouPara, setRolouPara] = useState(null);
+    const alvoNaTela = !!alvoId && postsFiltrados.some((p) => p.id === alvoId);
+    useEffect(() => {
+        if (!alvoNaTela || rolouPara === alvoId) return;
+        document.getElementById(alvoId)?.scrollIntoView({ block: "start" });
+        setRolouPara(alvoId);
+    }, [alvoNaTela, alvoId, rolouPara]);
 
     const handleSubmitPost = useCallback(async (text, mediaFile, mediaType, tema) => {
         if (!user) return false;
@@ -754,7 +831,7 @@ export default function Forum() {
                         <CreatePostForm user={user} onSubmit={handleSubmitPost} loading={loading} erro={erroPost} />
 
                         {postsVisiveis.length > 0 && (
-                            <BarraFiltros filtros={filtros} onChange={setFiltros} temas={temasUsados(postsVisiveis)} total={postsFiltrados.length} />
+                            <BarraFiltros filtros={filtros} onChange={setFiltros} temas={temasUsados(postsVisiveis)} total={postsFiltrados.length} parcial={feed.temMais} />
                         )}
 
                         <div className="space-y-4">
@@ -763,6 +840,7 @@ export default function Forum() {
                                     key={post.id}
                                     post={post}
                                     user={user}
+                                    destacado={post.id === alvoId}
                                     onLike={handleLike}
                                     onComment={handleComment}
                                 />
@@ -777,7 +855,15 @@ export default function Forum() {
                                 </div>
                             )}
 
-                            {postsVisiveis.length === 0 && (
+                            {feed.erro && (
+                                <p role="alert" className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4">{t("forum.erroCarregar")}</p>
+                            )}
+
+                            {feed.carregando && postsVisiveis.length === 0 && !feed.erro && (
+                                <p role="status" className="text-center text-gray-600 py-8">{t("forum.carregandoPosts")}</p>
+                            )}
+
+                            {!feed.carregando && !feed.erro && postsVisiveis.length === 0 && (
                                 <div className="text-center py-12 bg-white rounded-2xl shadow-md border border-gray-200">
                                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <svg aria-hidden="true" className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -787,6 +873,19 @@ export default function Forum() {
                                     <p className="text-gray-600 text-lg">
                                         {t("forum.nenhumaDiscussao")}
                                     </p>
+                                </div>
+                            )}
+
+                            {feed.temMais && (
+                                <div className="text-center pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={feed.carregarMais}
+                                        disabled={feed.carregando}
+                                        className="bg-white border border-gray-300 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 disabled:opacity-60"
+                                    >
+                                        {feed.carregando ? t("forum.carregandoPosts") : t("forum.carregarMais")}
+                                    </button>
                                 </div>
                             )}
                         </div>

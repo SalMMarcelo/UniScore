@@ -16,6 +16,9 @@ import { chaveComentario } from "./denuncias";
 
 export const LIMITE_TEXTO = 280;
 
+// Posts por página do feed (o "carregar mais" soma outra página)
+export const TAMANHO_PAGINA = 20;
+
 export const ORDENS = ["recentes", "curtidos", "comentados"];
 
 // Limites alinhados com storage.rules (match /forum/{userId}/{fileName})
