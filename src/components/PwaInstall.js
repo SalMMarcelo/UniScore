@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "../i18n/I18nProvider";
 
 function isStandalone() {
   if (typeof window === "undefined") return false;
@@ -16,6 +17,7 @@ function isIos() {
 }
 
 export default function PwaInstall() {
+  const { t } = useI18n();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [installed, setInstalled] = useState(false);
   const [showIosHint, setShowIosHint] = useState(false);
@@ -110,7 +112,7 @@ export default function PwaInstall() {
         ref={installButtonRef}
         onClick={handleClick}
         className="fixed bottom-6 left-6 z-50 flex items-center gap-2 rounded-full border-2 border-white bg-[#002247] px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
-        aria-label="Instalar aplicativo UniScore"
+        aria-label={t("pwa.instalarRotulo")}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -128,7 +130,7 @@ export default function PwaInstall() {
           <path d="m7 10 5 5 5-5" />
           <path d="M5 21h14" />
         </svg>
-        <span className="hidden sm:inline">Instalar app</span>
+        <span className="hidden sm:inline">{t("pwa.instalarApp")}</span>
       </button>
 
       {showIosHint && (
@@ -145,13 +147,13 @@ export default function PwaInstall() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 id="pwa-ios-titulo" className="mb-2 text-base font-semibold text-[#002247]">
-              Instalar o UniScore
+              {t("pwa.tituloIos")}
             </h2>
             <p id="pwa-ios-descricao" className="text-sm text-gray-600">
-              Toque no ícone de compartilhar
+              {t("pwa.toqueCompartilhar")}
               <span aria-hidden="true"> (⬆️) </span>
-              na barra do Safari e depois em{" "}
-              <strong>&quot;Adicionar à Tela de Início&quot;</strong>.
+              {t("pwa.naBarraSafari")}{" "}
+              <strong>{t("pwa.adicionarTela")}</strong>.
             </p>
             <button
               ref={closeButtonRef}
@@ -159,7 +161,7 @@ export default function PwaInstall() {
               onClick={() => setShowIosHint(false)}
               className="mt-4 rounded-full bg-[#002247] px-4 py-2 text-sm font-semibold text-white"
             >
-              Entendi
+              {t("pwa.entendi")}
             </button>
           </div>
         </div>

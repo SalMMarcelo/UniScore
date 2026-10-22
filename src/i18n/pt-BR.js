@@ -1100,6 +1100,70 @@ const ptBR = {
     }
   },
 
+  pwa: {
+    instalarRotulo: "Instalar aplicativo UniScore",
+    instalarApp: "Instalar app",
+    tituloIos: "Instalar o UniScore",
+    toqueCompartilhar: "Toque no ícone de compartilhar",
+    naBarraSafari: "na barra do Safari e depois em",
+    adicionarTela: "\"Adicionar à Tela de Início\"",
+    entendi: "Entendi"
+  },
+
+  relatorio: {
+    oQueFazemos: "O que fazemos",
+    aoVivo: "Ao vivo",
+    titulo: "Dashboard de Relatórios",
+    subtitulo: "Transparência e impacto intercultural no ensino superior brasileiro",
+    avaliacoes: "AVALIAÇÕES",
+    esteMes: "{valor} este mês",
+    universidades: "UNIVERSIDADES",
+    esteTrimestre: "{valor} este trimestre",
+    novasAtivas: "+12 novas ativas",
+    usuarios: "USUÁRIOS",
+    estaSemana: "{valor} esta semana",
+    registrados: "+1.2k registrados",
+    eventos: "EVENTOS",
+    hoje: "{valor} hoje",
+    avaliados: "+89 avaliados",
+    crescimento: "Crescimento de Usuários",
+    mes: "Mês",
+    ano: "Ano",
+    meses: {
+      jan: "Jan", fev: "Fev", mar: "Mar", abr: "Abr", mai: "Mai",
+      jun: "Jun", jul: "Jul", ago: "Ago", set: "Set", out: "Out"
+    },
+    usuariosAtivos: "Usuários ativos",
+    impacto: "Impacto Intercultural",
+    aspectos: {
+      cosmovisao: "Ampliação da cosmovisão",
+      conexao: "Conexão intercultural",
+      valorizacao: "Valorização da interculturalidade",
+      preconceitos: "Quebra de preconceitos",
+      consciencia: "Consciência global"
+    },
+    categoriasTitulo: "Categorias Culturais Mais Avaliadas",
+    categorias: {
+      intercambio: "Intercâmbio Internacional",
+      diversidade: "Diversidade Cultural",
+      linguas: "Línguas Estrangeiras",
+      arte: "Arte e Música Internacional",
+      culinaria: "Culinária Mundial",
+      tradicoes: "Tradições Regionais"
+    },
+    regionalTitulo: "Distribuição Regional",
+    regioes: {
+      sudeste: "Sudeste",
+      sul: "Sul",
+      nordeste: "Nordeste",
+      centroOeste: "Centro-Oeste",
+      norte: "Norte"
+    },
+    recentes: "Avaliações Recentes",
+    minAtras: "{n} min atrás",
+    horaAtras: "{n} hora atrás"
+  },
+
   // @@novas-secoes
 };
 

@@ -1092,6 +1092,70 @@ const enUS = {
     }
   },
 
+  pwa: {
+    instalarRotulo: "Install the UniScore app",
+    instalarApp: "Install app",
+    tituloIos: "Install UniScore",
+    toqueCompartilhar: "Tap the share icon",
+    naBarraSafari: "in the Safari toolbar and then",
+    adicionarTela: "\"Add to Home Screen\"",
+    entendi: "Got it"
+  },
+
+  relatorio: {
+    oQueFazemos: "What we do",
+    aoVivo: "Live",
+    titulo: "Reports Dashboard",
+    subtitulo: "Transparency and intercultural impact in Brazilian higher education",
+    avaliacoes: "REVIEWS",
+    esteMes: "{valor} this month",
+    universidades: "UNIVERSITIES",
+    esteTrimestre: "{valor} this quarter",
+    novasAtivas: "+12 newly active",
+    usuarios: "USERS",
+    estaSemana: "{valor} this week",
+    registrados: "+1.2k registered",
+    eventos: "EVENTS",
+    hoje: "{valor} today",
+    avaliados: "+89 reviewed",
+    crescimento: "User Growth",
+    mes: "Month",
+    ano: "Year",
+    meses: {
+      jan: "Jan", fev: "Feb", mar: "Mar", abr: "Apr", mai: "May",
+      jun: "Jun", jul: "Jul", ago: "Aug", set: "Sep", out: "Oct"
+    },
+    usuariosAtivos: "Active users",
+    impacto: "Intercultural Impact",
+    aspectos: {
+      cosmovisao: "Broadened worldview",
+      conexao: "Intercultural connection",
+      valorizacao: "Appreciation of interculturality",
+      preconceitos: "Breaking down prejudice",
+      consciencia: "Global awareness"
+    },
+    categoriasTitulo: "Most Reviewed Cultural Categories",
+    categorias: {
+      intercambio: "International Exchange",
+      diversidade: "Cultural Diversity",
+      linguas: "Foreign Languages",
+      arte: "International Art and Music",
+      culinaria: "World Cuisine",
+      tradicoes: "Regional Traditions"
+    },
+    regionalTitulo: "Regional Distribution",
+    regioes: {
+      sudeste: "Southeast",
+      sul: "South",
+      nordeste: "Northeast",
+      centroOeste: "Center-West",
+      norte: "North"
+    },
+    recentes: "Recent Reviews",
+    minAtras: "{n} min ago",
+    horaAtras: "{n} hour ago"
+  },
+
   // @@novas-secoes
 };
 
