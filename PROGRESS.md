@@ -219,10 +219,8 @@
 
 ### ⏳ **Pendências (para 23/10/2026)**
 
-1. **Credencial do deploy automático**: criar a conta de serviço `github-deploy` no Google Cloud (papéis: Administrador de regras do Firebase, Administrador de índices do Cloud Datastore, Consumidor do Service Usage), baixar a chave JSON e salvá-la no GitHub como secret `FIREBASE_SERVICE_ACCOUNT` (Settings → Secrets and variables → Actions); depois apagar o arquivo baixado. Sem isso o job `publicar` do workflow "Regras do Firebase" falha
-2. **Publicar as regras** com o novo moderador (reexecutar o workflow ou `npx firebase deploy --only firestore:rules,firestore:indexes,storage`)
-3. **Entrar no `/admin`** com o Google (ou verificar o e-mail) e clicar em **"Recalcular contadores"** na aba Fórum
-4. **Decidir o caminho das notificações push**: Netlify Functions (grátis) ou Cloud Functions (plano Blaze)
+1. **Credencial do deploy automático**: criar a conta de serviço `github-deploy` no Google Cloud (papéis: Administrador de regras do Firebase, Administrador de índices do Cloud Datastore, Consumidor do Service Usage), baixar a chave JSON e salvá-la no GitHub como secret `FIREBASE_SERVICE_ACCOUNT` (Settings → Secrets and variables → Actions); depois apagar o arquivo baixado. Sem isso o job `publicar` do workflow "Regras do Firebase" falha e as regras continuam sendo publicadas à mão
+2. **Decidir o caminho das notificações push**: Netlify Functions (grátis) ou Cloud Functions (plano Blaze)
 
 ### 🚀 **Próximos Passos Sugeridos**
 
