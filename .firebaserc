@@ -1,5 +1,14 @@
 {
   "projects": {
     "default": "uniscore-51208"
+  },
+  "targets": {
+    "uniscore-51208": {
+      "storage": {
+        "principal": [
+          "uniscore-51208.firebasestorage.app"
+        ]
+      }
+    }
   }
 }
