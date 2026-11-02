@@ -1,11 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { auth } from "../../firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import Link from "next/link";
 import AccessTypeTabs from "../../components/AccessTypeTabs";
 import BotoesLoginSocial from "../../components/BotoesLoginSocial";
-import { garantirDocumentoUsuario, destinoAposLogin, mensagemErroAuth } from "../../lib/usuarios";
+import { garantirDocumentoUsuario, destinoAposLogin, destinoDaUrl, mensagemErroAuth } from "../../lib/usuarios";
 import { useI18n } from "../../i18n/I18nProvider";
 
 export default function Login() {
@@ -15,6 +15,13 @@ export default function Login() {
     const [erro, setErro] = useState("");
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    // Repassa ?redirect= (ex.: voltar ao check-in) para quem ainda vai criar a conta
+    const [linkCadastro, setLinkCadastro] = useState("/cadastro");
+
+    useEffect(() => {
+        const destino = destinoDaUrl("");
+        if (destino) setLinkCadastro(`/cadastro?${new URLSearchParams({ redirect: destino }).toString()}`);
+    }, []);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -177,7 +184,7 @@ export default function Login() {
                         <div className="mt-6 text-center">
                             <p className="text-gray-600">
                                 {t("login.naoTemConta")}{' '}
-                                <Link href="/cadastro" className="text-blue-600 font-semibold hover:text-blue-700 hover:underline">
+                                <Link href={linkCadastro} className="text-blue-600 font-semibold hover:text-blue-700 hover:underline">
                                     {t("login.cadastreSe")}
                                 </Link>
                             </p>

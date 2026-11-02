@@ -6,6 +6,7 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../../../firebase";
 import MenuMobile from "../../../components/MenuMobile";
 import SeletorIdioma from "../../../components/SeletorIdioma";
+import SeloPresencaVerificada from "../../../components/SeloPresencaVerificada";
 import { useI18n } from "../../../i18n/I18nProvider";
 
 export default function UniversidadePage() {
@@ -246,6 +247,7 @@ export default function UniversidadePage() {
                                             <div className="text-sm text-gray-600">
                                                 {formatarData(av.criadoEm, { day: 'numeric', month: 'short', year: 'numeric' })}
                                             </div>
+                                            {av.presencaVerificada === true && <SeloPresencaVerificada className="mt-1" />}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1 mb-3" role="img" aria-label={t("geral.estrelas", { n: av.nota })}>

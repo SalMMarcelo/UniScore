@@ -8,6 +8,8 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 import { notaSegura } from "../../lib/notas";
 import { listarEventos, buscarEvento } from "../../lib/eventos";
+import { temPresenca } from "../../lib/presencas";
+import SeloPresencaVerificada from "../../components/SeloPresencaVerificada";
 import MenuMobile from "../../components/MenuMobile";
 import SeletorIdioma from "../../components/SeletorIdioma";
 import { useI18n } from "../../i18n/I18nProvider";
@@ -115,6 +117,8 @@ function AvaliarEventoConteudo() {
     const [imagemPreview, setImagemPreview] = useState(null);
     // Mensagem de validação/erro exibida no formulário (substitui alert())
     const [erro, setErro] = useState('');
+    // Presença (check-in) do usuário no evento escolhido: { eventoId, tem } (docs/checkin-presenca.md)
+    const [presenca, setPresenca] = useState({ eventoId: '', tem: false });
 
     const [avaliacao, setAvaliacao] = useState({
         universidadeId: '',
@@ -153,7 +157,9 @@ function AvaliarEventoConteudo() {
 
             if (!currentUser) {
                 alert(tRef.current('avaliar.precisaLogin'));
-                router.push('/login');
+                // Volta para cá (com o evento escolhido) depois do login
+                const retorno = window.location.pathname + window.location.search;
+                router.push(`/login?redirect=${encodeURIComponent(retorno)}`);
             }
         });
         return () => unsubscribe();
@@ -249,6 +255,23 @@ function AvaliarEventoConteudo() {
         });
     }, [avaliacao.universidadeId, todosEventos]);
 
+    // Verifica se o usuário fez check-in no evento escolhido
+    const eventoEscolhido = todosEventos.find(evt => evt.id === String(avaliacao.eventoId)) || null;
+    const exigeCheckin = !!(eventoEscolhido && eventoEscolhido.exigeCheckin === true);
+    const presencaConhecida = !!avaliacao.eventoId && presenca.eventoId === String(avaliacao.eventoId);
+    const temPresencaNoEvento = presencaConhecida && presenca.tem;
+    const bloqueadoSemCheckin = exigeCheckin && presencaConhecida && !presenca.tem;
+
+    useEffect(() => {
+        const eventoId = String(avaliacao.eventoId || '');
+        if (!user || !eventoId) return;
+        let cancelado = false;
+        temPresenca(eventoId, user.uid).then(tem => {
+            if (!cancelado) setPresenca({ eventoId, tem });
+        });
+        return () => { cancelado = true; };
+    }, [user, avaliacao.eventoId]);
+
     const setCriterio = (id, valor) => {
         setAvaliacao(prev => ({ ...prev, criterios: { ...prev.criterios, [id]: valor } }));
     };
@@ -306,6 +329,14 @@ function AvaliarEventoConteudo() {
 
         setErro('');
         setLoading(true);
+        // Confere a presença na hora de enviar (o check-in pode ter sido feito em outra aba)
+        const presencaVerificada = await temPresenca(String(avaliacao.eventoId), user.uid);
+        if (exigeCheckin && !presencaVerificada) {
+            setPresenca({ eventoId: String(avaliacao.eventoId), tem: false });
+            setErro(t('avaliar.exigeCheckinErro'));
+            setLoading(false);
+            return;
+        }
         try {
             let imagemUrl = null;
             if (imagemFile) {
@@ -342,6 +373,8 @@ function AvaliarEventoConteudo() {
                 photoURL: user.photoURL || null,
                 criterios,
                 intercultural,
+                // Só vai quando há presença confirmada (as regras conferem presencas/{eventoId}_{uid})
+                ...(presencaVerificada ? { presencaVerificada: true } : {}),
                 criadoEm: serverTimestamp()
             };
 
@@ -353,7 +386,9 @@ function AvaliarEventoConteudo() {
             router.push('/');
         } catch (error) {
             console.error('Erro completo ao salvar avaliação:', error);
-            setErro(t('avaliar.erroSalvar', { mensagem: error.message }));
+            setErro(exigeCheckin && error && error.code === 'permission-denied'
+                ? t('avaliar.exigeCheckinErro')
+                : t('avaliar.erroSalvar', { mensagem: error.message }));
         } finally {
             setLoading(false);
         }
@@ -361,6 +396,11 @@ function AvaliarEventoConteudo() {
 
     const proximaEtapa = (e) => {
         if (e) e.preventDefault(); // Prevenir submit do formulário
+        // Evento com check-in obrigatório: não deixa preencher o resto sem presença
+        if (etapa === 1 && bloqueadoSemCheckin) {
+            setErro(t('avaliar.exigeCheckinErro'));
+            return;
+        }
         // Na etapa de critérios, todos precisam de estrelas ou "Não se aplica"
         if (etapa === 2 && criteriosPendentes.length > 0) {
             avisarCriteriosPendentes();
@@ -543,9 +583,24 @@ function AvaliarEventoConteudo() {
                                             ) : eventos.length === 0 && avaliacao.universidadeId && (
                                                 <p className="text-sm text-gray-600 mt-2">{t("avaliar.nenhumEvento")}</p>
                                             )}
+                                            {temPresencaNoEvento ? (
+                                                <div className="mt-3 text-sm text-gray-700">
+                                                    <SeloPresencaVerificada />
+                                                    <p className="mt-1">{t("avaliar.presencaConfirmada")}</p>
+                                                </div>
+                                            ) : exigeCheckin && !presencaConhecida ? (
+                                                <p className="text-sm text-gray-600 mt-2">{t("avaliar.verificandoPresenca")}</p>
+                                            ) : null}
                                         </div>
                                     </div>
                                 </div>
+
+                                {bloqueadoSemCheckin && (
+                                    <div role="alert" className="bg-amber-50 border border-amber-300 text-amber-900 rounded-xl p-4 text-sm">
+                                        <p className="font-bold mb-1">{t("avaliar.exigeCheckinTitulo")}</p>
+                                        <p>{t("avaliar.exigeCheckinTexto")}</p>
+                                    </div>
+                                )}
 
                                 {/* Data e Imagem */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1013,7 +1068,7 @@ function AvaliarEventoConteudo() {
                             ) : (
                                 <button
                                     type="submit"
-                                    disabled={loading}
+                                    disabled={loading || bloqueadoSemCheckin}
                                     className="bg-gradient-to-r from-green-600 to-green-700 text-white px-8 py-3 rounded-lg font-bold hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {loading ? (
