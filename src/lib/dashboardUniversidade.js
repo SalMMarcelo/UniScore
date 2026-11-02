@@ -193,6 +193,55 @@ export function agregarDashboard({ avaliacoes, eventosConta, nomesEventos, prese
 }
 
 // ---------------------------------------------------------------------------
+// Relatório para impressão (docs/relatorio-universidade.md)
+// ---------------------------------------------------------------------------
+
+export const PERIODOS_RELATORIO = ["30d", "12m", "tudo"];
+export const LIMITE_RECENTES_RELATORIO = 20;
+
+// Início do período (Date, exclusivo) ou null para "tudo"
+export function inicioDoPeriodo(periodo, agora = new Date()) {
+    if (periodo === "30d") return new Date(agora.getTime() - 30 * DIA_MS);
+    if (periodo === "12m") {
+        const umAnoAntes = new Date(agora);
+        umAnoAntes.setFullYear(umAnoAntes.getFullYear() - 1);
+        return umAnoAntes;
+    }
+    return null;
+}
+
+// Avaliações com criadoEm dentro do período: "30d" (últimos 30 dias), "12m" (últimos 12 meses)
+// ou "tudo" (sem filtro). Com filtro, avaliações sem data ficam de fora.
+export function filtrarPorPeriodo(avaliacoes, periodo, agora = new Date()) {
+    const inicioData = inicioDoPeriodo(periodo, agora);
+    if (!inicioData) return avaliacoes;
+    const inicio = inicioData.getTime();
+    const fim = agora.getTime();
+    return avaliacoes.filter(av => {
+        const t = paraDate(av.criadoEm)?.getTime();
+        return t !== undefined && t > inicio && t <= fim;
+    });
+}
+
+// Dados do relatório a partir do que carregarDashboard devolveu, só com as avaliações do período.
+// As presenças (check-ins) não têm filtro de período: são sempre a contagem total.
+export function agregarRelatorio(dados, periodo, agora = new Date()) {
+    const avaliacoes = filtrarPorPeriodo(dados.avaliacoes || [], periodo, agora);
+    const agregado = agregarDashboard({
+        avaliacoes,
+        eventosConta: dados.eventosConta || [],
+        nomesEventos: dados.nomesEventos || {},
+        presencasPorEvento: dados.presencasPorEvento ?? null,
+        agora
+    });
+    return {
+        ...agregado,
+        avaliacoes,
+        recentes: avaliacoesRecentes(avaliacoes, LIMITE_RECENTES_RELATORIO)
+    };
+}
+
+// ---------------------------------------------------------------------------
 // Busca no Firestore
 // ---------------------------------------------------------------------------
 
@@ -291,6 +340,9 @@ export async function carregarDashboard({ uid, universidadeId, eventosConta = nu
     return {
         avaliacoes,
         nomesEventos,
+        // Dados brutos para reagregar por período (relatório)
+        eventosConta: eventos,
+        presencasPorEvento,
         ...agregarDashboard({ avaliacoes, eventosConta: eventos, nomesEventos, presencasPorEvento })
     };
 }

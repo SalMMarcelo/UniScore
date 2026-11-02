@@ -243,6 +243,19 @@ export default function DashboardUniversidade() {
                         {t("dashboard.bemVinda")} <span className="text-red-600">{universidadeData?.nomeUniversidade}</span>
                     </h2>
                     <p className="text-lg text-gray-600">{t("dashboard.subtitulo")}</p>
+                    {/* Relatório para imprimir / salvar em PDF (docs/relatorio-universidade.md) */}
+                    <a
+                        href="/dashboard-universidade/relatorio"
+                        target="_blank"
+                        rel="noopener"
+                        className="inline-flex items-center gap-2 mt-4 bg-gray-800 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-gray-900 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-800"
+                    >
+                        <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                        </svg>
+                        {t("dashboard.gerarRelatorio")}
+                        <span className="sr-only">{t("dashboard.gerarRelatorioNovaAba")}</span>
+                    </a>
                 </div>
 
                 {/* Pending Status Alert */}
