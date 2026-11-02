@@ -213,12 +213,15 @@
 - ✅ **Fórum**: busca (texto, autor e comentários, sem diferenciar acentos), filtro por tema, "só com mídia", "só meus posts", ordenação (recentes, curtidos, comentados), tema opcional ao publicar e respostas a comentários (um nível, campo `respostaA`) — lógica em `src/lib/forum.js`
 - ✅ **Mídia no fórum**: imagens até 10 MB e vídeos até 50 MB, validados no cliente e em `storage.rules`
 - ✅ **Paginação do fórum**: 20 posts por vez em tempo real, botão "Carregar mais posts"; o post de um link `/forum#id` (notificações) é buscado à parte se ainda não foi carregado, e a página rola até ele com destaque
-- ✅ **Testes das regras**: `npm run test:rules` (222 casos no emulador)
+- ✅ **Testes das regras**: `npm run test:rules` (253 casos no emulador)
 
 ## 📅 Novembro 2026 — Presença verificada e push
 
 - ✅ **Avaliação com presença verificada (check-in por QR)** — contrato em `docs/checkin-presenca.md`: a universidade ativa o check-in do evento no dashboard (QR em tela cheia/PNG, código novo, validade, nº de presenças); o participante escaneia → `/checkin` grava `presencas/{eventoId}_{uid}` (validado nas regras contra o segredo `eventos/{id}/privado/checkin`); avaliações ganham `presencaVerificada` e o selo "Presença verificada"; o evento pode exigir check-in para avaliar (`exigeCheckin`); `/relatorio` mostra total e % de avaliações verificadas (`src/lib/presencas.js`)
 - ✅ **Notificações push (código pronto, falta ligar)** — opção em `/notificacoes`, tokens em `users/{uid}/tokensPush`, recebimento no `public/sw.js` e envio em `functions/` (lógica de envio independente do gatilho). Para ligar: VAPID key em `NEXT_PUBLIC_FIREBASE_VAPID_KEY` e deploy do envio (ver `functions/README.md`)
+- ✅ **Catálogo de universidades no Firestore** (`docs/catalogo-universidades.md`): coleção pública `catalogoUniversidades`; ao aprovar no `/admin`, o moderador vincula a uma entrada existente ou publica a universidade no catálogo (aparece na busca, tem página e pode ser avaliada); "Publicar no catálogo" para aprovadas sem vínculo; revogar oculta (`ativo: false`). Mackenzie/USP seguem do `public/universidades.json` (ids "1"/"2"). Leitura em `listarUniversidades`/`buscarUniversidade` (`src/lib/universidades.js`)
+- ✅ **Números reais na home**: avaliações, universidades e eventos (no lugar de "usuários", que as regras não permitem contar)
+- ✅ **Dashboard da universidade só com dados reais** (`docs/dashboard-real.md`, `src/lib/dashboardUniversidade.js`): avaliações da universidade e dos eventos da conta, nota média, presença verificada, check-ins e taxa de avaliação, médias dos 5 critérios, distribuição de notas, tabela por evento e avaliações recentes com selo. Saíram visualizações, NPS, categorias e percentuais inventados
 - ✅ **Fluxo com vários agentes** — `CLAUDE.md`, agentes em `.claude/agents/` e `npm run test:i18n`
 - ✅ **Filtros do fórum no servidor**: tema, "só meus posts", "só com mídia" e a ordenação (recentes, curtidos, comentados) são consultas no Firestore com índices; os posts guardam `totalCurtidas`/`totalComentarios`, gravados em transação e validados pelas regras. Posts antigos ganham os contadores pelo botão "Recalcular contadores" no painel admin (aba Fórum). A busca por texto continua valendo só para os posts carregados
 - ✅ **Notificações**: curtidas, comentários, respostas e ações da moderação; sino com não lidas, página `/notificacoes`; regras aceitam só notificações ligadas a uma ação real (`src/lib/notificacoes.js`)
@@ -250,7 +253,7 @@
 
 **Testes das regras**
 
-- `npm run test:rules` sobe os emuladores do Firestore e do Storage e roda `tests/regras/*.test.mjs` (222 casos: usuários, avaliações, universidades, eventos, presenças, fórum, denúncias, notificações, tokens de push e uploads)
+- `npm run test:rules` sobe os emuladores do Firestore e do Storage e roda `tests/regras/*.test.mjs` (253 casos: usuários, avaliações, universidades, eventos, presenças, catálogo de universidades, fórum, denúncias, notificações, tokens de push e uploads)
 - Precisa de Java 21+ no PATH (exigência do `firebase-tools`); não usa nenhum projeto real (`demo-uniscore`)
 - Toda mudança em `firestore.rules` ou `storage.rules` deve vir com casos novos aqui
 
