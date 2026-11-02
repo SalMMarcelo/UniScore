@@ -323,7 +323,7 @@ const enUS = {
     buscarComFiltros: "Search events with filters",
     statAvaliacoes: "Reviews",
     statUniversidades: "Universities",
-    statUsuarios: "Users",
+    statEventos: "Events",
     ctaParticipou: "Attended an event recently?",
     ctaAvaliarAgora: "Review now",
     ctaReputacaoTitulo: "Strengthen your university's reputation",
@@ -486,7 +486,8 @@ const enUS = {
     avaliacoesComunidade: "Community Reviews",
     nenhuma: "No reviews yet",
     sejaPrimeiro: "Be the first to review",
-    eventoId: "Event ID: {id}"
+    eventoId: "Event ID: {id}",
+    naoEncontrada: "University not found."
   },
 
   denuncia: {
@@ -1018,7 +1019,13 @@ const enUS = {
       sugestao: "Suggestion by name: {nome} (use)",
       salvarVinculo: "Save link",
       revogar: "Revoke approval",
-      aprovar: "Approve"
+      aprovar: "Approve",
+      criarNova: "+ Create a new catalog entry",
+      oculta: " (hidden)",
+      publicar: "Publish to catalog",
+      publicada: "{nome} published to the catalog.",
+      semVinculoAprovada: "Approved, but not in the catalog: it does not show up in search and cannot be reviewed.",
+      ajudaNova: "Creates catalogoUniversidades/{uid} with the account name and links the account to it."
     },
     avaliacoes: {
       confirmarExcluir: "Permanently delete this review?",

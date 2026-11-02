@@ -8,6 +8,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 import { notaSegura } from "../../lib/notas";
 import { listarEventos, buscarEvento } from "../../lib/eventos";
+import { listarUniversidades } from "../../lib/universidades";
 import { temPresenca } from "../../lib/presencas";
 import SeloPresencaVerificada from "../../components/SeloPresencaVerificada";
 import MenuMobile from "../../components/MenuMobile";
@@ -45,7 +46,7 @@ function estrelasOuNull(valor) {
     return Number.isInteger(n) && n >= 1 && n <= 5 ? n : null;
 }
 
-// Normaliza nomes para comparar a universidade de um evento com universidades.json
+// Normaliza nomes para comparar a universidade de um evento com o catálogo
 function normalizarNome(texto) {
     return String(texto || '')
         .normalize('NFD')
@@ -55,7 +56,7 @@ function normalizarNome(texto) {
 }
 
 // Id (string) da universidade de um evento: usa evt.universidadeId e, se não
-// houver, procura pelo nome em universidades.json. Sem correspondência, usa o
+// houver, procura pelo nome no catálogo. Sem correspondência, usa o
 // próprio nome como id para o evento continuar selecionável.
 function universidadeDoEvento(evt, listaUnis) {
     if (evt.universidadeId !== undefined && evt.universidadeId !== null && evt.universidadeId !== '') {
@@ -68,8 +69,8 @@ function universidadeDoEvento(evt, listaUnis) {
     return uni ? uni.id : String(nomeOriginal);
 }
 
-// Lista de universidades do select: public/universidades.json + universidades
-// que aparecem nos eventos e não estão no JSON.
+// Lista de universidades do select: catálogo (src/lib/universidades.js:
+// Firestore + legadas) + universidades que aparecem nos eventos e não estão nele.
 function montarUniversidades(json, eventos) {
     const lista = (Array.isArray(json) ? json : []).map(u => ({ id: String(u.id), nome: u.nome }));
     eventos.forEach(evt => {
@@ -173,9 +174,10 @@ function AvaliarEventoConteudo() {
             setCarregandoEventos(true);
             try {
                 const [jsonUnis, listaEventos, eventoPre] = await Promise.all([
-                    fetch("/universidades.json")
-                        .then(res => (res.ok ? res.json() : []))
-                        .catch(() => []),
+                    listarUniversidades().catch(err => {
+                        console.error('Erro ao carregar universidades:', err);
+                        return [];
+                    }),
                     listarEventos().catch(err => {
                         console.error('Erro ao carregar eventos:', err);
                         return [];

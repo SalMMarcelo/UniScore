@@ -8,6 +8,8 @@ import MenuMobile from "../../../components/MenuMobile";
 import SeletorIdioma from "../../../components/SeletorIdioma";
 import SeloPresencaVerificada from "../../../components/SeloPresencaVerificada";
 import { useI18n } from "../../../i18n/I18nProvider";
+import AvatarUniversidade from "../../../components/AvatarUniversidade";
+import { buscarUniversidade } from "../../../lib/universidades";
 
 export default function UniversidadePage() {
     const { t, formatarData, formatarNumero } = useI18n();
@@ -17,14 +19,21 @@ export default function UniversidadePage() {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
+    // Catálogo (Firestore ou legado do JSON); null = inexistente ou oculta
     useEffect(() => {
-        fetch("/universidades.json")
-            .then(res => res.json())
-            .then(data => {
-                const uni = data.find(u => String(u.id) === String(id));
+        let cancelado = false;
+        setLoading(true);
+        buscarUniversidade(id)
+            .catch(err => {
+                console.error("Erro ao buscar universidade:", err);
+                return null;
+            })
+            .then(uni => {
+                if (cancelado) return;
                 setUniversidade(uni);
                 setLoading(false);
             });
+        return () => { cancelado = true; };
     }, [id]);
 
     // Buscar avaliações da universidade no Firestore
@@ -74,6 +83,19 @@ export default function UniversidadePage() {
     const { starDist, total, avg } = calcularEstatisticas();
     const avgTexto = avg === "-" ? "-" : formatarNumero(parseFloat(avg), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
+    if (!loading && !universidade) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+                <div className="text-center py-12" role="alert">
+                    <p className="text-gray-700 text-lg mb-4">{t("universidade.naoEncontrada")}</p>
+                    <Link href="/" className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors">
+                        {t("universidade.voltar")}
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
     if (!universidade || loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -118,13 +140,16 @@ export default function UniversidadePage() {
                 <div className="text-center mb-12">
                     <div className="flex justify-center mb-6">
                         <div className="w-32 h-32 rounded-full bg-white p-2 shadow-xl border-4 border-gray-200">
-                            <img src={universidade.imagem} alt={t("universidade.logotipo", { nome: universidade.nome })} className="w-full h-full object-cover rounded-full" />
+                            <AvatarUniversidade uni={universidade} alt={t("universidade.logotipo", { nome: universidade.nome })} className="w-full h-full" classeIniciais="text-4xl" />
                         </div>
                     </div>
                     <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                         {universidade.nome}
                     </h1>
-                    <p className="text-xl text-gray-600 mb-6">{universidade.sigla}</p>
+                    {universidade.sigla && <p className="text-xl text-gray-600 mb-2">{universidade.sigla}</p>}
+                    {universidade.descricao && <p className="text-gray-600 max-w-2xl mx-auto mb-6">{universidade.descricao}</p>}
+                    {/* Site oficial: só a entrada legada do Mackenzie tem endereço conhecido */}
+                    {universidade.id === "1" && (
                     <a
                         href="https://www.mackenzie.br/universidade/conheca-a-universidade"
                         target="_blank"
@@ -137,6 +162,7 @@ export default function UniversidadePage() {
                         {t("universidade.visitarSite")}
                         <span className="sr-only">{t("universidade.novaAba")}</span>
                     </a>
+                    )}
                 </div>
 
                 {/* Grid com vídeo e estatísticas */}

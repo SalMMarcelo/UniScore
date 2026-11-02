@@ -330,7 +330,7 @@ const ptBR = {
     buscarComFiltros: "Buscar eventos com filtros",
     statAvaliacoes: "Avaliações",
     statUniversidades: "Universidades",
-    statUsuarios: "Usuários",
+    statEventos: "Eventos",
     ctaParticipou: "Participou de algum evento recentemente?",
     ctaAvaliarAgora: "Avaliar agora",
     ctaReputacaoTitulo: "Fortaleça a reputação da sua universidade",
@@ -493,7 +493,8 @@ const ptBR = {
     avaliacoesComunidade: "Avaliações da Comunidade",
     nenhuma: "Nenhuma avaliação ainda",
     sejaPrimeiro: "Seja o primeiro a avaliar",
-    eventoId: "Evento ID: {id}"
+    eventoId: "Evento ID: {id}",
+    naoEncontrada: "Universidade não encontrada."
   },
 
   denuncia: {
@@ -1025,7 +1026,13 @@ const ptBR = {
       sugestao: "Sugestão pelo nome: {nome} (usar)",
       salvarVinculo: "Salvar vínculo",
       revogar: "Revogar aprovação",
-      aprovar: "Aprovar"
+      aprovar: "Aprovar",
+      criarNova: "+ Criar entrada nova no catálogo",
+      oculta: " (oculta)",
+      publicar: "Publicar no catálogo",
+      publicada: "{nome} publicada no catálogo.",
+      semVinculoAprovada: "Aprovada, mas fora do catálogo: não aparece na busca nem pode ser avaliada.",
+      ajudaNova: "Cria catalogoUniversidades/{uid} com o nome da conta e vincula a conta a ela."
     },
     avaliacoes: {
       confirmarExcluir: "Excluir esta avaliação definitivamente?",

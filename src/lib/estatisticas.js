@@ -19,6 +19,7 @@ import {
     Timestamp
 } from "firebase/firestore";
 import { listarEventos } from "./eventos";
+import { listarUniversidades } from "./universidades";
 
 export const SEM_TEMA = "Sem tema";
 
@@ -208,5 +209,30 @@ export async function carregarRelatorioPublico(agora = new Date()) {
         recentes,
         eventosPorId: Object.fromEntries(eventos.map(ev => [ev.id, ev])),
         geradoEm: agora
+    };
+}
+
+// Números das faixas de estatísticas da home (src/app/page.js), contados no
+// servidor sem baixar documentos. Cada valor é um número, ou null se falhar.
+//  - avaliacoes: total de avaliacoes;
+//  - universidades: tamanho do catálogo visível (o mesmo da busca da home,
+//    já em cache; a lista é pequena e já soma as legadas sem contar duas vezes);
+//  - eventos: eventos do Firestore + legados de public/events.json (os do
+//    Firestore nunca têm id numérico, então não há sobreposição).
+// Usuários não entram: as regras não permitem contar users/usuarios.
+export async function carregarNumerosHome() {
+    const [avaliacoes, eventosFirestore, legados, universidades] = await Promise.all([
+        contar(collection(db, "avaliacoes")),
+        contar(collection(db, "eventos")),
+        fetch("/events.json")
+            .then(res => (res.ok ? res.json() : null))
+            .then(dados => (Array.isArray(dados) ? dados.length : 0))
+            .catch(() => 0),
+        listarUniversidades().then(lista => lista.length).catch(() => null)
+    ]);
+    return {
+        avaliacoes,
+        universidades,
+        eventos: eventosFirestore === null ? null : eventosFirestore + legados
     };
 }

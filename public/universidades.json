@@ -2,7 +2,7 @@
     {
         "id": 1,
         "nome": "Mackenzie",
-        "sigla": "UAM",
+        "sigla": "UPM",
         "descricao": "Universidade Presbiteriana Mackenzie, referência em inovação e tecnologia.",
         "imagem": "/mack-logo.png",
         "eventos": [
@@ -15,7 +15,7 @@
         "nome": "USP",
         "sigla": "USP",
         "descricao": "Universidade de São Paulo, maior universidade pública do Brasil.",
-        "imagem": "/usp.png",
+        "imagem": null,
         "eventos": []
     }
 ]
