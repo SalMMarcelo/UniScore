@@ -19,6 +19,9 @@ npm run test:i18n    # pt-BR e en-US com as mesmas chaves
 PATH=/usr/lib/jvm/java-21-openjdk-amd64/bin:$PATH flock /tmp/uniscore-emulador.lock npm run test:rules
 ```
 
+**Dependências**: o CI usa Node 22 (npm 10) com `npm ci`, e o npm local é mais novo e grava um lock que o npm 10
+recusa. Ao instalar ou atualizar pacotes, regenere o lock com `npx -y npm@10 install --package-lock-only`.
+
 Não há testes de interface; valide páginas com `npm run build` e, quando possível, abrindo no navegador.
 
 ## Regras do código
