@@ -213,7 +213,7 @@
 - ✅ **Fórum**: busca (texto, autor e comentários, sem diferenciar acentos), filtro por tema, "só com mídia", "só meus posts", ordenação (recentes, curtidos, comentados), tema opcional ao publicar e respostas a comentários (um nível, campo `respostaA`) — lógica em `src/lib/forum.js`
 - ✅ **Mídia no fórum**: imagens até 10 MB e vídeos até 50 MB, validados no cliente e em `storage.rules`
 - ✅ **Paginação do fórum**: 20 posts por vez em tempo real, botão "Carregar mais posts"; o post de um link `/forum#id` (notificações) é buscado à parte se ainda não foi carregado, e a página rola até ele com destaque
-- ✅ **Testes das regras**: `npm run test:rules` (253 casos no emulador)
+- ✅ **Testes das regras**: `npm run test:rules` (257 casos no emulador)
 
 ## 📅 Novembro 2026 — Presença verificada e push
 
@@ -223,6 +223,8 @@
 - ✅ **Números reais na home**: avaliações, universidades e eventos (no lugar de "usuários", que as regras não permitem contar)
 - ✅ **Dashboard da universidade só com dados reais** (`docs/dashboard-real.md`, `src/lib/dashboardUniversidade.js`): avaliações da universidade e dos eventos da conta, nota média, presença verificada, check-ins e taxa de avaliação, médias dos 5 critérios, distribuição de notas, tabela por evento e avaliações recentes com selo. Saíram visualizações, NPS, categorias e percentuais inventados
 - ✅ **Relatório da universidade para imprimir / salvar em PDF** (`docs/relatorio-universidade.md`): botão "Gerar relatório" no dashboard abre `/dashboard-universidade/relatorio` numa aba nova; mesmos dados de `carregarDashboard`, filtro de período (30 dias / 12 meses / tudo) aplicado às avaliações por `agregarRelatorio`; logo e nome da universidade no cabeçalho, marca-d'água do logo em todas as páginas, metodologia da presença verificada no rodapé. A parte visual fica em `RelatorioImpressao.js` (recebe os dados prontos)
+- ✅ **Contas de universidade não avaliam nem fazem check-in**: `isContaUniversidade()` nas regras de `avaliacoes` e `presencas`; na interface, `LinkAvaliar` esconde os botões "Avaliar", `/avaliar` bloqueia com aviso e `/checkin` mostra o erro `conta-institucional`
+- ✅ **Cabeçalho "Meu painel"** para contas de universidade (`src/components/AcoesConta.js`); `/perfil` redireciona ao dashboard
 - ✅ **Fluxo com vários agentes** — `CLAUDE.md`, agentes em `.claude/agents/` e `npm run test:i18n`
 - ✅ **Filtros do fórum no servidor**: tema, "só meus posts", "só com mídia" e a ordenação (recentes, curtidos, comentados) são consultas no Firestore com índices; os posts guardam `totalCurtidas`/`totalComentarios`, gravados em transação e validados pelas regras. Posts antigos ganham os contadores pelo botão "Recalcular contadores" no painel admin (aba Fórum). A busca por texto continua valendo só para os posts carregados
 - ✅ **Notificações**: curtidas, comentários, respostas e ações da moderação; sino com não lidas, página `/notificacoes`; regras aceitam só notificações ligadas a uma ação real (`src/lib/notificacoes.js`)
@@ -232,11 +234,18 @@
 1. ✅ **Credencial do deploy automático**: conta de serviço `github-deploy` (papéis: Administrador de regras do Firebase, Administrador de índices do Cloud Datastore, Consumidor do Service Usage e Visualizador do Cloud Storage para Firebase) com a chave salva no GitHub como secret `FIREBASE_SERVICE_ACCOUNT` (configurado em 02/11/2026)
 2. **Decidir o caminho das notificações push**: Netlify Functions (grátis) ou Cloud Functions (plano Blaze) — o código do Cloud Functions está em `functions/` e o README descreve a alternativa Netlify
 
-### 🚀 **Próximos Passos Sugeridos**
+### 🚀 **Próximos Passos Sugeridos** (atualizado em 02/11/2026)
 
-1. **Ligar as notificações push** — VAPID key e deploy do envio (ver pendência acima)
-2. **Busca por texto no servidor** — hoje vale só para os posts carregados; exigiria um serviço de busca (ex.: Algolia ou Typesense via extensão do Firebase)
-3. **Usuários no relatório público** — exige um contador mantido no servidor (Cloud Function), pois as regras não permitem contar `users`
+1. **Carrossel da home** — as 8 imagens atuais têm tamanhos/formatos misturados (uma 400×300, uma vertical, uma de 1,6 MB) e pelo menos uma tem copyright de terceiros (`imagem3.jpg`, Ohio University). Decisão: fotos reais, não IA. Etapa 1: ~5 fotos livres (Unsplash/Pexels), horizontais, WebP ~150 KB, e redesenho do carrossel (altura fixa, legenda legível). Etapa 2: carrossel com os eventos reais do Firestore que têm foto, caindo nas fotos fixas
+2. **Ligar as notificações push** — Blaze já ativo: VAPID key em `NEXT_PUBLIC_FIREBASE_VAPID_KEY` e deploy da Cloud Function (`functions/README.md`)
+3. **Teste manual em produção** — relatório da universidade (PDF, marca-d'água) e cabeçalho "Meu painel"; confirmar o aviso amarelo em `/avaliar` para conta de universidade; apagar a avaliação de teste se tiver sido feita pela conta da universidade
+4. **Moderador que entra pelo QR** cai em `/admin` em vez de voltar ao check-in
+5. **Contas de universidade**: trocar "Comece agora" e "Para universidades" (home/rodapé) por "Meu painel"; tela para editar o perfil da universidade (descrição, imagem, sigla — as regras já permitem)
+6. **Página da universidade**: o vídeo do YouTube é o mesmo em todas
+7. **Admin**: cadastro pendente suspeito "Mackenzie" com e-mail `@makenzie.br`; limpar os dados de teste
+8. **CI**: incluir `package.json`/`package-lock.json` nos gatilhos do workflow das regras
+9. **Repositório**: o GitHub mudou para `SalMMarcelo/UniScore`; atualizar o remote local (`git remote set-url origin git@github.com:SalMMarcelo/UniScore.git`)
+10. **Busca por texto no servidor** (fórum) e **usuários no relatório público** — exigem serviço de busca / contador em Cloud Function
 
 ### 📝 **Notas Técnicas**
 
@@ -254,7 +263,7 @@
 
 **Testes das regras**
 
-- `npm run test:rules` sobe os emuladores do Firestore e do Storage e roda `tests/regras/*.test.mjs` (253 casos: usuários, avaliações, universidades, eventos, presenças, catálogo de universidades, fórum, denúncias, notificações, tokens de push e uploads)
+- `npm run test:rules` sobe os emuladores do Firestore e do Storage e roda `tests/regras/*.test.mjs` (257 casos: usuários, avaliações, universidades, eventos, presenças, catálogo de universidades, fórum, denúncias, notificações, tokens de push e uploads)
 - Precisa de Java 21+ no PATH (exigência do `firebase-tools`); não usa nenhum projeto real (`demo-uniscore`)
 - Toda mudança em `firestore.rules` ou `storage.rules` deve vir com casos novos aqui
 
