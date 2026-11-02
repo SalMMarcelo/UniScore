@@ -213,18 +213,24 @@
 - ✅ **Fórum**: busca (texto, autor e comentários, sem diferenciar acentos), filtro por tema, "só com mídia", "só meus posts", ordenação (recentes, curtidos, comentados), tema opcional ao publicar e respostas a comentários (um nível, campo `respostaA`) — lógica em `src/lib/forum.js`
 - ✅ **Mídia no fórum**: imagens até 10 MB e vídeos até 50 MB, validados no cliente e em `storage.rules`
 - ✅ **Paginação do fórum**: 20 posts por vez em tempo real, botão "Carregar mais posts"; o post de um link `/forum#id` (notificações) é buscado à parte se ainda não foi carregado, e a página rola até ele com destaque
-- ✅ **Testes das regras**: `npm run test:rules` (150 casos no emulador)
+- ✅ **Testes das regras**: `npm run test:rules` (222 casos no emulador)
+
+## 📅 Novembro 2026 — Presença verificada e push
+
+- ✅ **Avaliação com presença verificada (check-in por QR)** — contrato em `docs/checkin-presenca.md`: a universidade ativa o check-in do evento no dashboard (QR em tela cheia/PNG, código novo, validade, nº de presenças); o participante escaneia → `/checkin` grava `presencas/{eventoId}_{uid}` (validado nas regras contra o segredo `eventos/{id}/privado/checkin`); avaliações ganham `presencaVerificada` e o selo "Presença verificada"; o evento pode exigir check-in para avaliar (`exigeCheckin`); `/relatorio` mostra total e % de avaliações verificadas (`src/lib/presencas.js`)
+- ✅ **Notificações push (código pronto, falta ligar)** — opção em `/notificacoes`, tokens em `users/{uid}/tokensPush`, recebimento no `public/sw.js` e envio em `functions/` (lógica de envio independente do gatilho). Para ligar: VAPID key em `NEXT_PUBLIC_FIREBASE_VAPID_KEY` e deploy do envio (ver `functions/README.md`)
+- ✅ **Fluxo com vários agentes** — `CLAUDE.md`, agentes em `.claude/agents/` e `npm run test:i18n`
 - ✅ **Filtros do fórum no servidor**: tema, "só meus posts", "só com mídia" e a ordenação (recentes, curtidos, comentados) são consultas no Firestore com índices; os posts guardam `totalCurtidas`/`totalComentarios`, gravados em transação e validados pelas regras. Posts antigos ganham os contadores pelo botão "Recalcular contadores" no painel admin (aba Fórum). A busca por texto continua valendo só para os posts carregados
 - ✅ **Notificações**: curtidas, comentários, respostas e ações da moderação; sino com não lidas, página `/notificacoes`; regras aceitam só notificações ligadas a uma ação real (`src/lib/notificacoes.js`)
 
 ### ⏳ **Pendências (para 23/10/2026)**
 
 1. **Credencial do deploy automático**: criar a conta de serviço `github-deploy` no Google Cloud (papéis: Administrador de regras do Firebase, Administrador de índices do Cloud Datastore, Consumidor do Service Usage), baixar a chave JSON e salvá-la no GitHub como secret `FIREBASE_SERVICE_ACCOUNT` (Settings → Secrets and variables → Actions); depois apagar o arquivo baixado. Sem isso o job `publicar` do workflow "Regras do Firebase" falha e as regras continuam sendo publicadas à mão
-2. **Decidir o caminho das notificações push**: Netlify Functions (grátis) ou Cloud Functions (plano Blaze)
+2. **Decidir o caminho das notificações push**: Netlify Functions (grátis) ou Cloud Functions (plano Blaze) — o código do Cloud Functions está em `functions/` e o README descreve a alternativa Netlify
 
 ### 🚀 **Próximos Passos Sugeridos**
 
-1. **Notificações push (PWA)** — avisar fora do site via Firebase Cloud Messaging
+1. **Ligar as notificações push** — VAPID key e deploy do envio (ver pendência acima)
 2. **Busca por texto no servidor** — hoje vale só para os posts carregados; exigiria um serviço de busca (ex.: Algolia ou Typesense via extensão do Firebase)
 3. **Usuários no relatório público** — exige um contador mantido no servidor (Cloud Function), pois as regras não permitem contar `users`
 
@@ -244,7 +250,7 @@
 
 **Testes das regras**
 
-- `npm run test:rules` sobe os emuladores do Firestore e do Storage e roda `tests/regras/*.test.mjs` (150 casos: usuários, avaliações, universidades, eventos, fórum, denúncias, notificações e uploads)
+- `npm run test:rules` sobe os emuladores do Firestore e do Storage e roda `tests/regras/*.test.mjs` (222 casos: usuários, avaliações, universidades, eventos, presenças, fórum, denúncias, notificações, tokens de push e uploads)
 - Precisa de Java 21+ no PATH (exigência do `firebase-tools`); não usa nenhum projeto real (`demo-uniscore`)
 - Toda mudança em `firestore.rules` ou `storage.rules` deve vir com casos novos aqui
 
@@ -258,6 +264,6 @@
 
 ---
 
-**Última atualização:** 22 de Outubro de 2026  
+**Última atualização:** 2 de Novembro de 2026  
 **Status do Projeto:** ✅ Fase 3 concluída (moderação, gamificação, admin, acessibilidade e i18n)  
-**Próximo Milestone:** 🔔 Notificações push (PWA)
+**Próximo Milestone:** 🧪 Testar o check-in com uma universidade parceira e ligar o push
