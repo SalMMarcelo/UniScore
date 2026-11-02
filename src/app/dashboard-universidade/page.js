@@ -5,30 +5,52 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, deleteDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { buscarUniversidadeId } from "../../lib/universidades";
-import { notaSegura } from "../../lib/notas";
+import { carregarDashboard } from "../../lib/dashboardUniversidade";
 import SeletorIdioma from "../../components/SeletorIdioma";
+import SeloPresencaVerificada from "../../components/SeloPresencaVerificada";
 import PainelCheckin from "./eventos/PainelCheckin";
 import { useI18n } from "../../i18n/I18nProvider";
+
+const SEM_VALOR = "—";
+
+const ESTRELA_PATH = "M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z";
+
+// Barra horizontal decorativa: o valor sempre aparece em texto ao lado
+function Barra({ fracao, cor }) {
+    const largura = Math.max(0, Math.min(1, Number(fracao) || 0)) * 100;
+    return (
+        <div aria-hidden="true" className="flex-1 min-w-[60px] bg-gray-100 rounded-full h-3">
+            <div className={`${cor} h-3 rounded-full`} style={{ width: `${largura}%` }}></div>
+        </div>
+    );
+}
+
+function Cartao({ cor, icone, valor, rotulo, detalhe }) {
+    return (
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+            <div className={`w-12 h-12 ${cor} rounded-xl flex items-center justify-center mb-4`}>{icone}</div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">{valor}</div>
+            <div className="text-sm text-gray-600">{rotulo}</div>
+            {detalhe && <div className="text-sm text-gray-700 mt-1 font-medium">{detalhe}</div>}
+        </div>
+    );
+}
 
 export default function DashboardUniversidade() {
     const { t, rotulo, formatarData, formatarNumero, formatarMoeda } = useI18n();
     const [user, setUser] = useState(null);
     const [universidadeData, setUniversidadeData] = useState(null);
-    const [avaliacoes, setAvaliacoes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [isUniversidade, setIsUniversidade] = useState(false);
-    const [semVinculo, setSemVinculo] = useState(false);
     const [meusEventos, setMeusEventos] = useState([]);
+    const [eventosProntos, setEventosProntos] = useState(false);
     const [excluindoId, setExcluindoId] = useState(null);
     const [checkinAbertoId, setCheckinAbertoId] = useState(null);
-    const [stats, setStats] = useState({
-        totalAvaliacoes: 0,
-        mediaGeral: 0,
-        eventosAvaliados: 0,
-        ultimaAvaliacao: null
-    });
+    // Dados agregados (src/lib/dashboardUniversidade.js)
+    const [dados, setDados] = useState(null);
+    const [carregandoDados, setCarregandoDados] = useState(true);
+    const [erroDados, setErroDados] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -77,160 +99,16 @@ export default function DashboardUniversidade() {
         return () => unsubscribe();
     }, [router]);
 
-    useEffect(() => {
-        // Buscar avaliações apenas se for uma universidade válida
-        if (user && universidadeData && isUniversidade && !error) {
-            // Se o status for "pendente", mostrar dados de demonstração
-            if (universidadeData.status === "pendente") {
-                // Dados de demonstração para preview
-                const demoAvaliacoes = [
-                    {
-                        id: "demo1",
-                        usuario: "Ana Silva",
-                        photoURL: null,
-                        nota: 5,
-                        comentario: "Excelente evento de tecnologia! A organização foi impecável e os palestrantes muito qualificados. Definitivamente participaria novamente.",
-                        titulo: "Semana de Tecnologia 2024",
-                        criadoEm: { toDate: () => new Date(Date.now() - 86400000) }
-                    },
-                    {
-                        id: "demo2",
-                        usuario: "Carlos Mendes",
-                        photoURL: null,
-                        nota: 4,
-                        comentario: "Muito bom! O networking foi fantástico e aprendi bastante sobre as tendências do mercado. Única sugestão é melhorar o coffee break.",
-                        titulo: "Feira de Profissões",
-                        criadoEm: { toDate: () => new Date(Date.now() - 172800000) }
-                    },
-                    {
-                        id: "demo3",
-                        usuario: "Marina Santos",
-                        photoURL: null,
-                        nota: 5,
-                        comentario: "Simplesmente incrível! As palestras sobre sustentabilidade abriram minha mente. Parabéns pela iniciativa da universidade.",
-                        titulo: "Simpósio de Sustentabilidade",
-                        criadoEm: { toDate: () => new Date(Date.now() - 259200000) }
-                    },
-                    {
-                        id: "demo4",
-                        usuario: "João Oliveira",
-                        photoURL: null,
-                        nota: 4,
-                        comentario: "Workshop muito prático sobre empreendedorismo. Os casos apresentados foram relevantes e inspiradores.",
-                        titulo: "Workshop de Empreendedorismo",
-                        criadoEm: { toDate: () => new Date(Date.now() - 345600000) }
-                    },
-                    {
-                        id: "demo5",
-                        usuario: "Fernanda Costa",
-                        photoURL: null,
-                        nota: 5,
-                        comentario: "Evento espetacular! A qualidade dos palestrantes e a infraestrutura estavam perfeitas. Já estou ansioso pelo próximo.",
-                        titulo: "Congresso de Inovação",
-                        criadoEm: { toDate: () => new Date(Date.now() - 432000000) }
-                    },
-                    {
-                        id: "demo6",
-                        usuario: "Rafael Lima",
-                        photoURL: null,
-                        nota: 4,
-                        comentario: "Muito bem organizado! As atividades práticas complementaram perfeitamente a teoria apresentada nas palestras.",
-                        título: "Semana Acadêmica",
-                        criadoEm: { toDate: () => new Date(Date.now() - 518400000) }
-                    }
-                ];
-
-                setAvaliacoes(demoAvaliacoes);
-                setStats({
-                    totalAvaliacoes: 1247,
-                    mediaGeral: "4.7",
-                    eventosAvaliados: 23,
-                    ultimaAvaliacao: new Date()
-                });
-            } else {
-                // Modo produção - buscar dados reais
-                // As avaliações guardam o id de public/universidades.json ("1", "2"...),
-                // não o uid da conta. Cadastros antigos não têm universidadeId: buscar pelo nome.
-                let cancelado = false;
-                let unsubscribe = null;
-
-                const zerarStats = () => setStats({
-                    totalAvaliacoes: 0,
-                    mediaGeral: 0,
-                    eventosAvaliados: 0,
-                    ultimaAvaliacao: null
-                });
-
-                const iniciar = async () => {
-                    let universidadeId = universidadeData.universidadeId || null;
-                    if (!universidadeId) {
-                        try {
-                            universidadeId = await buscarUniversidadeId({
-                                nome: universidadeData.nomeUniversidade,
-                                sigla: universidadeData.sigla
-                            });
-                        } catch (lookupErr) {
-                            console.error("Erro ao buscar universidade na lista:", lookupErr);
-                        }
-                    }
-                    if (cancelado) return;
-
-                    if (!universidadeId) {
-                        // Sem vínculo com a lista de universidades: não há como buscar avaliações
-                        setSemVinculo(true);
-                        setAvaliacoes([]);
-                        zerarStats();
-                        return;
-                    }
-                    setSemVinculo(false);
-
-                    const q = query(
-                        collection(db, "avaliacoes"),
-                        where("universidadeId", "==", String(universidadeId))
-                    );
-
-                    unsubscribe = onSnapshot(q, (snapshot) => {
-                        const avaliacoesData = snapshot.docs.map(doc => ({
-                            id: doc.id,
-                            ...doc.data()
-                        }));
-
-                        setAvaliacoes(avaliacoesData);
-
-                        if (avaliacoesData.length > 0) {
-                            const media = avaliacoesData.reduce((acc, av) => acc + notaSegura(av.nota), 0) / avaliacoesData.length;
-                            const eventosUnicos = [...new Set(avaliacoesData.map(av => av.eventoId))];
-
-                            setStats({
-                                totalAvaliacoes: avaliacoesData.length,
-                                mediaGeral: media.toFixed(1),
-                                eventosAvaliados: eventosUnicos.length,
-                                ultimaAvaliacao: avaliacoesData[0]?.criadoEm
-                            });
-                        } else {
-                            zerarStats();
-                        }
-                    }, (err) => {
-                        console.error("Erro ao buscar avaliações:", err);
-                    });
-                };
-
-                iniciar();
-
-                return () => {
-                    cancelado = true;
-                    if (unsubscribe) unsubscribe();
-                };
-            }
-        }
-    }, [user, universidadeData, isUniversidade, error]);
-
     const aprovada = universidadeData?.status === "aprovado";
+    // Vínculo com uma universidade: só o que está na própria conta (universidades/{uid})
+    const universidadeId = universidadeData?.universidadeId ? String(universidadeData.universidadeId) : null;
+    const semVinculo = isUniversidade && !universidadeId;
 
     // Eventos cadastrados por esta conta (RF02) - só para universidades aprovadas
     useEffect(() => {
         if (!user || !aprovada) {
             setMeusEventos([]);
+            setEventosProntos(false);
             return;
         }
         const q = query(collection(db, "eventos"), where("universidadeUid", "==", user.uid));
@@ -239,11 +117,39 @@ export default function DashboardUniversidade() {
             // Mais recentes primeiro (ordenação local para não exigir índice composto)
             lista.sort((a, b) => String(b.data || "").localeCompare(String(a.data || "")));
             setMeusEventos(lista);
+            setEventosProntos(true);
         }, (err) => {
             console.error("Erro ao buscar eventos da universidade:", err);
+            setEventosProntos(true);
         });
         return () => unsubscribe();
     }, [user, aprovada]);
+
+    // Avaliações, presenças e agregações. Recarrega quando a lista de eventos muda.
+    // Conta não aprovada: a lib busca os eventos da conta e não conta presenças (as regras negariam).
+    const chaveEventos = meusEventos.map(ev => `${ev.id}:${ev.nome || ""}`).join("|");
+    useEffect(() => {
+        if (!user || !isUniversidade || error) return;
+        if (aprovada && !eventosProntos) return;
+        let cancelado = false;
+        setCarregandoDados(true);
+        setErroDados(false);
+        carregarDashboard({
+            uid: user.uid,
+            universidadeId,
+            eventosConta: aprovada ? meusEventos : null,
+            contarPresencasDosEventos: aprovada
+        })
+            .then(resultado => { if (!cancelado) setDados(resultado); })
+            .catch(err => {
+                console.error("Erro ao carregar os dados do dashboard:", err);
+                if (!cancelado) setErroDados(true);
+            })
+            .finally(() => { if (!cancelado) setCarregandoDados(false); });
+        return () => { cancelado = true; };
+        // meusEventos entra pela chaveEventos (evita recarregar a cada snapshot igual)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, isUniversidade, error, aprovada, eventosProntos, universidadeId, chaveEventos]);
 
     const excluirEvento = async (evento) => {
         if (!window.confirm(t("dashboard.confirmarExclusao", { nome: evento.nome }))) return;
@@ -266,6 +172,10 @@ export default function DashboardUniversidade() {
             console.error("Erro ao fazer logout:", error);
         }
     };
+
+    const fmtNota = (n) => (n === null || n === undefined ? SEM_VALOR : formatarNumero(n, { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+    const fmtPct = (f) => (f === null || f === undefined ? SEM_VALOR : formatarNumero(f, { style: "percent", maximumFractionDigits: 1 }));
+    const nomeEvento = (id) => dados?.nomesEventos?.[String(id)] || t("dashboard.eventoSemNome", { id: String(id) });
 
     if (loading) {
         return (
@@ -294,6 +204,10 @@ export default function DashboardUniversidade() {
             </div>
         );
     }
+
+    const resumo = dados?.resumo;
+    const presencas = dados?.presencas;
+    const semAvaliacoes = !resumo || resumo.total === 0;
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -342,14 +256,14 @@ export default function DashboardUniversidade() {
                             </div>
                             <div>
                                 <h3 className="font-bold text-xl text-gray-900 mb-1">{t("dashboard.analiseTitulo")}</h3>
-                                <p className="text-gray-700 mb-4">{t("dashboard.analiseTexto")}</p>
+                                <p className="text-gray-700">{t("dashboard.analiseTexto")}</p>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Conta sem vínculo com a lista de universidades */}
-                {semVinculo && universidadeData?.status !== "pendente" && (
+                {/* Conta sem vínculo: só as avaliações dos eventos cadastrados pela conta */}
+                {semVinculo && (
                     <div className="bg-yellow-50 border-2 border-yellow-200 px-8 py-6 rounded-2xl mb-8">
                         <h3 className="font-bold text-xl text-gray-900 mb-1">{t("dashboard.semVinculoTitulo")}</h3>
                         <p className="text-gray-700">
@@ -358,243 +272,237 @@ export default function DashboardUniversidade() {
                     </div>
                 )}
 
-                {/* Stats Cards - 4 principais */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                                <svg aria-hidden="true" className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                                </svg>
-                            </div>
-                            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">+15%</span>
-                        </div>
-                        <div className="text-3xl font-bold text-gray-900 mb-1">{formatarNumero(stats.totalAvaliacoes)}</div>
-                        <div className="text-sm text-gray-600">{t("dashboard.avaliacoesRecebidas")}</div>
+                {/* Dados reais das avaliações (src/lib/dashboardUniversidade.js) */}
+                {carregandoDados && !dados ? (
+                    <div role="status" className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm mb-8 text-center text-gray-700">
+                        <div aria-hidden="true" className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mb-3"></div>
+                        <div>{t("dashboard.carregandoDados")}</div>
                     </div>
-
-                    <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                                <svg aria-hidden="true" className="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div className="text-3xl font-bold text-gray-900 mb-1">{formatarNumero(stats.mediaGeral, { maximumFractionDigits: 1 })}</div>
-                        <div className="text-sm text-gray-600">{t("dashboard.ratingMedio")}</div>
+                ) : erroDados ? (
+                    <div role="alert" className="bg-red-50 border-2 border-red-200 text-red-800 px-8 py-6 rounded-2xl mb-8">
+                        {t("dashboard.erroDados")}
                     </div>
+                ) : (
+                    <>
+                        {/* Cartões */}
+                        <section aria-labelledby="titulo-resumo" className="mb-8">
+                            <h3 id="titulo-resumo" className="sr-only">{t("dashboard.resumoTitulo")}</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <Cartao
+                                    cor="bg-blue-100"
+                                    icone={<svg aria-hidden="true" className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>}
+                                    valor={formatarNumero(resumo?.total ?? 0)}
+                                    rotulo={t("dashboard.avaliacoesRecebidas")}
+                                />
+                                <Cartao
+                                    cor="bg-yellow-100"
+                                    icone={<svg aria-hidden="true" className="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20"><path d={ESTRELA_PATH}/></svg>}
+                                    valor={fmtNota(resumo?.notaMedia)}
+                                    rotulo={t("dashboard.notaMedia")}
+                                />
+                                <Cartao
+                                    cor="bg-green-100"
+                                    icone={<svg aria-hidden="true" className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>}
+                                    valor={formatarNumero(resumo?.eventosAvaliados ?? 0)}
+                                    rotulo={t("dashboard.eventosAvaliados")}
+                                />
+                                <Cartao
+                                    cor="bg-emerald-100"
+                                    icone={<svg aria-hidden="true" className="w-6 h-6 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
+                                    valor={formatarNumero(resumo?.verificadas ?? 0)}
+                                    rotulo={t("dashboard.comPresencaVerificada")}
+                                    detalhe={resumo?.percentualVerificadas != null ? t("dashboard.percentualDoTotal", { pct: fmtPct(resumo.percentualVerificadas) }) : null}
+                                />
+                            </div>
+                        </section>
 
-                    <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                                <svg aria-hidden="true" className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div className="text-3xl font-bold text-gray-900 mb-1">{stats.eventosAvaliados}</div>
-                        <div className="text-sm text-gray-600">{t("dashboard.eventosAvaliados")}</div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                                <svg aria-hidden="true" className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div className="text-3xl font-bold text-gray-900 mb-1">+28%</div>
-                        <div className="text-sm text-gray-600">{t("dashboard.engajamento")}</div>
-                    </div>
-                </div>
-
-                {/* Métricas de Engajamento - Últimos 30 dias */}
-                <div className="mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-6">{t("dashboard.metricasTitulo")}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Visualizações */}
-                        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <div className="text-3xl font-bold text-gray-900">{formatarNumero(12847)}</div>
-                                    <div className="text-gray-600">{t("dashboard.visualizacoes")}</div>
-                                </div>
-                                <div className="w-16 h-16 bg-gradient-to-r from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center">
-                                    <svg aria-hidden="true" className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-green-700">
-                                <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                                </svg>
-                                <span className="text-sm font-medium">{t("dashboard.vsMesAnterior", { valor: "+23%" })}</span>
-                            </div>
-                        </div>
-
-                        {/* Taxa de Conversão */}
-                        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <div className="text-3xl font-bold text-gray-900">{formatarNumero(0.673, { style: "percent", minimumFractionDigits: 1 })}</div>
-                                    <div className="text-gray-600">{t("dashboard.taxaAvaliacao")}</div>
-                                </div>
-                                <div className="w-16 h-16 bg-gradient-to-r from-pink-400 to-pink-600 rounded-2xl flex items-center justify-center">
-                                    <svg aria-hidden="true" className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-green-700">
-                                <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                                </svg>
-                                <span className="text-sm font-medium">{t("dashboard.vsMesAnterior", { valor: `+${formatarNumero(5.2)}%` })}</span>
-                            </div>
-                        </div>
-
-                        {/* NPS Score */}
-                        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <div className="text-3xl font-bold text-gray-900">+72</div>
-                                    <div className="text-gray-600">{t("dashboard.nps")}</div>
-                                </div>
-                                <div className="w-16 h-16 bg-gradient-to-r from-cyan-400 to-cyan-600 rounded-2xl flex items-center justify-center">
-                                    <svg aria-hidden="true" className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-green-700">
-                                <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                                </svg>
-                                <span className="text-sm font-medium">{t("dashboard.pontosVsMes")}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Gráficos de Satisfação e Distribuição de Notas */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    {/* Satisfação por Categoria */}
-                    <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-                        <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                            <svg aria-hidden="true" className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                            </svg>
-                            {t("dashboard.satisfacaoCategoria")}
-                        </h3>
-                        <div className="space-y-4">
-                            {[
-                                { categoria: t('dashboard.categorias.organizacao'), valor: 92, cor: 'bg-green-500' },
-                                { categoria: t('dashboard.categorias.conteudo'), valor: 88, cor: 'bg-blue-500' },
-                                { categoria: t('dashboard.categorias.infraestrutura'), valor: 85, cor: 'bg-purple-500' },
-                                { categoria: t('dashboard.categorias.networking'), valor: 78, cor: 'bg-yellow-500' },
-                                { categoria: t('dashboard.categorias.alimentacao'), valor: 72, cor: 'bg-red-500' }
-                            ].map((item, index) => (
-                                <div key={index} className="flex items-center gap-3">
-                                    <div className="w-28 text-gray-700 text-sm font-medium">{item.categoria}</div>
-                                    <div className="flex-1 bg-gray-100 rounded-full h-3">
-                                        <div className={`${item.cor} h-3 rounded-full transition-all duration-1000`} style={{ width: `${item.valor}%` }}></div>
+                        {/* Presenças e comparativo de 30 dias */}
+                        <section aria-labelledby="titulo-presencas" className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                                <h3 id="titulo-presencas" className="text-lg font-bold text-gray-900 mb-4">{t("dashboard.presencasTitulo")}</h3>
+                                <dl className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <dt className="text-sm text-gray-600">{t("dashboard.presencasTotal")}</dt>
+                                        <dd className="text-3xl font-bold text-gray-900">{presencas ? formatarNumero(presencas.total) : SEM_VALOR}</dd>
                                     </div>
-                                    <div className="w-12 text-gray-900 font-bold text-sm text-right">{item.valor}%</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Distribuição de Notas */}
-                    <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-                        <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                            <svg aria-hidden="true" className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                            </svg>
-                            {t("dashboard.distribuicaoNotas")}
-                        </h3>
-                        <div className="space-y-3">
-                            {[
-                                { estrelas: 5, quantidade: 623, porcentagem: 52 },
-                                { estrelas: 4, quantidade: 389, porcentagem: 32 },
-                                { estrelas: 3, quantidade: 156, porcentagem: 13 },
-                                { estrelas: 2, quantidade: 48, porcentagem: 2 },
-                                { estrelas: 1, quantidade: 31, porcentagem: 1 }
-                            ].map((item, index) => (
-                                <div key={index} className="flex items-center gap-3">
-                                    <div className="flex items-center gap-1 w-12">
-                                        <span className="text-gray-900 font-bold text-sm">{item.estrelas}</span>
-                                        <svg aria-hidden="true" className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                        </svg>
+                                    <div>
+                                        <dt className="text-sm text-gray-600">{t("dashboard.taxaAvaliacao")}</dt>
+                                        <dd className="text-3xl font-bold text-gray-900">{fmtPct(presencas?.taxaAvaliacao)}</dd>
                                     </div>
-                                    <div className="flex-1 bg-gray-100 rounded-full h-4">
-                                        <div className="bg-yellow-500 h-4 rounded-full transition-all duration-1000" style={{ width: `${item.porcentagem}%` }}></div>
-                                    </div>
-                                    <div className="text-gray-600 text-sm w-16 text-right">{item.quantidade}</div>
-                                    <div className="text-gray-900 font-bold text-sm w-12 text-right">{item.porcentagem}%</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Top Eventos por Performance */}
-                <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                        <svg aria-hidden="true" className="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                        </svg>
-                        {t("dashboard.topEventos")}
-                    </h3>
-                    <div className="space-y-4">
-                        {[
-                            { nome: 'Semana de Tecnologia 2024', rating: 4.9, participantes: 847, nps: '+85', posicao: 1 },
-                            { nome: 'Feira de Profissões', rating: 4.8, participantes: 623, nps: '+78', posicao: 2 },
-                            { nome: 'Congresso de Inovação', rating: 4.7, participantes: 512, nps: '+72', posicao: 3 },
-                            { nome: 'Workshop de Empreendedorismo', rating: 4.6, participantes: 389, nps: '+68', posicao: 4 },
-                            { nome: 'Simpósio de Sustentabilidade', rating: 4.5, participantes: 298, nps: '+64', posicao: 5 }
-                        ].map((evento, index) => (
-                            <div key={index} className="flex items-center gap-6 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all duration-300">
-                                <div className={`w-10 h-10 ${index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' : index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500' : index === 2 ? 'bg-gradient-to-r from-orange-400 to-orange-600' : 'bg-gray-300'} rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md`}>
-                                    {evento.posicao}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="text-gray-900 font-bold text-lg">{evento.nome}</div>
-                                    <div className="flex items-center gap-4 text-gray-600 text-sm mt-1">
-                                        <span className="flex items-center gap-1">
-                                            <svg aria-hidden="true" className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                            </svg>
-                                            {formatarNumero(evento.rating)}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                            </svg>
-                                            {t("dashboard.participantes", { n: evento.participantes })}
-                                        </span>
-                                        <span className="flex items-center gap-1 font-semibold text-green-600">
-                                            NPS {evento.nps}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                        <div
-                                            className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full"
-                                            style={{ width: `${evento.rating * 20}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
+                                </dl>
+                                <p className="text-sm text-gray-600 mt-4">
+                                    {presencas ? t("dashboard.taxaAvaliacaoAjuda") : t("dashboard.presencasIndisponiveis")}
+                                </p>
                             </div>
-                        ))}
-                    </div>
-                </div>
+
+                            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                                <h3 className="text-lg font-bold text-gray-900 mb-4">{t("dashboard.ultimos30Titulo")}</h3>
+                                {dados?.comparativo ? (
+                                    <dl className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <dt className="text-sm text-gray-600">{t("dashboard.ultimos30")}</dt>
+                                            <dd className="text-3xl font-bold text-gray-900">{formatarNumero(dados.comparativo.atual)}</dd>
+                                        </div>
+                                        <div>
+                                            <dt className="text-sm text-gray-600">{t("dashboard.anteriores30")}</dt>
+                                            <dd className="text-3xl font-bold text-gray-900">{formatarNumero(dados.comparativo.anterior)}</dd>
+                                        </div>
+                                        <div>
+                                            <dt className="text-sm text-gray-600">{t("dashboard.variacao")}</dt>
+                                            <dd className={`text-3xl font-bold ${dados.comparativo.variacao >= 0 ? "text-green-700" : "text-red-700"}`}>
+                                                {formatarNumero(dados.comparativo.variacao, { style: "percent", maximumFractionDigits: 0, signDisplay: "exceptZero" })}
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                ) : (
+                                    <p className="text-gray-600">{t("dashboard.semComparativo")}</p>
+                                )}
+                            </div>
+                        </section>
+
+                        {semAvaliacoes ? (
+                            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm mb-8 text-center">
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">{t("dashboard.nenhumaAvaliacao")}</h3>
+                                <p className="text-gray-600">{t("dashboard.nenhumaAvaliacaoTexto")}</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Satisfação por critério e distribuição de notas */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                                    <section aria-labelledby="titulo-criterios" className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                                        <h3 id="titulo-criterios" className="text-lg font-bold text-gray-900 mb-4">{t("dashboard.satisfacaoCriterio")}</h3>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm">
+                                                <thead>
+                                                    <tr className="text-left text-gray-600 border-b border-gray-200">
+                                                        <th scope="col" className="py-2 pr-3 font-semibold">{t("dashboard.colCriterio")}</th>
+                                                        <th scope="col" className="py-2 pr-3 font-semibold">{t("dashboard.colMedia")}</th>
+                                                        <th scope="col" className="py-2 font-semibold text-right">{t("dashboard.colAvaliacoes")}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {dados.criterios.map(c => (
+                                                        <tr key={c.id} className="border-b border-gray-100 last:border-0">
+                                                            <th scope="row" className="py-2 pr-3 text-left font-medium text-gray-800">{t(`criterios.${c.id}`)}</th>
+                                                            <td className="py-2 pr-3">
+                                                                <div className="flex items-center gap-3">
+                                                                    <Barra fracao={c.media ? c.media / 5 : 0} cor="bg-blue-500" />
+                                                                    <span className="w-10 text-right font-bold text-gray-900">{fmtNota(c.media)}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-2 text-right text-gray-700">{formatarNumero(c.quantidade)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <p className="text-xs text-gray-600 mt-3">{t("dashboard.criteriosAjuda")}</p>
+                                    </section>
+
+                                    <section aria-labelledby="titulo-distribuicao" className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                                        <h3 id="titulo-distribuicao" className="text-lg font-bold text-gray-900 mb-4">{t("dashboard.distribuicaoNotas")}</h3>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm">
+                                                <thead>
+                                                    <tr className="text-left text-gray-600 border-b border-gray-200">
+                                                        <th scope="col" className="py-2 pr-3 font-semibold">{t("dashboard.colNota")}</th>
+                                                        <th scope="col" className="py-2 pr-3 font-semibold">{t("dashboard.colPercentual")}</th>
+                                                        <th scope="col" className="py-2 font-semibold text-right">{t("dashboard.colQuantidade")}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {dados.distribuicao.map(item => (
+                                                        <tr key={item.estrelas} className="border-b border-gray-100 last:border-0">
+                                                            <th scope="row" className="py-2 pr-3 text-left font-medium text-gray-800 whitespace-nowrap">
+                                                                {t("dashboard.estrelas", { n: item.estrelas })}
+                                                            </th>
+                                                            <td className="py-2 pr-3">
+                                                                <div className="flex items-center gap-3">
+                                                                    <Barra fracao={item.percentual} cor="bg-yellow-500" />
+                                                                    <span className="w-14 text-right font-bold text-gray-900">{fmtPct(item.percentual)}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-2 text-right text-gray-700">{formatarNumero(item.quantidade)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </section>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Por evento */}
+                        {dados?.porEvento?.length > 0 && (
+                            <section aria-labelledby="titulo-por-evento" className="bg-white rounded-2xl p-6 md:p-8 border border-gray-200 shadow-sm mb-8">
+                                <h3 id="titulo-por-evento" className="text-2xl font-bold text-gray-900 mb-4">{t("dashboard.porEventoTitulo")}</h3>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="text-left text-gray-600 border-b border-gray-200">
+                                                <th scope="col" className="py-2 pr-3 font-semibold">{t("dashboard.colEvento")}</th>
+                                                <th scope="col" className="py-2 pr-3 font-semibold text-right">{t("dashboard.colAvaliacoes")}</th>
+                                                <th scope="col" className="py-2 pr-3 font-semibold text-right">{t("dashboard.colNotaMedia")}</th>
+                                                <th scope="col" className="py-2 pr-3 font-semibold text-right">{t("dashboard.colPresencas")}</th>
+                                                <th scope="col" className="py-2 font-semibold text-right">{t("dashboard.colVerificadas")}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {dados.porEvento.map(linha => (
+                                                <tr key={linha.eventoId} className="border-b border-gray-100 last:border-0">
+                                                    <th scope="row" className="py-2 pr-3 text-left font-medium text-gray-900">
+                                                        <Link href={`/evento/${linha.eventoId}/detalhes`} className="hover:text-red-600 underline-offset-2 hover:underline">
+                                                            {linha.nome || nomeEvento(linha.eventoId)}
+                                                        </Link>
+                                                    </th>
+                                                    <td className="py-2 pr-3 text-right">{formatarNumero(linha.avaliacoes)}</td>
+                                                    <td className="py-2 pr-3 text-right">{fmtNota(linha.notaMedia)}</td>
+                                                    <td className="py-2 pr-3 text-right">{linha.presencas === null ? SEM_VALOR : formatarNumero(linha.presencas)}</td>
+                                                    <td className="py-2 text-right">{formatarNumero(linha.verificadas)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Avaliações recentes */}
+                        {!semAvaliacoes && (
+                            <section aria-labelledby="titulo-recentes" className="bg-white rounded-2xl p-6 md:p-8 border border-gray-200 shadow-sm mb-8">
+                                <h3 id="titulo-recentes" className="text-2xl font-bold text-gray-900">{t("dashboard.recentesTitulo")}</h3>
+                                <p className="text-gray-600 mb-4">{t("dashboard.recentesTexto", { n: dados.recentes.length })}</p>
+                                <ul className="space-y-4">
+                                    {dados.recentes.map(av => {
+                                        const nota = Math.max(0, Math.min(5, Math.round(Number(av.nota) || 0)));
+                                        return (
+                                            <li key={av.id} className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
+                                                    <span className="flex items-center gap-0.5" role="img" aria-label={t("dashboard.notaDe5", { n: nota })}>
+                                                        {[1, 2, 3, 4, 5].map(i => (
+                                                            <svg key={i} aria-hidden="true" className={`w-4 h-4 ${i <= nota ? "text-yellow-500" : "text-gray-300"}`} fill="currentColor" viewBox="0 0 20 20"><path d={ESTRELA_PATH}/></svg>
+                                                        ))}
+                                                    </span>
+                                                    {av.presencaVerificada === true && <SeloPresencaVerificada />}
+                                                    <span className="text-sm text-gray-600">{formatarData(av.criadoEm) || SEM_VALOR}</span>
+                                                </div>
+                                                <div className="text-sm text-gray-700 mb-1">
+                                                    <span className="font-semibold">{t("dashboard.colEvento")}:</span>{" "}
+                                                    {av.eventoId ? (
+                                                        <Link href={`/evento/${av.eventoId}/detalhes`} className="hover:text-red-600 hover:underline">{nomeEvento(av.eventoId)}</Link>
+                                                    ) : SEM_VALOR}
+                                                </div>
+                                                {av.titulo && <p className="font-semibold text-gray-900">{av.titulo}</p>}
+                                                <p className="text-gray-800 whitespace-pre-line break-words">{av.comentario || <span className="italic text-gray-600">{t("dashboard.semComentario")}</span>}</p>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </section>
+                        )}
+                    </>
+                )}
 
                 {/* Meus Eventos (RF02) */}
                 <div id="meus-eventos" className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm mb-8 scroll-mt-28">
@@ -679,7 +587,7 @@ export default function DashboardUniversidade() {
                 </div>
 
                 {/* Ferramentas de Gestão */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div className="mb-8">
                     {/* Gerenciamento de Eventos */}
                     <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
                         <div className="flex items-center gap-4 mb-6">
@@ -730,88 +638,7 @@ export default function DashboardUniversidade() {
                                     )}
                                 </div>
                             </div>
-
-                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-red-300 transition-all">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h4 className="font-bold text-gray-900 text-lg">{t("dashboard.monitorar")}</h4>
-                                        <p className="text-gray-600 text-sm">{t("dashboard.monitorarTexto")}</p>
-                                    </div>
-                                    <button className="bg-gradient-to-r from-cyan-700 to-blue-700 text-white px-4 py-2 rounded-lg font-bold hover:from-cyan-800 hover:to-blue-800 transition-all duration-300 shadow-md">
-                                        {t("dashboard.monitor")}
-                                    </button>
-                                </div>
-                            </div>
                         </div>
-                    </div>
-
-                    {/* Relatórios e Analytics */}
-                    <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl flex items-center justify-center">
-                                <svg aria-hidden="true" className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold text-gray-900">{t("dashboard.relatoriosAvancados")}</h3>
-                                <p className="text-gray-600">{t("dashboard.relatoriosTexto")}</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-purple-300 transition-all">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h4 className="font-bold text-gray-900 text-lg">{t("dashboard.dashboardExecutivo")}</h4>
-                                        <p className="text-gray-600 text-sm">{t("dashboard.dashboardExecutivoTexto")}</p>
-                                    </div>
-                                    <button className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-md">
-                                        {t("dashboard.ver")}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-purple-300 transition-all">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h4 className="font-bold text-gray-900 text-lg">{t("dashboard.exportarRelatorios")}</h4>
-                                        <p className="text-gray-600 text-sm">{t("dashboard.exportarTexto")}</p>
-                                    </div>
-                                    <button className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 transition-all duration-300">
-                                        {t("dashboard.exportar")}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-purple-300 transition-all">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h4 className="font-bold text-gray-900 text-lg">{t("dashboard.preditiva")}</h4>
-                                        <p className="text-gray-600 text-sm">{t("dashboard.preditivaTexto")}</p>
-                                    </div>
-                                    <button className="bg-gradient-to-r from-pink-700 to-rose-700 text-white px-4 py-2 rounded-lg font-bold hover:from-pink-800 hover:to-rose-800 transition-all duration-300 shadow-md">
-                                        {t("dashboard.analisar")}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* CTA Final */}
-                <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-8 text-center text-white shadow-lg">
-                    <h3 className="text-3xl font-bold mb-4">{t("dashboard.prontoTitulo")}</h3>
-                    <p className="text-lg text-white mb-6 max-w-2xl mx-auto">
-                        {t("dashboard.prontoTexto")}
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button className="bg-white text-red-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-all duration-300 shadow-lg">
-                            {t("dashboard.solicitarAprovacao")}
-                        </button>
-                        <button className="bg-red-800 text-white px-8 py-3 rounded-lg font-bold hover:bg-red-900 transition-all duration-300 border-2 border-white/20">
-                            {t("dashboard.falarSuporte")}
-                        </button>
                     </div>
                 </div>
             </main>
