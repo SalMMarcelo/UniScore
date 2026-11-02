@@ -19,6 +19,7 @@ import {
   ORDENACOES,
   ORDENACAO_PADRAO
 } from "../../lib/busca";
+import LinkAvaliar from "../../components/LinkAvaliar";
 
 // Busca e filtros de eventos (RF06).
 // Os filtros ficam sincronizados com a query string (?q=...&tema=...), para
@@ -118,12 +119,12 @@ function CartaoEvento({ ev, estatistica }) {
           <Estrelas media={estatistica.media} total={estatistica.total} />
         </div>
         <div className="mt-auto pt-4 flex gap-2">
-          <Link
+          <LinkAvaliar
             href={`/avaliar?eventoId=${encodeURIComponent(ev.id)}`}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition-colors text-sm"
           >
             {t("geral.avaliar")}
-          </Link>
+          </LinkAvaliar>
           <Link
             href={detalhes}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition-colors text-sm"
@@ -239,7 +240,7 @@ function BuscarEventosConteudo() {
           </Link>
           <nav className="hidden md:flex gap-8 text-sm font-medium" aria-label={t("menu.navPrincipal")}>
             <Link href="/forum" className="text-gray-600 hover:text-blue-600 transition-colors">{t("menu.forum")}</Link>
-            <Link href="/avaliar" className="text-gray-600 hover:text-green-600 transition-colors">{t("menu.escrevaAvaliacao")}</Link>
+            <LinkAvaliar href="/avaliar" className="text-gray-600 hover:text-green-600 transition-colors">{t("menu.escrevaAvaliacao")}</LinkAvaliar>
           </nav>
           <SeletorIdioma className="hidden md:inline-flex" />
           <MenuMobile />

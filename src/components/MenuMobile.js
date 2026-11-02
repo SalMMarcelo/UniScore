@@ -7,12 +7,15 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
 import { useI18n } from "../i18n/I18nProvider";
 import SeletorIdioma from "./SeletorIdioma";
+import { useContaInstitucional } from "./LinkAvaliar";
 
 // Menu de navegação para telas pequenas (abaixo de md), onde a <nav> do
 // cabeçalho fica oculta. Botão com aria-expanded/aria-controls, fecha com Esc,
 // ao clicar fora e ao navegar.
 export default function MenuMobile({ className = "" }) {
   const { t } = useI18n();
+  // Contas de universidade não avaliam: o item "Escreva uma avaliação" some
+  const institucional = useContaInstitucional();
   const [aberto, setAberto] = useState(false);
   const [user, setUser] = useState(null);
   const pathname = usePathname();
@@ -101,11 +104,13 @@ export default function MenuMobile({ className = "" }) {
               {t("menu.forum")}
             </Link>
           </li>
-          <li>
-            <Link href="/avaliar" onClick={fechar} className={classeLink} aria-current={pathname === "/avaliar" ? "page" : undefined}>
-              {t("menu.escrevaAvaliacao")}
-            </Link>
-          </li>
+          {!institucional && (
+            <li>
+              <Link href="/avaliar" onClick={fechar} className={classeLink} aria-current={pathname === "/avaliar" ? "page" : undefined}>
+                {t("menu.escrevaAvaliacao")}
+              </Link>
+            </li>
+          )}
           <li>
             <Link href="/ranking" onClick={fechar} className={classeLink} aria-current={pathname === "/ranking" ? "page" : undefined}>
               {t("menu.ranking")}

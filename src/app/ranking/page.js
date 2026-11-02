@@ -14,6 +14,7 @@ import {
     LIMITE_RANKING_POSTS,
     TAMANHO_RANKING
 } from "../../lib/gamificacao";
+import LinkAvaliar from "../../components/LinkAvaliar";
 
 const MEDALHAS = ["🥇", "🥈", "🥉"];
 
@@ -114,12 +115,12 @@ export default function Ranking() {
                         ) : ranking.length === 0 ? (
                             <div className="text-center text-gray-600 py-8">
                                 <p className="mb-4">{t("ranking.vazio")}</p>
-                                <Link
+                                <LinkAvaliar
                                     href="/avaliar"
                                     className="inline-block bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md"
                                 >
                                     {t("ranking.avaliarEvento")}
-                                </Link>
+                                </LinkAvaliar>
                             </div>
                         ) : (
                             <ol className="divide-y divide-gray-100" aria-label={t("ranking.top", { n: TAMANHO_RANKING })}>

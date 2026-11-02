@@ -13,6 +13,7 @@ import SeloPresencaVerificada from "../../../../components/SeloPresencaVerificad
 import MenuMobile from "../../../../components/MenuMobile";
 import SeletorIdioma from "../../../../components/SeletorIdioma";
 import { useI18n } from "../../../../i18n/I18nProvider";
+import LinkAvaliar from "../../../../components/LinkAvaliar";
 
 const LIMITE_AVALIACOES = 50;
 
@@ -251,12 +252,12 @@ export default function DetalhesEvento() {
                             </div>
 
                             <div className="flex flex-wrap gap-3">
-                                <Link
+                                <LinkAvaliar
                                     href={`/avaliar?eventoId=${encodeURIComponent(evento.id)}`}
                                     className="inline-flex items-center gap-2 bg-gradient-to-r from-green-700 to-green-800 text-white px-6 py-3 rounded-lg font-bold hover:from-green-800 hover:to-green-900 transition-all duration-300 shadow-lg transform hover:scale-105"
                                 >
                                     <span aria-hidden="true">★</span> {t("detalhes.avaliarEste")}
-                                </Link>
+                                </LinkAvaliar>
                                 {podeEditar && (
                                     <Link
                                         href={`/dashboard-universidade/eventos/${evento.id}/editar`}
