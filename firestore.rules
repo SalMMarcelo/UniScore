@@ -194,7 +194,8 @@ service cloud.firestore {
       allow read: if isOwner(universidadeId) || isModerator();
 
       // Cadastro: só para o próprio uid e sempre como 'pendente'.
-      // `universidadeId` (campo) = id da entrada em public/universidades.json, ou null.
+      // `universidadeId` (campo) = id da entrada em catalogoUniversidades
+      // (ou legado de public/universidades.json), ou null.
       allow create: if isOwner(universidadeId)
         && request.resource.data.status == 'pendente'
         && (!('universidadeId' in request.resource.data)
@@ -202,13 +203,66 @@ service cloud.firestore {
             || request.resource.data.universidadeId is string);
 
       // O dono pode atualizar seus dados, mas não o próprio status nem o
-      // vínculo com public/universidades.json; moderadores podem tudo
+      // vínculo com o catálogo (universidadeId); moderadores podem tudo
       // (inclusive aprovar, mudando status para 'aprovado').
       allow update: if isModerator()
         || (isOwner(universidadeId)
             && !changedKeys().hasAny(['status', 'universidadeId']));
 
       allow delete: if isModerator();
+    }
+
+    // ------------------------------------------------------------------
+    // Catálogo público de universidades - docs/catalogo-universidades.md
+    // ------------------------------------------------------------------
+    // Perfil público que aparece na busca, em /universidade/[id] e nos
+    // selects de avaliação. Ids: os legados de public/universidades.json
+    // ("1", "2"), porque avaliações e eventos antigos apontam para eles; as
+    // entradas novas usam o uid da conta (catalogoUniversidades/{uid}).
+    // Gravado por src/app/admin/AbaUniversidades.js (moderador: aprovar,
+    // "Publicar no catálogo", revogar -> ativo: false), num batch junto com
+    // universidades/{uid}. Lido por src/lib/universidades.js.
+    //  - campos exatamente estes (nada extra, como 'status' ou 'pontos');
+    //  - atualizadoEm == request.time em toda gravação (não se data no passado);
+    //  - criadoEm == request.time na criação e imutável depois.
+    function catalogoFields() {
+      return ['nome', 'sigla', 'descricao', 'imagem', 'contaUid', 'ativo', 'criadoEm', 'atualizadoEm'];
+    }
+
+    function isValidCatalogo(d) {
+      return d.keys().hasOnly(catalogoFields())
+        && d.keys().hasAll(catalogoFields())
+        && d.nome is string && d.nome.size() >= 1 && d.nome.size() <= 200
+        && (d.sigla == null || (d.sigla is string && d.sigla.size() <= 20))
+        && d.descricao is string && d.descricao.size() <= 1000
+        && (d.imagem == null || (d.imagem is string && d.imagem.size() <= 2048))
+        && (d.contaUid == null || (d.contaUid is string && d.contaUid.size() <= 128))
+        && d.ativo is bool
+        && d.criadoEm is timestamp
+        && d.atualizadoEm == request.time;
+    }
+
+    match /catalogoUniversidades/{catalogoId} {
+      allow read: if true; // Público (busca da home, páginas de universidade)
+
+      // Só o moderador cria e apaga: uma entrada no catálogo é o que torna a
+      // universidade "oficial" na plataforma.
+      allow create: if isModerator()
+        && isValidCatalogo(request.resource.data)
+        && request.resource.data.criadoEm == request.time;
+
+      allow delete: if isModerator();
+
+      // Moderador altera tudo. A universidade APROVADA dona da entrada
+      // (contaUid == uid) só mexe no perfil (descrição, imagem, sigla): nome,
+      // vínculo com a conta e visibilidade (`ativo`) são decisão do moderador.
+      // Universidade revogada (status 'pendente') perde a edição.
+      allow update: if isValidCatalogo(request.resource.data)
+        && request.resource.data.criadoEm == resource.data.criadoEm
+        && (isModerator()
+            || (isApprovedUniversity()
+                && resource.data.contaUid == request.auth.uid
+                && changedKeys().hasOnly(['descricao', 'imagem', 'sigla', 'atualizadoEm'])));
     }
 
     // ------------------------------------------------------------------
