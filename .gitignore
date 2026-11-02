@@ -45,3 +45,6 @@ firestore-debug.log
 storage-debug.log
 firebase-debug.log
 ui-debug.log
+
+# worktrees dos subagentes do Claude Code
+.claude/worktrees/
