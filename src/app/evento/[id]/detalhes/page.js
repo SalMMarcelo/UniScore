@@ -9,6 +9,7 @@ import { buscarEvento } from "../../../../lib/eventos";
 import { notaSegura } from "../../../../lib/notas";
 import { isAdminEmail } from "../../../../lib/admin";
 import BotaoDenunciar from "../../../../components/BotaoDenunciar";
+import SeloPresencaVerificada from "../../../../components/SeloPresencaVerificada";
 import MenuMobile from "../../../../components/MenuMobile";
 import SeletorIdioma from "../../../../components/SeletorIdioma";
 import { useI18n } from "../../../../i18n/I18nProvider";
@@ -329,6 +330,7 @@ export default function DetalhesEvento() {
                                             <div className="text-xs text-gray-600">
                                                 {formatarData(av.criadoEm)}
                                             </div>
+                                            {av.presencaVerificada === true && <SeloPresencaVerificada className="mt-1" />}
                                         </div>
                                         <Estrelas nota={av.nota} />
                                     </div>

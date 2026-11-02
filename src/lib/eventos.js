@@ -9,7 +9,8 @@
 // Todos os eventos são devolvidos no formato normalizado:
 // { id, nome, descricao, data (YYYY-MM-DD), local, publicoAlvo, preco (number, 0 = gratuito),
 //   tema, tipo, imagem (url ou null), universidadeId (id de universidades.json ou null),
-//   universidadeNome, universidadeUid (ou null), legado (bool) }
+//   universidadeNome, universidadeUid (ou null), legado (bool),
+//   exigeCheckin (bool: só avalia quem fez check-in; ver docs/checkin-presenca.md) }
 
 import { db } from "../firebase";
 import { collection, getDocs, getDoc, doc, query, orderBy } from "firebase/firestore";
@@ -90,6 +91,7 @@ function normalizarEventoFirestore(id, d = {}) {
     universidadeId: d.universidadeId != null && d.universidadeId !== "" ? String(d.universidadeId) : null,
     universidadeNome: texto(d.universidadeNome),
     universidadeUid: d.universidadeUid || null,
+    exigeCheckin: d.exigeCheckin === true,
     legado: false
   };
 }
@@ -133,6 +135,7 @@ function normalizarEventoLegado(ev, universidades) {
     universidadeId,
     universidadeNome,
     universidadeUid: null,
+    exigeCheckin: false,
     legado: true
   };
 }

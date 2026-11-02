@@ -15,6 +15,7 @@ import { listarEventos } from "../lib/eventos";
 import MenuMobile from "../components/MenuMobile";
 import SinoNotificacoes from "../components/SinoNotificacoes";
 import SeletorIdioma from "../components/SeletorIdioma";
+import SeloPresencaVerificada from "../components/SeloPresencaVerificada";
 import { useI18n } from "../i18n/I18nProvider";
 
 // Imagens do carrossel (títulos/textos em home.slides.<n>)
@@ -633,7 +634,10 @@ export default function Home() {
                         {av.usuario?.charAt(0)?.toUpperCase() || "U"}
                       </div>
                     )}
-                    <div className="font-bold text-gray-900 flex-1">{av.usuario || t("geral.usuario")}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-gray-900">{av.usuario || t("geral.usuario")}</div>
+                      {av.presencaVerificada === true && <SeloPresencaVerificada className="mt-1" />}
+                    </div>
                   </div>
                   
                   <div className="flex items-center gap-1 mb-3" role="img" aria-label={t("geral.estrelas", { n: notaSegura(av.nota) })}>

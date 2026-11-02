@@ -26,7 +26,8 @@ const VAZIO = {
     preco: "0",
     tema: "",
     tipo: "",
-    imagem: null
+    imagem: null,
+    exigeCheckin: false
 };
 
 export default function FormularioEvento({ eventoId = null }) {
@@ -104,7 +105,8 @@ export default function FormularioEvento({ eventoId = null }) {
                         preco: String(Number(ev.preco) || 0),
                         tema: ev.tema || "",
                         tipo: ev.tipo || "",
-                        imagem: ev.imagem || null
+                        imagem: ev.imagem || null,
+                        exigeCheckin: ev.exigeCheckin === true
                     });
                 } else if (!uni) {
                     // Moderador sem conta de universidade não cadastra eventos
@@ -193,7 +195,9 @@ export default function FormularioEvento({ eventoId = null }) {
                 preco: Math.round(preco * 100) / 100,
                 tema: form.tema,
                 tipo: form.tipo,
-                imagem
+                imagem,
+                // Check-in obrigatório para avaliar (docs/checkin-presenca.md)
+                exigeCheckin: form.exigeCheckin === true
             };
 
             // Vínculo com public/universidades.json: tem de ser igual ao da conta
@@ -345,6 +349,21 @@ export default function FormularioEvento({ eventoId = null }) {
                                 )}
                                 <input id="imagem" aria-describedby="imagem-ajuda" type="file" accept="image/*" onChange={escolherImagem} className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-bold file:bg-red-50 file:text-red-700 hover:file:bg-red-100" />
                                 <p id="imagem-ajuda" className="text-xs text-gray-600 mt-1">{t("formEvento.ajudaImagem")}</p>
+                            </div>
+
+                            <div className="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-xl p-4">
+                                <input
+                                    id="exigeCheckin"
+                                    type="checkbox"
+                                    aria-describedby="exigeCheckin-ajuda"
+                                    checked={form.exigeCheckin}
+                                    onChange={(e) => setForm(prev => ({ ...prev, exigeCheckin: e.target.checked }))}
+                                    className="mt-1 h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-2 focus:ring-red-500"
+                                />
+                                <div>
+                                    <label htmlFor="exigeCheckin" className="font-semibold text-gray-800">{t("formEvento.exigeCheckin")}</label>
+                                    <p id="exigeCheckin-ajuda" className="text-sm text-gray-600 mt-1">{t("formEvento.exigeCheckinAjuda")}</p>
+                                </div>
                             </div>
 
                             <div className="flex flex-col sm:flex-row gap-4 justify-end pt-2">

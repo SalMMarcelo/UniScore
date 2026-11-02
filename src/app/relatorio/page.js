@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import MenuMobile from "../../components/MenuMobile";
+import SeloPresencaVerificada from "../../components/SeloPresencaVerificada";
 import SeletorIdioma from "../../components/SeletorIdioma";
 import { useI18n } from "../../i18n/I18nProvider";
 import { carregarRelatorioPublico } from "../../lib/estatisticas";
@@ -202,6 +203,33 @@ export default function RelatorioPublico() {
                             />
                         </div>
 
+                        <div className="mb-8">
+                            <Painel titulo={t("relatorio.presencaTitulo")} descricao={t("relatorio.presencaDescricao")}>
+                                <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-8">
+                                    <div>
+                                        <div className="text-4xl font-bold text-green-700">{numero(dados.presencaVerificada)}</div>
+                                        <div className="text-sm text-gray-600">{t("relatorio.presencaTotal")}</div>
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-baseline gap-3 mb-2">
+                                            <span className="text-sm font-medium text-gray-700">{t("relatorio.presencaPercentualRotulo")}</span>
+                                            <span className="text-sm font-bold text-green-700 bg-green-100 px-2 py-1 rounded whitespace-nowrap">
+                                                {dados.percentualPresencaVerificada === null
+                                                    ? "—"
+                                                    : formatarNumero(dados.percentualPresencaVerificada, { style: "percent", maximumFractionDigits: 1 })}
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner" aria-hidden="true">
+                                            <div
+                                                className="h-3 bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-1000"
+                                                style={{ width: `${Math.min(1, dados.percentualPresencaVerificada || 0) * 100}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Painel>
+                        </div>
+
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                             <GraficoMensal dados={dados.porMes} numero={numero} formatarData={formatarData} t={t} />
 
@@ -272,6 +300,7 @@ export default function RelatorioPublico() {
                                                     </div>
                                                     <div className="min-w-0">
                                                         <div className="text-sm font-medium text-gray-900 truncate">{nome}</div>
+                                                        {av.presencaVerificada === true && <SeloPresencaVerificada />}
                                                         <div className="text-xs text-gray-600 truncate">
                                                             {evento
                                                                 ? [evento.universidadeNome, evento.nome].filter(Boolean).join(" • ")

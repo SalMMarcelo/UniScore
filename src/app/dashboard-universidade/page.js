@@ -8,6 +8,7 @@ import Link from "next/link";
 import { buscarUniversidadeId } from "../../lib/universidades";
 import { notaSegura } from "../../lib/notas";
 import SeletorIdioma from "../../components/SeletorIdioma";
+import PainelCheckin from "./eventos/PainelCheckin";
 import { useI18n } from "../../i18n/I18nProvider";
 
 export default function DashboardUniversidade() {
@@ -21,6 +22,7 @@ export default function DashboardUniversidade() {
     const [semVinculo, setSemVinculo] = useState(false);
     const [meusEventos, setMeusEventos] = useState([]);
     const [excluindoId, setExcluindoId] = useState(null);
+    const [checkinAbertoId, setCheckinAbertoId] = useState(null);
     const [stats, setStats] = useState({
         totalAvaliacoes: 0,
         mediaGeral: 0,
@@ -619,7 +621,8 @@ export default function DashboardUniversidade() {
                     ) : (
                         <div className="space-y-4">
                             {meusEventos.map(ev => (
-                                <div key={ev.id} className="flex flex-col md:flex-row md:items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-red-300 transition-all">
+                                <div key={ev.id} className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-red-300 transition-all">
+                                <div className="flex flex-col md:flex-row md:items-center gap-4">
                                     {ev.imagem ? (
                                         <img src={ev.imagem} alt="" className="w-20 h-20 rounded-xl object-cover border-2 border-gray-200 shrink-0" />
                                     ) : (
@@ -639,7 +642,17 @@ export default function DashboardUniversidade() {
                                             <span>{Number(ev.preco) > 0 ? formatarMoeda(Number(ev.preco)) : t("dashboard.gratuito")}</span>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 shrink-0">
+                                    <div className="flex flex-wrap gap-2 shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => setCheckinAbertoId(atual => atual === ev.id ? null : ev.id)}
+                                            aria-expanded={checkinAbertoId === ev.id}
+                                            aria-controls={`painel-checkin-${ev.id}`}
+                                            aria-label={t("dashboard.checkinEvento", { nome: ev.nome })}
+                                            className="bg-green-50 text-green-800 px-4 py-2 rounded-lg font-bold hover:bg-green-100 transition-all duration-300"
+                                        >
+                                            <span aria-hidden="true">📲</span> {t("dashboard.checkin")}
+                                        </button>
                                         <Link href={`/dashboard-universidade/eventos/${ev.id}/editar`} aria-label={t("dashboard.editarEvento", { nome: ev.nome })} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-300 transition-all duration-300">
                                             <span aria-hidden="true">✏️</span> {t("dashboard.editar")}
                                         </Link>
@@ -653,6 +666,12 @@ export default function DashboardUniversidade() {
                                             {excluindoId === ev.id ? t("dashboard.excluindo") : <><span aria-hidden="true">🗑️</span> {t("dashboard.excluir")}</>}
                                         </button>
                                     </div>
+                                </div>
+                                <div id={`painel-checkin-${ev.id}`}>
+                                    {checkinAbertoId === ev.id && (
+                                        <PainelCheckin evento={{ id: ev.id, nome: ev.nome, data: typeof ev.data === "string" ? ev.data : "" }} />
+                                    )}
+                                </div>
                                 </div>
                             ))}
                         </div>
