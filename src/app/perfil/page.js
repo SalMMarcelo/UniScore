@@ -9,6 +9,8 @@ import Link from "next/link";
 import PainelConquistas from "../../components/PainelConquistas";
 import SeletorTipoPerfil from "../../components/SeletorTipoPerfil";
 import MenuMobile from "../../components/MenuMobile";
+import { verificarContaInstitucional } from "../../components/useContaInstitucional";
+import { ROTA_PAINEL_UNIVERSIDADE } from "../../components/AcoesConta";
 import SeletorIdioma from "../../components/SeletorIdioma";
 import { useI18n } from "../../i18n/I18nProvider";
 import { NOME_MAX, isTipoPerfilValido, rotuloTipoPerfil, carregarUniversidades, destinoDaUrl } from "../../lib/usuarios";
@@ -48,7 +50,14 @@ export default function Perfil() {
                 router.push("/login");
                 return;
             }
-            
+
+            // Conta de universidade não tem perfil de estudante: vai para o painel dela.
+            // Enquanto verifica, a página segue em "carregando" (sem mostrar o formulário).
+            if (await verificarContaInstitucional(u.uid)) {
+                router.replace(ROTA_PAINEL_UNIVERSIDADE);
+                return;
+            }
+
             setUser(u);
             try {
                 // Buscar perfil no Firestore

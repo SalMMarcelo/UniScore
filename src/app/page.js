@@ -21,6 +21,7 @@ import SeletorIdioma from "../components/SeletorIdioma";
 import SeloPresencaVerificada from "../components/SeloPresencaVerificada";
 import { useI18n } from "../i18n/I18nProvider";
 import LinkAvaliar from "../components/LinkAvaliar";
+import { LinkPerfil, LinkParaUniversidades } from "../components/AcoesConta";
 
 // Imagens do carrossel (títulos/textos em home.slides.<n>)
 const SLIDES = [
@@ -281,7 +282,7 @@ export default function Home() {
                 </Link>
               )}
               <SinoNotificacoes />
-              <a href="/perfil" className="rounded-full bg-gray-100 w-9 h-9 flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer border border-gray-300" title={t("geral.perfil")} aria-label={t("geral.perfil")}>
+              <LinkPerfil className="rounded-full bg-gray-100 w-9 h-9 flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer border border-gray-300" rotulo={t("geral.perfil")}>
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full object-cover" />
                 ) : (
@@ -289,12 +290,12 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                   </svg>
                 )}
-              </a>
+              </LinkPerfil>
             </>
           )}
-          <Link href="/para-universidades" className="hidden sm:inline-block bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold text-sm shadow-sm transition-all">
+          <LinkParaUniversidades className="hidden sm:inline-block bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold text-sm shadow-sm transition-all">
             {t("menu.paraUniversidades")}
-          </Link>
+          </LinkParaUniversidades>
           {user && (
             <button
               type="button"

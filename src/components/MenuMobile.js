@@ -7,14 +7,16 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
 import { useI18n } from "../i18n/I18nProvider";
 import SeletorIdioma from "./SeletorIdioma";
-import { useContaInstitucional } from "./LinkAvaliar";
+import { useContaInstitucional } from "./useContaInstitucional";
+import { ROTA_PAINEL_UNIVERSIDADE } from "./AcoesConta";
 
 // Menu de navegação para telas pequenas (abaixo de md), onde a <nav> do
 // cabeçalho fica oculta. Botão com aria-expanded/aria-controls, fecha com Esc,
 // ao clicar fora e ao navegar.
 export default function MenuMobile({ className = "" }) {
   const { t } = useI18n();
-  // Contas de universidade não avaliam: o item "Escreva uma avaliação" some
+  // Contas de universidade não avaliam: o item "Escreva uma avaliação" some, e
+  // "Perfil"/"Para universidades" dão lugar a "Meu painel"
   const institucional = useContaInstitucional();
   const [aberto, setAberto] = useState(false);
   const [user, setUser] = useState(null);
@@ -116,11 +118,14 @@ export default function MenuMobile({ className = "" }) {
               {t("menu.ranking")}
             </Link>
           </li>
-          <li>
-            <Link href="/para-universidades" onClick={fechar} className={classeLink} aria-current={pathname === "/para-universidades" ? "page" : undefined}>
-              {t("menu.paraUniversidades")}
-            </Link>
-          </li>
+          {/* Contas de universidade já são clientes: no lugar da divulgação, o painel (abaixo) */}
+          {!institucional && (
+            <li>
+              <Link href="/para-universidades" onClick={fechar} className={classeLink} aria-current={pathname === "/para-universidades" ? "page" : undefined}>
+                {t("menu.paraUniversidades")}
+              </Link>
+            </li>
+          )}
           {user && (
             <li>
               <Link href="/notificacoes" onClick={fechar} className={classeLink} aria-current={pathname === "/notificacoes" ? "page" : undefined}>
@@ -129,7 +134,11 @@ export default function MenuMobile({ className = "" }) {
             </li>
           )}
           <li>
-            {user ? (
+            {user && institucional ? (
+              <Link href={ROTA_PAINEL_UNIVERSIDADE} onClick={fechar} className={classeLink} aria-current={pathname === ROTA_PAINEL_UNIVERSIDADE ? "page" : undefined}>
+                {t("menu.meuPainel")}
+              </Link>
+            ) : user ? (
               <Link href="/perfil" onClick={fechar} className={classeLink} aria-current={pathname === "/perfil" ? "page" : undefined}>
                 {t("menu.perfil")}
               </Link>

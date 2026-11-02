@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import MenuMobile from "../../components/MenuMobile";
+import { LinkPerfil } from "../../components/AcoesConta";
 import SeletorIdioma from "../../components/SeletorIdioma";
 import OpcaoPush from "../../components/OpcaoPush";
 import { useNotificacoes } from "../../components/SinoNotificacoes";
@@ -67,7 +68,7 @@ export default function Notificacoes() {
                     </Link>
                     <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600" aria-label={t("menu.navPrincipal")}>
                         <Link href="/forum" className="hover:text-blue-600 transition-colors">{t("menu.forum")}</Link>
-                        <Link href="/perfil" className="hover:text-blue-600 transition-colors">{t("menu.perfil")}</Link>
+                        <LinkPerfil className="hover:text-blue-600 transition-colors" texto={t("menu.perfil")} />
                         <SeletorIdioma />
                     </nav>
                     <MenuMobile />
