@@ -26,6 +26,14 @@ service cloud.firestore {
         ];
     }
 
+    // Conta institucional (qualquer status): existe universidades/{uid}.
+    // Contas institucionais não fazem check-in nem avaliam eventos, para que a
+    // universidade não infle a nota (e o selo de presença) dos próprios eventos.
+    // As telas avisam antes (contaInstitucional em src/lib/usuarios.js).
+    function isContaUniversidade() {
+      return exists(/databases/$(database)/documents/universidades/$(request.auth.uid));
+    }
+
     // Conta de universidade ("administrador da faculdade") já APROVADA por
     // um moderador. Contas com status 'pendente' não têm privilégios.
     function isApprovedUniversity() {
@@ -167,6 +175,7 @@ service cloud.firestore {
       allow read: if true; // Público para leitura
 
       allow create: if isSignedIn()
+        && !isContaUniversidade()
         && request.resource.data.usuarioId == request.auth.uid
         && isValidAvaliacao(request.resource.data)
         && isPresencaCoerente(request.resource.data);
@@ -380,6 +389,7 @@ service cloud.firestore {
     // expirou e o código bate.
     match /presencas/{presencaId} {
       allow create: if isSignedIn()
+        && !isContaUniversidade()
         && request.resource.data.keys().hasOnly(['eventoId', 'usuarioId', 'codigo', 'criadoEm'])
         && isIdSimples(request.resource.data.eventoId)
         && request.resource.data.usuarioId == request.auth.uid

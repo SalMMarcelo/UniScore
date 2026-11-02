@@ -97,6 +97,12 @@ QR: biblioteca `qrcode` (npm), gerado no cliente.
   da home).
 - `/relatorio` (em `src/lib/estatisticas.js`): total e % de avaliações com presença verificada.
 
+## Contas institucionais
+
+Contas de universidade (existe `universidades/{uid}`, aprovada ou pendente) não criam `presencas` nem
+`avaliacoes` (`isContaUniversidade()` em `firestore.rules`): a instituição não pode inflar a nota nem o selo dos
+próprios eventos. `/checkin` mostra o erro `conta-institucional` e `/avaliar` bloqueia o envio com explicação.
+
 ## Limites conhecidos
 
 - Quem recebe uma foto do QR durante a validade consegue fazer check-in sem estar presente. O que mitiga:

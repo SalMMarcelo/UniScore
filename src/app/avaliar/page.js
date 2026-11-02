@@ -10,6 +10,7 @@ import { notaSegura } from "../../lib/notas";
 import { listarEventos, buscarEvento } from "../../lib/eventos";
 import { listarUniversidades } from "../../lib/universidades";
 import { temPresenca } from "../../lib/presencas";
+import { contaInstitucional } from "../../lib/usuarios";
 import SeloPresencaVerificada from "../../components/SeloPresencaVerificada";
 import MenuMobile from "../../components/MenuMobile";
 import SeletorIdioma from "../../components/SeletorIdioma";
@@ -107,6 +108,8 @@ function AvaliarEventoConteudo() {
     const universidadeIdParam = searchParams.get('universidadeId') || '';
 
     const [user, setUser] = useState(null);
+    // Contas de universidade não avaliam (regra isContaUniversidade em firestore.rules)
+    const [institucional, setInstitucional] = useState(false);
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [universidades, setUniversidades] = useState([]);
     const [todosEventos, setTodosEventos] = useState([]);
@@ -155,6 +158,8 @@ function AvaliarEventoConteudo() {
             }
             setUser(currentUser);
             setLoadingAuth(false);
+            setInstitucional(false);
+            if (currentUser) contaInstitucional(currentUser.uid).then(setInstitucional);
 
             if (!currentUser) {
                 alert(tRef.current('avaliar.precisaLogin'));
@@ -329,6 +334,11 @@ function AvaliarEventoConteudo() {
             return;
         }
 
+        if (institucional) {
+            setErro(t('avaliar.contaInstitucionalTexto'));
+            return;
+        }
+
         setErro('');
         setLoading(true);
         // Confere a presença na hora de enviar (o check-in pode ter sido feito em outra aba)
@@ -399,6 +409,10 @@ function AvaliarEventoConteudo() {
     const proximaEtapa = (e) => {
         if (e) e.preventDefault(); // Prevenir submit do formulário
         // Evento com check-in obrigatório: não deixa preencher o resto sem presença
+        if (etapa === 1 && institucional) {
+            setErro(t('avaliar.contaInstitucionalTexto'));
+            return;
+        }
         if (etapa === 1 && bloqueadoSemCheckin) {
             setErro(t('avaliar.exigeCheckinErro'));
             return;
@@ -596,6 +610,13 @@ function AvaliarEventoConteudo() {
                                         </div>
                                     </div>
                                 </div>
+
+                                {institucional && (
+                                    <div role="alert" className="bg-amber-50 border border-amber-300 text-amber-900 rounded-xl p-4 text-sm">
+                                        <p className="font-bold mb-1">{t("avaliar.contaInstitucionalTitulo")}</p>
+                                        <p>{t("avaliar.contaInstitucionalTexto")}</p>
+                                    </div>
+                                )}
 
                                 {bloqueadoSemCheckin && (
                                     <div role="alert" className="bg-amber-50 border border-amber-300 text-amber-900 rounded-xl p-4 text-sm">
@@ -1070,7 +1091,7 @@ function AvaliarEventoConteudo() {
                             ) : (
                                 <button
                                     type="submit"
-                                    disabled={loading || bloqueadoSemCheckin}
+                                    disabled={loading || bloqueadoSemCheckin || institucional}
                                     className="bg-gradient-to-r from-green-600 to-green-700 text-white px-8 py-3 rounded-lg font-bold hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {loading ? (

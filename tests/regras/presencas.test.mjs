@@ -134,6 +134,14 @@ describe("presencas", () => {
         await assertSucceeds(setDoc(presencaRef(ana()), presenca()));
     });
 
+    // Contas institucionais não fazem check-in (nem no próprio evento)
+    for (const [nome, uid, db] of [["dona do evento", "uniA", uniA], ["outra universidade", "uniB", uniB], ["universidade pendente", "uniP", uniP]]) {
+        it(`conta institucional (${nome}) não faz check-in`, async () => {
+            await semearSegredo();
+            await assertFails(setDoc(presencaRef(db(), `ev_${uid}`), presenca({ usuarioId: uid })));
+        });
+    }
+
     it("anônimo não faz check-in", async () => {
         await semearSegredo();
         await assertFails(setDoc(presencaRef(anonimo().firestore()), presenca()));

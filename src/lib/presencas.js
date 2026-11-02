@@ -19,6 +19,7 @@ import {
     serverTimestamp,
     Timestamp
 } from "firebase/firestore";
+import { contaInstitucional } from "./usuarios";
 
 const ALFABETO = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 const TAMANHO_CODIGO = 24;
@@ -28,7 +29,8 @@ export const FORMATO_CODIGO = /^[A-Za-z0-9]{16,64}$/;
 export const ERROS_PRESENCA = {
     CODIGO_INVALIDO: "codigo-invalido",
     CHECKIN_ENCERRADO: "checkin-encerrado",
-    NAO_LOGADO: "nao-logado"
+    NAO_LOGADO: "nao-logado",
+    CONTA_INSTITUCIONAL: "conta-institucional"
 };
 
 function refCheckin(eventoId) {
@@ -138,7 +140,8 @@ async function lerPresenca(eventoId, uid) {
 }
 
 // Grava presencas/{eventoId}_{uid}. Presença já existente conta como sucesso.
-// Erros (err.code): "nao-logado", "codigo-invalido" (QR malformado) e "checkin-encerrado"
+// Erros (err.code): "nao-logado", "conta-institucional" (universidades não fazem check-in),
+// "codigo-invalido" (QR malformado) e "checkin-encerrado"
 // (as regras recusaram: código trocado, check-in inativo ou expirado; o participante não lê o
 // segredo, então a interface não distingue esses casos).
 export async function registrarPresenca(eventoId, codigo) {
@@ -148,6 +151,8 @@ export async function registrarPresenca(eventoId, codigo) {
     if (!id || id.includes("/") || !FORMATO_CODIGO.test(String(codigo || ""))) {
         throw erroPresenca(ERROS_PRESENCA.CODIGO_INVALIDO);
     }
+
+    if (await contaInstitucional(user.uid)) throw erroPresenca(ERROS_PRESENCA.CONTA_INSTITUCIONAL);
 
     if (await lerPresenca(id, user.uid)) return { jaExistia: true };
 

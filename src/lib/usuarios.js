@@ -104,6 +104,17 @@ export async function carregarUniversidades() {
 }
 
 // Caminho interno indicado em ?redirect=/caminho (somente caminhos do próprio site)
+// Conta institucional (universidade, aprovada ou não): existe universidades/{uid}.
+// Essas contas não fazem check-in nem avaliam (regra isContaUniversidade em firestore.rules).
+export async function contaInstitucional(uid) {
+  if (!uid) return false;
+  try {
+    return (await getDoc(doc(db, "universidades", uid))).exists();
+  } catch {
+    return false;
+  }
+}
+
 export function destinoDaUrl(padrao = "/") {
   if (typeof window === "undefined") return padrao;
   const destino = new URLSearchParams(window.location.search).get("redirect");

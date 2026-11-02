@@ -30,6 +30,15 @@ describe("avaliacoes", () => {
     it("autor cria avaliação válida", () =>
         assertSucceeds(setDoc(doc(ana(), "avaliacoes", "a2"), avaliacao())));
 
+    it("conta institucional (aprovada ou pendente) não avalia", async () => {
+        await semear(async (db) => {
+            await setDoc(doc(db, "universidades", "uniA"), { status: "aprovado", universidadeId: "1" });
+            await setDoc(doc(db, "universidades", "uniP"), { status: "pendente" });
+        });
+        await assertFails(setDoc(doc(usuario("uniA").firestore(), "avaliacoes", "a2"), avaliacao({ usuarioId: "uniA" })));
+        await assertFails(setDoc(doc(usuario("uniP").firestore(), "avaliacoes", "a3"), avaliacao({ usuarioId: "uniP" })));
+    });
+
     it("anônimo não cria", () =>
         assertFails(setDoc(doc(anonimo().firestore(), "avaliacoes", "a2"), avaliacao())));
 

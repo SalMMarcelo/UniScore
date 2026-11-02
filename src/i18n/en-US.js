@@ -524,6 +524,8 @@ const enUS = {
     eventoNaoEncontrado: "The event in the link was not found. Select the university and the event below.",
     presencaConfirmada: "You checked in to this event. Your review will carry the verified attendance badge.",
     verificandoPresenca: "Checking your check-in for this event...",
+    contaInstitucionalTitulo: "University accounts cannot review events",
+    contaInstitucionalTexto: "To keep reviews independent, institutional accounts cannot review or check in. To review as a participant, sign out and sign in with a personal account.",
     exigeCheckinTitulo: "This event requires check-in to review",
     exigeCheckinTexto: "The university only accepts reviews from people who attended. Scan the check-in QR code shown at the venue (or ask the organizers for the link) and then come back to review.",
     exigeCheckinErro: "Could not submit: this event requires check-in and we did not find your attendance. Check in with the event's QR code and try again.",
@@ -1281,6 +1283,7 @@ const enUS = {
     erros: {
       "codigo-invalido": "This check-in link is incomplete or invalid. Scan the QR code shown at the event again.",
       "checkin-encerrado": "Check-in for this event is not open or this QR code is no longer valid. Ask the organizers for the current QR code.",
+      "conta-institucional": "University accounts cannot check in or review events. To register attendance, sign out and sign in with a personal account.",
       "nao-logado": "Sign in to check in.",
       desconhecido: "Something went wrong while recording your attendance. Check your connection and try again.",
     },
