@@ -1,5 +1,5 @@
 import { describe, it, beforeEach } from "node:test";
-import { doc, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, deleteField } from "firebase/firestore";
 import { criarAmbiente, assertSucceeds, assertFails, EMAIL_MODERADOR } from "./ambiente.mjs";
 
 const { env, usuario, moderador, anonimo, semear } = await criarAmbiente();
@@ -86,4 +86,91 @@ describe("avaliacoes", () => {
         await semear((db) => setDoc(doc(db, "avaliacoes", "a1"), avaliacao()));
         await assertSucceeds(deleteDoc(doc(moderador().firestore(), "avaliacoes", "a1")));
     });
+});
+
+describe("avaliacoes com presença verificada", () => {
+    const ana = () => usuario("ana").firestore();
+    const eventoFs = (extra = {}) => ({
+        nome: "Feira", descricao: "", data: "2026-11-10", local: "Campus", publicoAlvo: "Todos",
+        preco: 0, tema: "Cultura", tipo: "Festival", universidadeUid: "uniA", criadoEm: new Date("2026-10-01"),
+        ...extra
+    });
+
+    beforeEach(async () => {
+        await env.clearFirestore();
+        await semear(async (db) => {
+            await setDoc(doc(db, "eventos", "livre"), eventoFs());
+            await setDoc(doc(db, "eventos", "fechado"), eventoFs({ exigeCheckin: true }));
+            await setDoc(doc(db, "eventos", "aberto"), eventoFs({ exigeCheckin: false }));
+            await setDoc(doc(db, "presencas", "fechado_ana"), { eventoId: "fechado", usuarioId: "ana", codigo: "x", criadoEm: new Date() });
+            await setDoc(doc(db, "presencas", "livre_ana"), { eventoId: "livre", usuarioId: "ana", codigo: "x", criadoEm: new Date() });
+            await setDoc(doc(db, "avaliacoes", "v1"), avaliacao({ eventoId: "fechado", presencaVerificada: true }));
+            await setDoc(doc(db, "avaliacoes", "v2"), avaliacao({ eventoId: "livre" }));
+        });
+    });
+
+    it("com presença cria com o selo", () =>
+        assertSucceeds(setDoc(doc(ana(), "avaliacoes", "n"), avaliacao({ eventoId: "livre", presencaVerificada: true }))));
+
+    it("sem presença não cria com o selo", () =>
+        assertFails(setDoc(doc(usuario("bia").firestore(), "avaliacoes", "n"),
+            avaliacao({ usuarioId: "bia", eventoId: "livre", presencaVerificada: true }))));
+
+    it("presença de outra pessoa não vale", async () => {
+        await semear((db) => setDoc(doc(db, "presencas", "aberto_bia"), { eventoId: "aberto", usuarioId: "bia", codigo: "x", criadoEm: new Date() }));
+        await assertFails(setDoc(doc(ana(), "avaliacoes", "n"), avaliacao({ eventoId: "aberto", presencaVerificada: true })));
+    });
+
+    it("presença de outro evento não vale", () =>
+        assertFails(setDoc(doc(ana(), "avaliacoes", "n"), avaliacao({ eventoId: "aberto", presencaVerificada: true }))));
+
+    it("selo sem eventoId negado", () => {
+        const { eventoId, ...semEvento } = avaliacao({ presencaVerificada: true });
+        return assertFails(setDoc(doc(ana(), "avaliacoes", "n"), semEvento));
+    });
+
+    it("presencaVerificada que não é booleano negado", () =>
+        assertFails(setDoc(doc(ana(), "avaliacoes", "n"), avaliacao({ eventoId: "livre", presencaVerificada: "true" }))));
+
+    it("evento sem exigência: avalia sem o selo (presencaVerificada false ou ausente)", async () => {
+        await assertSucceeds(setDoc(doc(ana(), "avaliacoes", "n1"), avaliacao({ eventoId: "aberto", presencaVerificada: false })));
+        await assertSucceeds(setDoc(doc(usuario("bia").firestore(), "avaliacoes", "n2"), avaliacao({ usuarioId: "bia", eventoId: "livre" })));
+    });
+
+    it("evento com exigeCheckin: sem o selo negado, mesmo tendo presença", async () => {
+        await assertFails(setDoc(doc(ana(), "avaliacoes", "n"), avaliacao({ eventoId: "fechado" })));
+        await assertFails(setDoc(doc(ana(), "avaliacoes", "n"), avaliacao({ eventoId: "fechado", presencaVerificada: false })));
+    });
+
+    it("evento com exigeCheckin: com presença e selo cria", () =>
+        assertSucceeds(setDoc(doc(ana(), "avaliacoes", "n"), avaliacao({ eventoId: "fechado", presencaVerificada: true }))));
+
+    it("evento com exigeCheckin: sem presença negado", () =>
+        assertFails(setDoc(doc(usuario("bia").firestore(), "avaliacoes", "n"),
+            avaliacao({ usuarioId: "bia", eventoId: "fechado", presencaVerificada: true }))));
+
+    it("evento legado (fora do Firestore) continua livre", async () => {
+        await assertSucceeds(setDoc(doc(ana(), "avaliacoes", "n1"), avaliacao({ eventoId: "7" })));
+        await assertSucceeds(setDoc(doc(ana(), "avaliacoes", "n2"), avaliacao({ eventoId: 7 })));
+    });
+
+    it("eventoId com caracteres de caminho negado", () =>
+        assertFails(setDoc(doc(ana(), "avaliacoes", "n"), avaliacao({ eventoId: "fechado/privado/checkin" }))));
+
+    it("autor edita a nota sem mexer no selo", () =>
+        assertSucceeds(updateDoc(doc(ana(), "avaliacoes", "v1"), { nota: 2 })));
+
+    it("autor não acrescenta, tira nem muda o selo", async () => {
+        await assertFails(updateDoc(doc(ana(), "avaliacoes", "v2"), { presencaVerificada: true }));
+        await assertFails(updateDoc(doc(ana(), "avaliacoes", "v1"), { presencaVerificada: false }));
+        await assertFails(updateDoc(doc(ana(), "avaliacoes", "v1"), { presencaVerificada: deleteField() }));
+    });
+
+    it("autor não troca o evento", async () => {
+        await assertFails(updateDoc(doc(ana(), "avaliacoes", "v1"), { eventoId: "livre" }));
+        await assertFails(updateDoc(doc(ana(), "avaliacoes", "v2"), { eventoId: "fechado" }));
+    });
+
+    it("moderador pode corrigir o selo", () =>
+        assertSucceeds(updateDoc(doc(moderador().firestore(), "avaliacoes", "v1"), { presencaVerificada: false })));
 });
