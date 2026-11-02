@@ -3,7 +3,7 @@
 // Documento: usuarios/{uid}
 // { nome (string ≤ 100), avatar (url), email (string ou null), criadoEm (timestamp),
 //   tipoPerfil ('universitario' | 'familiar' | 'visitante' | 'convidado'),
-//   universidadeId (id de public/universidades.json, como string, ou null),
+//   universidadeId (id do catálogo de universidades, como string, ou null),
 //   updatedAt (ISO string, gravado por /perfil) }
 //
 // Atenção: o tipo de perfil NÃO pode se chamar "papel" nem "role" — esses
@@ -12,6 +12,7 @@
 import { db } from "../firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { isAdminEmail } from "./admin";
+import { listarUniversidades } from "./universidades";
 import { tPadrao } from "../i18n/traduzir";
 
 // Mantenha sincronizado com isValidTipoPerfil() em firestore.rules.
@@ -97,12 +98,9 @@ export async function garantirDocumentoUsuario(user, extras = {}) {
   return { ...atual, ...faltando };
 }
 
-// Lista de universidades (public/universidades.json) para o campo universidadeId
+// Lista de universidades (catálogo: src/lib/universidades.js) para o campo universidadeId
 export async function carregarUniversidades() {
-  const res = await fetch("/universidades.json");
-  if (!res.ok) throw new Error("Não foi possível carregar a lista de universidades");
-  const lista = await res.json();
-  return Array.isArray(lista) ? lista : [];
+  return listarUniversidades();
 }
 
 // Caminho interno indicado em ?redirect=/caminho (somente caminhos do próprio site)

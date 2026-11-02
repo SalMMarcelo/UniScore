@@ -8,13 +8,13 @@
 //
 // Todos os eventos são devolvidos no formato normalizado:
 // { id, nome, descricao, data (YYYY-MM-DD), local, publicoAlvo, preco (number, 0 = gratuito),
-//   tema, tipo, imagem (url ou null), universidadeId (id de universidades.json ou null),
+//   tema, tipo, imagem (url ou null), universidadeId (id do catálogo de universidades ou null),
 //   universidadeNome, universidadeUid (ou null), legado (bool),
 //   exigeCheckin (bool: só avalia quem fez check-in; ver docs/checkin-presenca.md) }
 
 import { db } from "../firebase";
 import { collection, getDocs, getDoc, doc, query, orderBy } from "firebase/firestore";
-import { encontrarUniversidadeId } from "./universidades";
+import { encontrarUniversidadeId, listarUniversidades } from "./universidades";
 
 export const TIPOS = [
   "Palestra",
@@ -104,7 +104,7 @@ function normalizarEventoLegado(ev, universidades) {
   let universidadeNome = texto(ev.universidade);
 
   if (Array.isArray(universidades)) {
-    // 1) A universidade que lista o evento em "eventos" no universidades.json
+    // 1) A universidade legada que lista o evento em "eventos" (public/universidades.json)
     const dona = universidades.find(
       uni => Array.isArray(uni.eventos) && uni.eventos.map(String).includes(id)
     );
@@ -155,7 +155,10 @@ async function carregarJson(caminho) {
 async function listarEventosLegados() {
   const [eventos, universidades] = await Promise.all([
     carregarJson("/events.json"),
-    carregarJson("/universidades.json")
+    listarUniversidades().catch(err => {
+      console.error("Erro ao carregar universidades:", err);
+      return [];
+    })
   ]);
   return eventos.map(ev => normalizarEventoLegado(ev, universidades));
 }

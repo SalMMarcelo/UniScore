@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { notaSegura } from "../../lib/notas";
 import { listarEventos, TEMAS, TIPOS } from "../../lib/eventos";
+import { listarUniversidades } from "../../lib/universidades";
 import {
   carregarEstatisticas,
   estatisticaDoEvento,
@@ -179,11 +180,13 @@ function BuscarEventosConteudo() {
     return () => { cancelado = true; };
   }, []);
 
+  // Universidades do filtro: catálogo (Firestore + legadas)
   useEffect(() => {
-    fetch("/universidades.json")
-      .then(res => (res.ok ? res.json() : []))
-      .then(data => setUniversidades(Array.isArray(data) ? data : []))
+    let cancelado = false;
+    listarUniversidades()
+      .then(lista => { if (!cancelado) setUniversidades(lista); })
       .catch(err => console.error("Erro ao carregar universidades:", err));
+    return () => { cancelado = true; };
   }, []);
 
   // URL alterada externamente (ex.: nova busca vinda da home com a página já aberta)

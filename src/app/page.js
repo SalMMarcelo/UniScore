@@ -12,6 +12,9 @@ import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { isAdminEmail } from "../lib/admin";
 import { notaSegura } from "../lib/notas";
 import { listarEventos } from "../lib/eventos";
+import { listarUniversidades } from "../lib/universidades";
+import { carregarNumerosHome } from "../lib/estatisticas";
+import AvatarUniversidade from "../components/AvatarUniversidade";
 import MenuMobile from "../components/MenuMobile";
 import SinoNotificacoes from "../components/SinoNotificacoes";
 import SeletorIdioma from "../components/SeletorIdioma";
@@ -113,8 +116,10 @@ function EventosDaUniversidade({ uni, todosEventos, avaliacoes }) {
 }
 
 export default function Home() {
-  const { t, formatarData } = useI18n();
+  const { t, formatarData, formatarNumero } = useI18n();
   const [search, setSearch] = useState("");
+  // Números reais das faixas de estatísticas (null = carregando ou indisponível)
+  const [numeros, setNumeros] = useState({ avaliacoes: null, universidades: null, eventos: null });
   const [universidades, setUniversidades] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
   const [selectedUni, setSelectedUni] = useState(null);
@@ -185,24 +190,40 @@ export default function Home() {
     return () => { cancelado = true; };
   }, []);
 
+  // Catálogo de universidades (Firestore + legadas) para as sugestões da busca
   useEffect(() => {
-    fetch("/universidades.json")
-      .then((res) => res.json())
-      .then((data) => setUniversidades(data));
+    let cancelado = false;
+    listarUniversidades()
+      .then((lista) => { if (!cancelado) setUniversidades(lista); })
+      .catch((err) => console.error("Erro ao carregar universidades:", err));
+    return () => { cancelado = true; };
+  }, []);
+
+  // Números das faixas de estatísticas (contados no servidor)
+  useEffect(() => {
+    let cancelado = false;
+    carregarNumerosHome()
+      .then((n) => { if (!cancelado) setNumeros(n); })
+      .catch((err) => console.error("Erro ao contar estatísticas:", err));
+    return () => { cancelado = true; };
   }, []);
 
   useEffect(() => {
-    if (!search) {
+    const termo = search.trim().toLowerCase();
+    if (!termo) {
       setSuggestions([]);
       return;
     }
     setSuggestions(
       universidades.filter((uni) =>
-        uni.nome.toLowerCase().includes(search.toLowerCase()) ||
-        uni.sigla.toLowerCase().includes(search.toLowerCase())
+        (uni.nome || "").toLowerCase().includes(termo) ||
+        (uni.sigla || "").toLowerCase().includes(termo)
       )
     );
   }, [search, universidades]);
+
+  // "—" enquanto carrega (ou se a contagem falhar); senão o número no idioma ativo
+  const numero = (valor) => (typeof valor === "number" ? formatarNumero(valor) : "—");
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans relative overflow-x-hidden">
@@ -353,10 +374,10 @@ export default function Home() {
                       onClick={() => router.push(`/universidade/${uni.id}`)}
                     >
                       <div className="flex items-center gap-4">
-                        <img src={uni.imagem} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 shadow-sm" />
+                        <AvatarUniversidade uni={uni} className="w-12 h-12 border-2 border-gray-200 shadow-sm" classeIniciais="text-sm" />
                         <div className="flex-1 text-left">
                           <span className="font-bold text-gray-800 text-base">{uni.nome}</span>
-                          <span className="text-sm text-gray-500 ml-3">{uni.sigla}</span>
+                          {uni.sigla && <span className="text-sm text-gray-500 ml-3">{uni.sigla}</span>}
                         </div>
                       </div>
                     </button>
@@ -376,16 +397,16 @@ export default function Home() {
           {/* Stats rápidos */}
           <div className="grid grid-cols-3 gap-2 sm:gap-6 max-w-3xl mx-auto mt-12">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div className="text-3xl font-bold text-white mb-1">12.8k+</div>
+              <div className="text-3xl font-bold text-white mb-1">{numero(numeros.avaliacoes)}</div>
               <div className="text-sm text-blue-100">{t("home.statAvaliacoes")}</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div className="text-3xl font-bold text-white mb-1">67</div>
+              <div className="text-3xl font-bold text-white mb-1">{numero(numeros.universidades)}</div>
               <div className="text-sm text-blue-100">{t("home.statUniversidades")}</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div className="text-3xl font-bold text-white mb-1">28k+</div>
-              <div className="text-sm text-blue-100">{t("home.statUsuarios")}</div>
+              <div className="text-3xl font-bold text-white mb-1">{numero(numeros.eventos)}</div>
+              <div className="text-sm text-blue-100">{t("home.statEventos")}</div>
             </div>
           </div>
         </div>
@@ -540,7 +561,7 @@ export default function Home() {
         {selectedUni ? (
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-8 mb-8">
             <div className="flex items-center gap-6 mb-4">
-              <img src={selectedUni.imagem} alt={selectedUni.nome} className="w-20 h-20 rounded-full object-cover border-4 border-[#00b0ff]" />
+              <AvatarUniversidade uni={selectedUni} alt={selectedUni.nome} className="w-20 h-20 border-4 border-[#00b0ff]" classeIniciais="text-2xl" />
               <div>
                 <div className="text-2xl font-bold text-gray-800">{selectedUni.nome} <span className="text-xs text-gray-600 ml-2">{selectedUni.sigla}</span></div>
                 <div className="text-gray-600 mt-2">{selectedUni.descricao}</div>
@@ -584,11 +605,11 @@ export default function Home() {
               </p>
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-white/10 rounded-lg p-4">
-                  <div className="text-2xl font-bold mb-1">12.8k+</div>
+                  <div className="text-2xl font-bold mb-1">{numero(numeros.avaliacoes)}</div>
                   <div className="text-sm text-blue-100">{t("home.statAvaliacoes")}</div>
                 </div>
                 <div className="bg-white/10 rounded-lg p-4">
-                  <div className="text-2xl font-bold mb-1">67</div>
+                  <div className="text-2xl font-bold mb-1">{numero(numeros.universidades)}</div>
                   <div className="text-sm text-blue-100">{t("home.statUniversidades")}</div>
                 </div>
               </div>

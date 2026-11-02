@@ -181,4 +181,16 @@ describe("aprovação em batch (AbaUniversidades)", () => {
             universidadeNome: "Universidade Teste", criadoEm: serverTimestamp()
         }));
     });
+
+    it("moderador vincula ao catálogo um evento antigo da conta (vincularEventosDaConta)", async () => {
+        const evento = {
+            nome: "Feira", descricao: "", data: "2026-11-10", local: "Campus", publicoAlvo: "Todos",
+            preco: 0, tema: "Cultura", tipo: "Feira", universidadeUid: "uniN", universidadeId: null,
+            universidadeNome: "Universidade Teste", criadoEm: ANTIGO
+        };
+        await semear((db) => setDoc(doc(db, "eventos", "ev-antigo"), evento));
+        await assertSucceeds(updateDoc(doc(mod(), "eventos", "ev-antigo"), {
+            universidadeId: "uniN", universidadeNome: "Universidade Teste", atualizadoEm: serverTimestamp()
+        }));
+    });
 });

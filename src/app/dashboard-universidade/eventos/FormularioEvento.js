@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { isAdminEmail } from "../../../lib/admin";
 import { TEMAS, TIPOS, PUBLICOS } from "../../../lib/eventos";
+import { buscarUniversidade } from "../../../lib/universidades";
 import { useI18n } from "../../../i18n/I18nProvider";
 
 const LIMITE_IMAGEM = 5 * 1024 * 1024; // 5 MB (igual a storage.rules)
@@ -200,12 +201,18 @@ export default function FormularioEvento({ eventoId = null }) {
                 exigeCheckin: form.exigeCheckin === true
             };
 
-            // Vínculo com public/universidades.json: tem de ser igual ao da conta
-            // (firestore.rules confere universidades/{uid}.universidadeId)
-            const vinculo = universidade ? {
-                universidadeId: typeof universidade.universidadeId === "string" ? universidade.universidadeId : null,
-                universidadeNome: String(universidade.nomeUniversidade || "").slice(0, 200)
-            } : null;
+            // Vínculo com o catálogo de universidades: tem de ser igual ao da conta
+            // (firestore.rules confere universidades/{uid}.universidadeId). O nome
+            // exibido no evento é o do catálogo, quando a conta está vinculada.
+            let vinculo = null;
+            if (universidade) {
+                const universidadeId = typeof universidade.universidadeId === "string" ? universidade.universidadeId : null;
+                const doCatalogo = universidadeId ? await buscarUniversidade(universidadeId).catch(() => null) : null;
+                vinculo = {
+                    universidadeId,
+                    universidadeNome: String((doCatalogo && doCatalogo.nome) || universidade.nomeUniversidade || "").slice(0, 200)
+                };
+            }
 
             if (editando) {
                 await updateDoc(doc(db, "eventos", String(eventoId)), {

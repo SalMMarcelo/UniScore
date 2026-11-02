@@ -55,7 +55,8 @@ export default function CadastroUniversidades() {
                 formData.senha
             );
 
-            // Vincular à universidade de public/universidades.json (id usado nas avaliações)
+            // Sugere o vínculo com o catálogo de universidades (id usado nas avaliações).
+            // O moderador confirma ou cria uma entrada nova ao aprovar (/admin).
             let universidadeId = null;
             try {
                 universidadeId = await buscarUniversidadeId({ nome: formData.nomeUniversidade });
