@@ -555,5 +555,36 @@ service cloud.firestore {
             || isValidNotificacaoComentario(request.resource.data)
             || isValidNotificacaoModeracao(request.resource.data));
     }
+
+    // ------------------------------------------------------------------
+    // Tokens de notificação push (FCM) - users/{uid}/tokensPush/{token}
+    // ------------------------------------------------------------------
+    // Gravados por src/lib/push.js (salvarToken/desativarPush) quando o
+    // usuário ativa ou desativa o push em /notificacoes. Só o dono lê e grava:
+    // o token permite mandar avisos para o aparelho, então não pode vazar nem
+    // ser plantado na conta de outro. A Cloud Function (functions/index.js)
+    // lê e apaga tokens inválidos pelo Admin SDK, que ignora estas regras.
+    //  - id do documento = token (para não duplicar o mesmo navegador);
+    //  - idioma: idioma do texto do push; navegador: userAgent (até 200);
+    //  - criadoEm fixo na criação; atualizadoEm = hora da gravação (renovação).
+    function isValidTokenPush(tokenId, d) {
+      return d.keys().hasOnly(['token', 'idioma', 'navegador', 'criadoEm', 'atualizadoEm'])
+        && d.keys().hasAll(['token', 'idioma', 'criadoEm', 'atualizadoEm'])
+        && tokenId.matches('^[A-Za-z0-9_:-]{20,512}$')
+        && d.token == tokenId
+        && d.idioma in ['pt-BR', 'en-US']
+        && (!('navegador' in d) || (d.navegador is string && d.navegador.size() <= 200))
+        && d.atualizadoEm == request.time;
+    }
+
+    match /users/{userId}/tokensPush/{tokenId} {
+      allow read, delete: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidTokenPush(tokenId, request.resource.data)
+        && request.resource.data.criadoEm == request.time;
+      allow update: if isOwner(userId)
+        && isValidTokenPush(tokenId, request.resource.data)
+        && request.resource.data.criadoEm == resource.data.criadoEm;
+    }
   }
 }

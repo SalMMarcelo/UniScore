@@ -1235,6 +1235,17 @@ const ptBR = {
     }
   },
 
+  push: {
+    titulo: "Receber notificações no celular/computador",
+    descricao: "Receba um aviso fora do site quando alguém curtir ou comentar seus posts.",
+    ativoDescricao: "Ativado neste navegador. Você será avisado mesmo com o site fechado.",
+    verificando: "Verificando se este navegador aceita notificações...",
+    naoSuportado: "Este navegador não aceita notificações push. No iPhone, instale o UniScore na tela inicial e abra por lá.",
+    negada: "As notificações estão bloqueadas para este site. Libere nas configurações do navegador e recarregue a página.",
+    aguarde: "Aguarde...",
+    erro: "Não foi possível alterar as notificações. Tente novamente."
+  },
+
   // @@novas-secoes
 };
 

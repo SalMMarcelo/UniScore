@@ -1227,6 +1227,17 @@ const enUS = {
     }
   },
 
+  push: {
+    titulo: "Get notifications on your phone/computer",
+    descricao: "Get an alert outside the site when someone likes or comments on your posts.",
+    ativoDescricao: "Enabled on this browser. You will be alerted even when the site is closed.",
+    verificando: "Checking whether this browser supports notifications...",
+    naoSuportado: "This browser does not support push notifications. On iPhone, add UniScore to your home screen and open it from there.",
+    negada: "Notifications are blocked for this site. Allow them in your browser settings and reload the page.",
+    aguarde: "Please wait...",
+    erro: "Could not change notifications. Please try again."
+  },
+
   // @@novas-secoes
 };
 

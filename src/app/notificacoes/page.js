@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import MenuMobile from "../../components/MenuMobile";
 import SeletorIdioma from "../../components/SeletorIdioma";
+import OpcaoPush from "../../components/OpcaoPush";
 import { useNotificacoes } from "../../components/SinoNotificacoes";
 import { useI18n } from "../../i18n/I18nProvider";
 import {
@@ -95,6 +96,8 @@ export default function Notificacoes() {
                         </button>
                     )}
                 </div>
+
+                {user && <OpcaoPush user={user} />}
 
                 {falhaAcao && (
                     <p role="alert" className="mb-4 bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3 text-sm">{falhaAcao}</p>
