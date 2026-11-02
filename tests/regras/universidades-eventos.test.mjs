@@ -119,4 +119,20 @@ describe("eventos", () => {
 
     it("dono apaga", () =>
         assertSucceeds(deleteDoc(doc(uniA(), "eventos", "e1"))));
+
+    it("cria evento com exigeCheckin booleano", () =>
+        assertSucceeds(setDoc(doc(uniA(), "eventos", "novo"), evento({ exigeCheckin: true }))));
+
+    it("exigeCheckin que não é booleano negado", async () => {
+        await assertFails(setDoc(doc(uniA(), "eventos", "novo"), evento({ exigeCheckin: "sim" })));
+        await assertFails(updateDoc(doc(uniA(), "eventos", "e1"), { exigeCheckin: 1 }));
+    });
+
+    it("dono liga e desliga exigeCheckin", async () => {
+        await assertSucceeds(updateDoc(doc(uniA(), "eventos", "e1"), { exigeCheckin: true }));
+        await assertSucceeds(updateDoc(doc(uniA(), "eventos", "e1"), { exigeCheckin: false }));
+    });
+
+    it("outra universidade não liga exigeCheckin", () =>
+        assertFails(updateDoc(doc(uniB(), "eventos", "e1"), { exigeCheckin: true })));
 });

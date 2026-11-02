@@ -124,7 +124,43 @@ service cloud.firestore {
         && (!('comentario' in data) || (data.comentario is string && data.comentario.size() <= 2000))
         && (!('titulo' in data) || (data.titulo is string && data.titulo.size() <= 200))
         && (!('criterios' in data) || isValidCriterios(data.criterios))
-        && (!('intercultural' in data) || data.intercultural is map);
+        && (!('intercultural' in data) || data.intercultural is map)
+        && (!('presencaVerificada' in data) || data.presencaVerificada is bool);
+    }
+
+    // Presença verificada (docs/checkin-presenca.md), checada só na criação;
+    // gravada por src/app/avaliar/page.js.
+    //  - presencaVerificada == true exige presencas/{eventoId}_{uid}, que só
+    //    nasce com o código do QR (ver match /presencas);
+    //  - evento do Firestore com exigeCheckin == true exige o selo. Eventos
+    //    legados (public/events.json, ids numéricos) não estão no Firestore:
+    //    exists() antes de get() mantém a avaliação deles livre. eventoId que não
+    //    é string (avaliações legadas com número) nunca aponta para evento do
+    //    Firestore, cujos ids não podem ser numéricos.
+    // O eventoId string tem de ser um id simples (sem "/"), para não montar
+    // caminhos arbitrários nem burlar o exigeCheckin com um id "parecido".
+    function isIdSimples(id) {
+      return id is string && id.matches('^[A-Za-z0-9_-]{1,128}$');
+    }
+
+    function presencaPath(eventoId, uid) {
+      return /databases/$(database)/documents/presencas/$(eventoId + '_' + uid);
+    }
+
+    function eventoPath(eventoId) {
+      return /databases/$(database)/documents/eventos/$(eventoId);
+    }
+
+    function isPresencaCoerente(data) {
+      let verificada = data.get('presencaVerificada', false) == true;
+      let eventoId = data.get('eventoId', null);
+      return (!(eventoId is string) || isIdSimples(eventoId))
+        && (!verificada
+            || (isIdSimples(eventoId) && exists(presencaPath(eventoId, request.auth.uid))))
+        && (verificada
+            || !(eventoId is string)
+            || !exists(eventoPath(eventoId))
+            || get(eventoPath(eventoId)).data.get('exigeCheckin', false) != true);
     }
 
     match /avaliacoes/{avaliacaoId} {
@@ -132,14 +168,17 @@ service cloud.firestore {
 
       allow create: if isSignedIn()
         && request.resource.data.usuarioId == request.auth.uid
-        && isValidAvaliacao(request.resource.data);
+        && isValidAvaliacao(request.resource.data)
+        && isPresencaCoerente(request.resource.data);
 
       // Autor pode editar a própria avaliação (sem trocar o autor);
-      // moderadores podem editar qualquer uma.
+      // moderadores podem editar qualquer uma. O autor não mexe no selo de
+      // presença nem troca o evento (o que levaria o selo para outro evento
+      // ou fugiria do exigeCheckin).
       allow update: if isModerator()
         || (isOwner(resource.data.usuarioId)
             && request.resource.data.usuarioId == resource.data.usuarioId
-            && !changedKeys().hasAny(['moderado', 'moderadoPor', 'moderadoEm'])
+            && !changedKeys().hasAny(['moderado', 'moderadoPor', 'moderadoEm', 'presencaVerificada', 'eventoId'])
             && isValidAvaliacao(request.resource.data));
 
       allow delete: if isModerator() || isOwner(resource.data.usuarioId);
@@ -182,7 +221,7 @@ service cloud.firestore {
     function eventoFields() {
       return ['nome', 'descricao', 'data', 'local', 'publicoAlvo', 'preco',
               'tema', 'tipo', 'imagem', 'universidadeUid', 'universidadeId',
-              'universidadeNome', 'criadoEm', 'atualizadoEm'];
+              'universidadeNome', 'criadoEm', 'atualizadoEm', 'exigeCheckin'];
     }
 
     function isValidEvento(data) {
@@ -198,7 +237,10 @@ service cloud.firestore {
         && (!('imagem' in data) || data.imagem == null
             || (data.imagem is string && data.imagem.size() <= 2048))
         && (!('universidadeId' in data) || data.universidadeId == null || data.universidadeId is string)
-        && (!('universidadeNome' in data) || (data.universidadeNome is string && data.universidadeNome.size() <= 200));
+        && (!('universidadeNome' in data) || (data.universidadeNome is string && data.universidadeNome.size() <= 200))
+        // Check-in (docs/checkin-presenca.md): true = só avalia quem tem presença
+        // confirmada em presencas/{eventoId}_{uid}. Opcional; ausente = livre.
+        && (!('exigeCheckin' in data) || data.exigeCheckin is bool);
     }
 
     // O vínculo com public/universidades.json tem de ser o mesmo da conta da
@@ -235,6 +277,83 @@ service cloud.firestore {
       allow delete: if isModerator()
         || (isApprovedUniversity()
             && resource.data.universidadeUid == request.auth.uid);
+
+      // Segredo do check-in (docs/checkin-presenca.md), documento único
+      // eventos/{eventoId}/privado/checkin, gravado por src/lib/presencas.js
+      // (salvarCheckin / rotacionarCodigo) no painel do dashboard-universidade.
+      // O `codigo` é o que vai no QR: só a universidade dona e moderadores leem.
+      // As regras de presencas leem este documento com get(), que ignora estas
+      // regras de leitura.
+      match /privado/{docId} {
+        allow read, delete: if docId == 'checkin' && isDonoDoEventoOuModerador(eventoId);
+        allow create, update: if docId == 'checkin'
+          && isDonoDoEventoOuModerador(eventoId)
+          && isValidCheckin(request.resource.data);
+      }
+    }
+
+    // Universidade aprovada dona de eventos/{eventoId}, ou moderador.
+    // Evento inexistente: só o moderador (ex.: limpar segredo órfão).
+    function isDonoDoEventoOuModerador(eventoId) {
+      return isModerator()
+        || (isApprovedUniversity()
+            && exists(eventoPath(eventoId))
+            && get(eventoPath(eventoId)).data.universidadeUid == request.auth.uid);
+    }
+
+    // Exatamente estes campos. `atualizadoEm` == request.time impede datar
+    // a mudança no passado; expiraEm é livre (a dona decide a validade).
+    function isValidCheckin(d) {
+      return d.keys().hasOnly(['codigo', 'ativo', 'expiraEm', 'atualizadoEm'])
+        && d.keys().hasAll(['codigo', 'ativo', 'expiraEm', 'atualizadoEm'])
+        && d.codigo is string && d.codigo.matches('^[A-Za-z0-9]{16,64}$')
+        && d.ativo is bool
+        && d.expiraEm is timestamp
+        && d.atualizadoEm == request.time;
+    }
+
+    function checkinPath(eventoId) {
+      return /databases/$(database)/documents/eventos/$(eventoId)/privado/checkin;
+    }
+
+    // ------------------------------------------------------------------
+    // Presenças (check-in por QR) - docs/checkin-presenca.md
+    // ------------------------------------------------------------------
+    // Id determinístico `${eventoId}_${uid}`: uma presença por pessoa e evento
+    // (um segundo setDoc vira update, que ninguém pode fazer).
+    // Gravada por src/lib/presencas.js (registrarPresenca), na página /checkin.
+    // Só nasce com o código vigente do QR: o segredo existe, está ativo, não
+    // expirou e o código bate.
+    match /presencas/{presencaId} {
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasOnly(['eventoId', 'usuarioId', 'codigo', 'criadoEm'])
+        && isIdSimples(request.resource.data.eventoId)
+        && request.resource.data.usuarioId == request.auth.uid
+        && presencaId == request.resource.data.eventoId + '_' + request.auth.uid
+        && request.resource.data.criadoEm == request.time
+        && request.resource.data.codigo is string
+        && exists(checkinPath(request.resource.data.eventoId))
+        && get(checkinPath(request.resource.data.eventoId)).data.ativo == true
+        && request.time < get(checkinPath(request.resource.data.eventoId)).data.expiraEm
+        && get(checkinPath(request.resource.data.eventoId)).data.codigo == request.resource.data.codigo;
+
+      allow update: if false;
+
+      // Revogar presença indevida.
+      allow delete: if isDonoDoEventoOuModerador(resource.data.eventoId);
+
+      // Leitura: o próprio participante (temPresenca), a universidade dona do
+      // evento (lista e contagem com where("eventoId", "==", id)) e moderadores.
+      // Documento inexistente (temPresenca antes do check-in): só quem é o uid
+      // do final do id, para não revelar se outra pessoa esteve no evento.
+      allow get: if isSignedIn()
+        && ((resource == null && presencaId.matches('^[A-Za-z0-9_-]+_' + request.auth.uid + '$'))
+            || (resource != null
+                && (resource.data.usuarioId == request.auth.uid
+                    || isDonoDoEventoOuModerador(resource.data.eventoId))));
+      allow list: if isSignedIn()
+        && (resource.data.usuarioId == request.auth.uid
+            || isDonoDoEventoOuModerador(resource.data.eventoId));
     }
 
     // ------------------------------------------------------------------
