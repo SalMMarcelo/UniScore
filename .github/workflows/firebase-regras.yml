@@ -4,7 +4,8 @@
 #
 # Segredo necessário (Settings → Secrets and variables → Actions):
 #   FIREBASE_SERVICE_ACCOUNT: JSON da conta de serviço com os papéis
-#   Firebase Rules Admin, Cloud Datastore Index Admin e Service Usage Consumer.
+#   Firebase Rules Admin, Cloud Datastore Index Admin, Service Usage Consumer e
+#   Cloud Storage for Firebase Viewer (para ler o bucket padrão no deploy do Storage).
 name: Regras do Firebase
 
 on:
