@@ -158,7 +158,9 @@ export async function carregarRelatorioPublico(agora = new Date()) {
         eventos,
         porMes,
         impacto,
-        recentes
+        recentes,
+        verificadas,
+        verificadasOcultas
     ] = await Promise.all([
         contar(avaliacoesRef),
         contar(query(avaliacoesRef, where("moderado", "==", true))),
@@ -168,7 +170,10 @@ export async function carregarRelatorioPublico(agora = new Date()) {
         listarEventos().catch(err => { console.error("Erro ao listar eventos:", err); return []; }),
         avaliacoesPorMes(avaliacoesRef, agora),
         Promise.all(ASPECTOS_IMPACTO.map(async a => ({ id: a.id, media: await media(avaliacoesRef, a.campo) }))),
-        avaliacoesRecentes(avaliacoesRef)
+        avaliacoesRecentes(avaliacoesRef),
+        // Presença verificada por check-in (docs/checkin-presenca.md)
+        contar(query(avaliacoesRef, where("presencaVerificada", "==", true))),
+        contar(query(avaliacoesRef, where("presencaVerificada", "==", true), where("moderado", "==", true)))
     ]);
 
     const hoje = hojeISO(agora);
@@ -176,10 +181,20 @@ export async function carregarRelatorioPublico(agora = new Date()) {
         eventos.map(ev => ev.universidadeId || ev.universidadeNome).filter(Boolean)
     );
 
+    const avaliacoesVisiveis = totalAvaliacoes === null || avaliacoesOcultas === null
+        ? totalAvaliacoes
+        : totalAvaliacoes - avaliacoesOcultas;
+    const presencaVerificada = verificadas === null || verificadasOcultas === null
+        ? verificadas
+        : verificadas - verificadasOcultas;
+
     return {
-        avaliacoes: totalAvaliacoes === null || avaliacoesOcultas === null
-            ? totalAvaliacoes
-            : totalAvaliacoes - avaliacoesOcultas,
+        avaliacoes: avaliacoesVisiveis,
+        // Avaliações visíveis feitas por quem fez check-in, e a fração (0-1) do total visível
+        presencaVerificada,
+        percentualPresencaVerificada: presencaVerificada === null || !avaliacoesVisiveis
+            ? null
+            : presencaVerificada / avaliacoesVisiveis,
         avaliacoesNoMes,
         mediaGeral,
         posts,
