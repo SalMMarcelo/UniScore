@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import MenuMobile from "../../components/MenuMobile";
+import { OuMeuPainel } from "../../components/AcoesConta";
 
 export default function ParaUniversidades() {
     return (
@@ -29,12 +30,14 @@ export default function ParaUniversidades() {
                             </button>
                         </nav>
                         <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-4">
-                            <Link href="/login-universidades" className="text-gray-700 hover:text-gray-900 font-medium transition-colors">
-                                Iniciar sessão
-                            </Link>
-                            <Link href="/cadastro-universidades" className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold hover:from-red-700 hover:to-red-800 transition-all shadow-md">
-                                Criar conta gratuita
-                            </Link>
+                            <OuMeuPainel className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold hover:from-red-700 hover:to-red-800 transition-all shadow-md">
+                                <Link href="/login-universidades" className="text-gray-700 hover:text-gray-900 font-medium transition-colors">
+                                    Iniciar sessão
+                                </Link>
+                                <Link href="/cadastro-universidades" className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold hover:from-red-700 hover:to-red-800 transition-all shadow-md">
+                                    Criar conta gratuita
+                                </Link>
+                            </OuMeuPainel>
                             <MenuMobile />
                         </div>
                     </div>

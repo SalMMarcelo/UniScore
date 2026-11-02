@@ -15,6 +15,7 @@ import {
     TAMANHO_RANKING
 } from "../../lib/gamificacao";
 import LinkAvaliar from "../../components/LinkAvaliar";
+import { LinkPerfil } from "../../components/AcoesConta";
 
 const MEDALHAS = ["🥇", "🥈", "🥉"];
 
@@ -86,7 +87,7 @@ export default function Ranking() {
 
                     <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label={t("menu.navPrincipal")}>
                         <Link href="/forum" className="hover:text-blue-600 transition-colors">{t("menu.forum")}</Link>
-                        <Link href="/perfil" className="hover:text-blue-600 transition-colors">{t("ranking.meuPerfil")}</Link>
+                        <LinkPerfil className="hover:text-blue-600 transition-colors" texto={t("ranking.meuPerfil")} />
                         <SeletorIdioma />
                     </nav>
                     <MenuMobile />

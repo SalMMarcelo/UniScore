@@ -36,7 +36,8 @@ const ptBR = {
     paraUniversidades: "Para universidades",
     perfil: "Perfil",
     entrar: "Entrar",
-    notificacoes: "Notificações"
+    notificacoes: "Notificações",
+    meuPainel: "Meu painel"
   },
 
   // Rótulos de valores gravados no Firestore (o valor gravado não muda)

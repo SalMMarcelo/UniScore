@@ -35,7 +35,8 @@ const enUS = {
     paraUniversidades: "For universities",
     perfil: "Profile",
     entrar: "Sign in",
-    notificacoes: "Notifications"
+    notificacoes: "Notifications",
+    meuPainel: "My dashboard"
   },
 
   valores: {
