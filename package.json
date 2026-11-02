@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "test:rules": "firebase emulators:exec --only firestore,storage --project demo-uniscore \"node --test --test-concurrency=1 --test-reporter=spec tests/regras/*.test.mjs\""
+    "test:rules": "firebase emulators:exec --only firestore,storage --project demo-uniscore \"node --test --test-concurrency=1 --test-reporter=spec tests/regras/*.test.mjs\"",
+    "test:i18n": "node --no-warnings scripts/verificar-i18n.mjs"
   },
   "dependencies": {
     "firebase": "^12.4.0",
